@@ -1,18 +1,20 @@
 import HeaderNav from "./components/HeaderNav";
 
 export default function Home() {
-  const heroVideoSrc = encodeURI("/VIDEO PORTADA SIVAR MUSIC WEB.mp4");
+  const heroVideoSrc = "/video-portada-sivar-music-web.mp4";
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
       <video
         className="absolute inset-0 h-full w-full object-cover"
-        src={heroVideoSrc}
         autoPlay
         muted
         loop
         playsInline
-      />
+        controls={false}
+      >
+        <source src={heroVideoSrc} type="video/mp4" />
+      </video>
       <div className="absolute inset-0 bg-black/45" />
 
       <HeaderNav />
