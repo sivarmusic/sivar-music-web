@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sivar Music Group",
+  title: "Sivar Music",
   description: "Official website of Sivar Music Group",
 };
 
