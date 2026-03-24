@@ -9,6 +9,7 @@ type HeaderLogoProps = {
   href?: string;
   imageClassName?: string;
   priority?: boolean;
+  sizeClassName?: string;
   sizes?: string;
 };
 
@@ -18,10 +19,12 @@ export default function HeaderLogo({
   href,
   imageClassName = "",
   priority = false,
+  sizeClassName = "w-[148px] sm:w-[186px] md:w-[210px]",
   sizes = "(min-width: 768px) 210px, (min-width: 640px) 186px, 148px",
 }: HeaderLogoProps) {
   const baseClassName = [
-    "flex w-[148px] items-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] sm:w-[186px] md:w-[210px]",
+    "flex items-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
+    sizeClassName,
     hidden ? "pointer-events-none -translate-y-1 opacity-0" : "translate-y-0 opacity-100",
     className,
   ]

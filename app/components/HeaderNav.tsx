@@ -6,11 +6,15 @@ import HeaderLogo from "./HeaderLogo";
 
 type HeaderNavProps = {
   logoPriority?: boolean;
+  logoSizeClassName?: string;
+  logoSizes?: string;
   logoVisible?: boolean;
 };
 
 export default function HeaderNav({
   logoPriority = false,
+  logoSizeClassName = "w-[104px] sm:w-[130px] md:w-[147px]",
+  logoSizes = "(min-width: 768px) 147px, (min-width: 640px) 130px, 104px",
   logoVisible = true,
 }: HeaderNavProps) {
   const [navOpen, setNavOpen] = useState(false);
@@ -29,6 +33,8 @@ export default function HeaderNav({
           href="/"
           hidden={!logoVisible}
           priority={logoPriority}
+          sizeClassName={logoSizeClassName}
+          sizes={logoSizes}
           className="pointer-events-auto"
         />
 

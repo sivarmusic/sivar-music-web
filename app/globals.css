@@ -29,10 +29,6 @@ body {
   color: #ffffff;
 }
 
-.font-editorial {
-  font-family: var(--font-editorial), serif;
-}
-
 .intro-overlay {
   position: fixed;
   inset: 0;
@@ -59,7 +55,7 @@ body {
 }
 
 .intro-overlay__logo {
-  width: min(72vw, 33.5rem);
+  width: min(14vw, 10.85rem);
 }
 
 .intro-overlay__logo-image {
@@ -101,7 +97,7 @@ body {
 
 @media (max-width: 640px) {
   .intro-overlay__logo {
-    width: min(78vw, 19rem);
+    width: min(39.2vw, 7.7rem);
   }
 }
 

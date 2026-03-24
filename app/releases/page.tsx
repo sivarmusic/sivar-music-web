@@ -22,7 +22,7 @@ export default function ReleasesPage() {
             alt="Sivar Music Entertainment"
             width={520}
             height={132}
-            className="h-auto w-full max-w-[360px] md:max-w-[520px]"
+            className="h-auto w-full max-w-[180px] md:max-w-[260px]"
             priority
           />
         </div>
