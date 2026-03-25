@@ -41,16 +41,17 @@ export default function ArtistsPage() {
               href={`/artists/${artist.slug}`}
               className="group overflow-hidden rounded-xl border border-white/10 bg-white/5 shadow-lg transition hover:-translate-y-1 hover:border-white/30 hover:shadow-2xl"
             >
-              <div
-                className={`relative h-48 bg-gradient-to-br ${artist.accent} transition duration-300 group-hover:brightness-110`}
-              >
-                <div className="absolute inset-0 opacity-35" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.25),transparent_40%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.18),transparent_35%),radial-gradient(circle_at_50%_80%,rgba(255,255,255,0.18),transparent_45%)]" />
-                <div className="absolute inset-0 flex items-end">
-                  <p className="p-4 text-4xl font-black uppercase text-white/85">
-                    {artist.name.slice(0, 1)}
-                  </p>
-                </div>
+              <div className="relative h-64 overflow-hidden bg-white/5 md:h-72">
+                <Image
+                  src={artist.menuImage}
+                  alt={artist.name}
+                  fill
+                  sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw"
+                  className={`object-cover transition duration-500 group-hover:scale-[1.03] ${
+                    artist.menuImageClassName ?? "object-center"
+                  }`}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
               </div>
               <div className="space-y-2 bg-black/60 px-4 py-4">
                 <h3 className="text-lg font-semibold uppercase tracking-wide">{artist.name}</h3>
