@@ -23,14 +23,15 @@ export default function ArtistsPage() {
 
         <section className="max-w-3xl space-y-4 md:space-y-6">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-pink-300">
-            Entertainment
+            SIVAR MUSIC ENTERTAINMENT
           </p>
           <h1 className="text-4xl font-black uppercase leading-none tracking-tight drop-shadow-[0_6px_16px_rgba(0,0,0,0.45)] md:text-6xl">
-            Artists
+            ARTISTAS
           </h1>
           <p className="max-w-2xl text-base text-white/80 md:text-lg">
-            Discover the lineup shaping Sivar Music Group. From breakout voices to established icons,
-            dive into profiles, latest projects, and what is next on stage and in the studio.
+            Descubre a los artistas y productores que dan forma a la identidad de
+            Sivar Music Entertainment a través de voces distintivas, proyectos en
+            evolución y una dirección creativa original.
           </p>
         </section>
 
@@ -54,11 +55,11 @@ export default function ArtistsPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
               </div>
               <div className="space-y-2 bg-black/60 px-4 py-4">
-                <h3 className="text-lg font-semibold uppercase tracking-wide">{artist.name}</h3>
+                <h3 className="text-lg font-semibold tracking-wide">{artist.name}</h3>
                 <p className="text-xs font-semibold uppercase text-white/60">{artist.genre}</p>
                 <p className="text-sm text-white/75">{artist.summary}</p>
                 <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-pink-200">
-                  View profile
+                  Ver perfil
                   <span aria-hidden>→</span>
                 </span>
               </div>
