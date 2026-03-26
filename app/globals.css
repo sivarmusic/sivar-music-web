@@ -101,6 +101,105 @@ body {
   }
 }
 
+.mst-marquee {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 12;
+  overflow: hidden;
+  pointer-events: none;
+  width: clamp(3.8rem, 5vw, 5.75rem);
+}
+
+.mst-marquee--left {
+  left: 0;
+}
+
+.mst-marquee--right {
+  right: 0;
+}
+
+.mst-marquee__track {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  will-change: transform;
+  animation: mst-marquee-up 24s linear infinite;
+}
+
+.mst-marquee__word {
+  position: absolute;
+  left: 50%;
+  display: block;
+  font-family:
+    "Comic Sans MS",
+    "Comic Sans",
+    "Chalkboard SE",
+    "Comic Neue",
+    cursive;
+  font-size: clamp(2.15rem, 3.65vw, 3.4rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: lowercase;
+  white-space: nowrap;
+  color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    #ff53d8 0%,
+    #ffe95c 16%,
+    #6dff72 34%,
+    #78f6ff 52%,
+    #7a82ff 70%,
+    #ff83de 86%,
+    #ff53d8 100%
+  );
+  background-size: 230% 100%;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center center;
+  will-change: background-position, filter;
+  filter: hue-rotate(var(--marquee-hue, 0deg)) saturate(1.2) brightness(1.06)
+    drop-shadow(0 0 10px rgba(0, 0, 0, 0.18));
+  animation: mst-marquee-spectrum 8.2s linear infinite;
+  animation-delay: var(--marquee-delay, 0s);
+}
+
+@keyframes mst-marquee-up {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes mst-marquee-spectrum {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(var(--marquee-hue, 0deg)) saturate(1.18)
+      brightness(1.03) drop-shadow(0 0 10px rgba(0, 0, 0, 0.16));
+  }
+
+  50% {
+    background-position: 100% 50%;
+    filter: hue-rotate(calc(var(--marquee-hue, 0deg) + 180deg))
+      saturate(1.32) brightness(1.12)
+      drop-shadow(0 0 12px rgba(255, 255, 255, 0.12));
+  }
+
+  100% {
+    background-position: 230% 50%;
+    filter: hue-rotate(calc(var(--marquee-hue, 0deg) + 360deg))
+      saturate(1.18) brightness(1.03)
+      drop-shadow(0 0 10px rgba(0, 0, 0, 0.16));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .intro-overlay {
     transition-duration: 180ms;
@@ -109,5 +208,14 @@ body {
   .intro-overlay__logo-image {
     animation-duration: 1ms;
     animation-delay: 0ms;
+  }
+
+  .mst-marquee__track {
+    animation: none;
+  }
+
+  .mst-marquee__word {
+    animation: none;
+    background-position: 35% 50%;
   }
 }

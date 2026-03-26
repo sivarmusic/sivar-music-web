@@ -4,6 +4,8 @@ export type Artist = {
   genre: string;
   menuImage: string;
   menuImageClassName?: string;
+  profileBackgroundImage?: string;
+  profileMode?: "default" | "background-only" | "mst-desktop";
   summary: string;
   accent: string;
   profileParagraphs: string[];
@@ -37,6 +39,8 @@ export const artists: Artist[] = [
     genre: "POP / URBAN POP",
     menuImage: encodeURI("/MENU-PICS/MONICA SIN TILDE MENU.jpg"),
     menuImageClassName: "object-[center_18%]",
+    profileBackgroundImage: encodeURI("/MST-WEB/FONDO_MST_WEB.jpg"),
+    profileMode: "mst-desktop",
     summary:
       "Una voz introspectiva y contemporánea que construye canciones íntimas, con texturas alternativas y una identidad profundamente personal.",
     accent: "from-indigo-500 via-purple-500 to-pink-400",

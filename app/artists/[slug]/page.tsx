@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import MonicaSinTildeProfile from "../../components/MonicaSinTildeProfile";
 import HeaderNav from "../../components/HeaderNav";
 import { artists } from "../../data/artists";
 
@@ -22,8 +23,42 @@ export default async function ArtistDetailPage({ params }: ArtistPageProps) {
     notFound();
   }
 
+  if (artist.profileMode === "mst-desktop") {
+    return <MonicaSinTildeProfile />;
+  }
+
+  if (
+    artist.profileMode === "background-only" &&
+    artist.profileBackgroundImage
+  ) {
+    return (
+      <main className="relative min-h-screen overflow-hidden bg-black text-white">
+        <div className="absolute inset-0">
+          <Image
+            src={artist.profileBackgroundImage}
+            alt={artist.name}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        </div>
+
+        <HeaderNav />
+
+        <div className="relative z-10 min-h-screen" />
+      </main>
+    );
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
+      {artist.profileBackgroundImage ? (
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-24"
+          style={{ backgroundImage: `url("${artist.profileBackgroundImage}")` }}
+        />
+      ) : null}
       <div className={`absolute inset-0 bg-gradient-to-br ${artist.accent} opacity-15`} />
       <div className="absolute inset-0 bg-black/80" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_32%),linear-gradient(180deg,rgba(0,0,0,0.1),rgba(0,0,0,0.62)_48%,rgba(0,0,0,0.88)_100%)]" />
