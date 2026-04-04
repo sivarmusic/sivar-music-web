@@ -42,3 +42,5 @@ next-env.d.ts
 public/VIDEO PORTADA SIVAR MUSIC WEB.mp4
 public/PORTFOLIO/
 public/portfolio/
+.video-exports/
+.env*.local

@@ -1,19 +1,93 @@
-import { readdirSync } from "node:fs";
-import path from "node:path";
+import blobManifest from "./soundForFilmsBlobManifest.json";
 
 export type SoundForFilmsProject = {
   slug: string;
   title: string;
   description: string;
   partnerCredit: string;
+  previewVideoSrc: string;
   videoSrc: string;
 };
 
-const portfolioDirectory = path.join(process.cwd(), "public", "PORTFOLIO");
+type SoundForFilmsCatalogEntry = {
+  filename: string;
+  title: string;
+  description: string;
+  partnerCredit?: string;
+  previewFilename?: string;
+};
 
-function stripExtension(filename: string) {
-  return filename.replace(/\.[^/.]+$/, "");
-}
+type SoundForFilmsBlobManifest = {
+  generatedAt: string | null;
+  full: Record<string, string>;
+  preview: Record<string, string>;
+};
+
+const soundForFilmsCatalog: SoundForFilmsCatalogEntry[] = [
+  {
+    filename: "AEROMEXICO.mp4",
+    title: "AEROMEXICO",
+    description: "MUSIC/SOUND DESIGN/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
+  },
+  {
+    filename: "ARREDO.mp4",
+    title: "ARREDO",
+    description: "SOUND DESIGN/MIX",
+  },
+  {
+    filename: "BUHO FILM.mp4",
+    title: "BUHO FILM",
+    description: "MUSIC/SOUND DESIGN/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
+  },
+  {
+    filename: "DON JULIO.mp4",
+    title: "DON JULIO",
+    description: "SOUND DESIGN/MIX",
+  },
+  {
+    filename: "HBO MAX.mp4",
+    title: "HBO MAX",
+    description: "SOUND DESIGN/MIX",
+  },
+  {
+    filename: "KFC CARIBE.mp4",
+    title: "KFC CARIBE",
+    description: "MUSIC/SOUND DESIGN/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
+  },
+  {
+    filename: "KFC LATAM.mp4",
+    title: "KFC LATAM",
+    description: "MUSIC/SOUND DESIGN/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
+  },
+  {
+    filename: "MONTELOBOS.mp4",
+    title: "MONTELOBOS",
+    description: "MUSIC/SOUND DESIGN/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
+  },
+  {
+    filename: "NISSAN.mp4",
+    title: "NISSAN",
+    description: "SOUND DESIGN/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
+  },
+  {
+    filename: "OLYMPICS.mp4",
+    title: "OLYMPICS",
+    description: "MUSIC/SOUND DESIGN/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
+  },
+  {
+    filename: "TECATE.mp4",
+    title: "TECATE",
+    description: "MUSIC/SOUND DESIGN/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
+  },
+];
 
 function slugify(value: string) {
   return value
@@ -25,47 +99,57 @@ function slugify(value: string) {
     .replace(/-+/g, "-");
 }
 
-// Titles are derived from the real filenames in public/PORTFOLIO so renames stay synced.
+function trimTrailingSlash(value: string) {
+  return value.replace(/\/+$/, "");
+}
+
+function buildVideoUrl(baseUrl: string, filename: string) {
+  return encodeURI(`${trimTrailingSlash(baseUrl)}/${filename}`);
+}
+
+const soundForFilmsBlobManifest = blobManifest as SoundForFilmsBlobManifest;
+const LOCAL_VIDEO_BASE_URL = "/PORTFOLIO";
+
+// Explicit env overrides still win, but the generated Vercel Blob manifest
+// removes the need to wire base URLs for deploys once assets are uploaded.
+const fullVideoBaseUrl =
+  process.env.SOUND_FOR_FILMS_VIDEO_BASE_URL ??
+  process.env.NEXT_PUBLIC_SOUND_FOR_FILMS_VIDEO_BASE_URL ??
+  "";
+
+const previewVideoBaseUrl =
+  process.env.SOUND_FOR_FILMS_PREVIEW_BASE_URL ??
+  process.env.NEXT_PUBLIC_SOUND_FOR_FILMS_PREVIEW_BASE_URL ??
+  fullVideoBaseUrl;
+
+function resolveBlobOrFallbackUrl(
+  filename: string,
+  type: "full" | "preview",
+  envBaseUrl: string
+) {
+  if (envBaseUrl) {
+    return buildVideoUrl(envBaseUrl, filename);
+  }
+
+  const manifestUrl =
+    type === "full"
+      ? soundForFilmsBlobManifest.full[filename]
+      : soundForFilmsBlobManifest.preview[filename];
+
+  return manifestUrl ?? buildVideoUrl(LOCAL_VIDEO_BASE_URL, filename);
+}
+
 export function getSoundForFilmsProjects(): SoundForFilmsProject[] {
-  const portfolioVideoFiles = readdirSync(portfolioDirectory)
-    .filter((filename) => /\.(mp4|mov|webm)$/i.test(filename))
-    .sort((left, right) => left.localeCompare(right));
-
-  // Add a short description per video here when needed.
-  const descriptionsByTitle: Record<string, string> = {
-    AEROMEXICO: "MUSIC/SOUND DESIGN/MIX",
-    ARREDO: "SOUND DESIGN/MIX",
-    "BUHO FILM": "MUSIC/SOUND DESIGN/MIX",
-    "DON JULIO": "SOUND DESIGN/MIX",
-    "HBO MAX": "SOUND DESIGN/MIX",
-    "KFC CARIBE": "MUSIC/SOUND DESIGN/MIX",
-    "KFC LATAM": "MUSIC/SOUND DESIGN/MIX",
-    MONTELOBOS: "MUSIC/SOUND DESIGN/MIX",
-    NISSAN: "SOUND DESIGN/MIX",
-    OLYMPICS: "MUSIC/SOUND DESIGN/MIX",
-    TECATE: "MUSIC/SOUND DESIGN/MIX",
-  };
-
-  const partnerCreditsByTitle: Record<string, string> = {
-    AEROMEXICO: "in partnership with BDS creative studio.",
-    "BUHO FILM": "in partnership with BDS creative studio.",
-    "KFC CARIBE": "in partnership with BDS creative studio.",
-    "KFC LATAM": "in partnership with BDS creative studio.",
-    MONTELOBOS: "in partnership with BDS creative studio.",
-    NISSAN: "in partnership with BDS creative studio.",
-    OLYMPICS: "in partnership with BDS creative studio.",
-    TECATE: "in partnership with BDS creative studio.",
-  };
-
-  return portfolioVideoFiles.map((filename) => {
-    const title = stripExtension(filename);
-
-    return {
-      slug: slugify(title),
-      title,
-      description: descriptionsByTitle[title] ?? "",
-      partnerCredit: partnerCreditsByTitle[title] ?? "",
-      videoSrc: encodeURI(`/PORTFOLIO/${filename}`),
-    };
-  });
+  return soundForFilmsCatalog.map((entry) => ({
+    slug: slugify(entry.title),
+    title: entry.title,
+    description: entry.description,
+    partnerCredit: entry.partnerCredit ?? "",
+    previewVideoSrc: resolveBlobOrFallbackUrl(
+      entry.previewFilename ?? entry.filename,
+      "preview",
+      previewVideoBaseUrl
+    ),
+    videoSrc: resolveBlobOrFallbackUrl(entry.filename, "full", fullVideoBaseUrl),
+  }));
 }

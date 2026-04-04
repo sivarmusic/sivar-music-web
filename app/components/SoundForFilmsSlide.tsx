@@ -70,7 +70,7 @@ export default function SoundForFilmsSlide({
       video.removeEventListener("canplay", handleCanPlay);
       video.removeEventListener("timeupdate", handleTimeUpdate);
     };
-  }, [PREVIEW_DURATION_SECONDS, isActive, project.videoSrc, shouldLoadPreview]);
+  }, [PREVIEW_DURATION_SECONDS, isActive, project.previewVideoSrc, shouldLoadPreview]);
 
   return (
     <article
@@ -83,8 +83,8 @@ export default function SoundForFilmsSlide({
 
       <video
         ref={videoRef}
-        key={project.videoSrc}
-        src={project.videoSrc}
+        key={project.previewVideoSrc}
+        src={project.previewVideoSrc}
         className={`absolute inset-0 h-full w-full cursor-pointer object-cover transition-[opacity,transform] duration-[1300ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isActive ? "scale-100 opacity-100" : "scale-[1.04] opacity-0"
         }`}

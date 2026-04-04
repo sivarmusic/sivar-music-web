@@ -3,8 +3,6 @@ import HeaderNav from "../components/HeaderNav";
 import SoundForFilmsShowcase from "../components/SoundForFilmsShowcase";
 import { getSoundForFilmsProjects } from "../data/soundForFilmsProjects";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "Sound for Films | Sivar Music",
   description:

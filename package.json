@@ -6,9 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "videos:optimize": "bash scripts/optimize-sound-for-films-videos.sh",
+    "videos:upload:vercel-blob": "node scripts/upload-sound-for-films-to-vercel-blob.mjs",
+    "videos:publish:vercel-blob": "npm run videos:optimize && npm run videos:upload:vercel-blob"
   },
   "dependencies": {
+    "@vercel/blob": "^2.3.3",
     "next": "^16.2.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
