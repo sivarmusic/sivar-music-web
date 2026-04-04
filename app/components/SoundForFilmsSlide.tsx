@@ -18,6 +18,13 @@ export default function SoundForFilmsSlide({
 }: SoundForFilmsSlideProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const PREVIEW_DURATION_SECONDS = 6;
+  const compactTitleLength = project.title.replace(/\s+/g, "").length;
+  const mobileTitleSizeClassName =
+    compactTitleLength >= 10
+      ? "text-[clamp(1.95rem,11vw,2.7rem)]"
+      : compactTitleLength >= 8
+        ? "text-[clamp(2.2rem,12vw,3rem)]"
+        : "text-[clamp(2.4rem,14vw,3.6rem)]";
 
   useEffect(() => {
     const video = videoRef.current;
@@ -119,7 +126,9 @@ export default function SoundForFilmsSlide({
             isActive ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
           }`}
         >
-          <h2 className="max-w-5xl text-[clamp(2.4rem,16vw,7.4rem)] font-black uppercase leading-[0.88] tracking-[-0.06em] text-white [text-shadow:0_18px_48px_rgba(0,0,0,0.62)] sm:text-[clamp(3rem,9vw,7.4rem)]">
+          <h2
+            className={`max-w-full font-black uppercase leading-[0.88] tracking-[-0.06em] text-white [text-shadow:0_18px_48px_rgba(0,0,0,0.62)] sm:max-w-5xl sm:text-[clamp(3rem,9vw,7.4rem)] ${mobileTitleSizeClassName}`}
+          >
             {project.title}
           </h2>
           {project.description ? (
