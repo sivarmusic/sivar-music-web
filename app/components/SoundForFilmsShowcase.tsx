@@ -19,13 +19,16 @@ type SoundForFilmsShowcaseProps = {
 
 const WHEEL_LOCK_MS = 900;
 const SWIPE_THRESHOLD = 52;
+const PREVIEW_AUTO_ADVANCE_MS = 5400;
 
 export default function SoundForFilmsShowcase({
   projects,
 }: SoundForFilmsShowcaseProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [exitingIndex, setExitingIndex] = useState<number | null>(null);
-  const [playerProject, setPlayerProject] = useState<SoundForFilmsProject | null>(null);
+  const [playerProject, setPlayerProject] = useState<SoundForFilmsProject | null>(
+    null
+  );
   const [isShowcaseVisible, setIsShowcaseVisible] = useState(true);
   const [isDocumentVisible, setIsDocumentVisible] = useState(true);
   const showcaseRef = useRef<HTMLElement>(null);
@@ -33,6 +36,7 @@ export default function SoundForFilmsShowcase({
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const activeIndexRef = useRef(0);
   const exitingTimeoutRef = useRef<number | null>(null);
+  const shouldLoadPreview = isShowcaseVisible && isDocumentVisible && !playerProject;
 
   useEffect(() => {
     activeIndexRef.current = activeIndex;
@@ -120,6 +124,49 @@ export default function SoundForFilmsShowcase({
   const moveToIndex = (index: number) => {
     commitSlideChange(index);
   };
+
+  const getNextIndex = (index: number) =>
+    index + 1 >= projects.length ? 0 : index + 1;
+
+  const handlePlayerEnded = () => {
+    if (!playerProject) {
+      return;
+    }
+
+    const currentProjectIndex = projects.findIndex(
+      ({ slug }) => slug === playerProject.slug
+    );
+
+    setPlayerProject(null);
+
+    if (currentProjectIndex === -1) {
+      return;
+    }
+
+    commitSlideChange(getNextIndex(currentProjectIndex));
+  };
+
+  const handlePreviewAutoAdvance = useEffectEvent(() => {
+    if (!shouldLoadPreview || projects.length < 2) {
+      return;
+    }
+
+    commitSlideChange(getNextIndex(activeIndexRef.current));
+  });
+
+  useEffect(() => {
+    if (!shouldLoadPreview || projects.length < 2) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      handlePreviewAutoAdvance();
+    }, PREVIEW_AUTO_ADVANCE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeIndex, projects.length, shouldLoadPreview]);
 
   const handleWindowKeyDown = useEffectEvent((event: KeyboardEvent) => {
     if (playerProject) {
@@ -240,8 +287,6 @@ export default function SoundForFilmsShowcase({
       ? [exitingIndex, activeIndex]
       : [activeIndex];
 
-  const shouldLoadPreview = isShowcaseVisible && isDocumentVisible && !playerProject;
-
   return (
     <>
       <section
@@ -312,6 +357,7 @@ export default function SoundForFilmsShowcase({
         <SoundForFilmsPlayer
           project={playerProject}
           onClose={() => setPlayerProject(null)}
+          onEnded={handlePlayerEnded}
         />
       ) : null}
     </>

@@ -6,11 +6,13 @@ import type { SoundForFilmsProject } from "../data/soundForFilmsProjects";
 type SoundForFilmsPlayerProps = {
   project: SoundForFilmsProject;
   onClose: () => void;
+  onEnded: () => void;
 };
 
 export default function SoundForFilmsPlayer({
   project,
   onClose,
+  onEnded,
 }: SoundForFilmsPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isReady, setIsReady] = useState(false);
@@ -111,6 +113,7 @@ export default function SoundForFilmsPlayer({
             preload="auto"
             disablePictureInPicture
             disableRemotePlayback
+            onEnded={onEnded}
           />
         </div>
       </div>

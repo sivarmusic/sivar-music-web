@@ -18,6 +18,7 @@ export default function SoundForFilmsSlide({
 }: SoundForFilmsSlideProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const PREVIEW_DURATION_SECONDS = 6;
+  const isCoronaCentenario = project.title === "CORONA 100 AÑOS";
   const compactTitleLength = project.title.replace(/\s+/g, "").length;
   const mobileTitleSizeClassName =
     compactTitleLength >= 10
@@ -107,17 +108,13 @@ export default function SoundForFilmsSlide({
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(214,207,191,0.16)_0%,transparent_32%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.08)_0%,transparent_28%)]" />
 
       <div
-        className={`pointer-events-auto absolute right-4 top-[calc(env(safe-area-inset-top)+4.75rem)] z-20 hidden transition-all delay-150 duration-700 ease-out sm:block md:right-10 md:top-32 ${
-          isActive ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+        className={`pointer-events-none absolute inset-0 z-20 flex items-center justify-center transition-all delay-150 duration-700 ease-out ${
+          isActive ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
         }`}
       >
-        <button
-          type="button"
-          onClick={onOpenPlayer}
-          className="inline-flex min-h-10 items-center rounded-full border border-white/12 bg-black/28 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/78 transition hover:border-white/28 hover:bg-black/46"
-        >
-          Open Film
-        </button>
+        <span className="text-[0.62rem] font-medium lowercase tracking-[0.34em] text-white/72 [text-shadow:0_10px_28px_rgba(0,0,0,0.52)] sm:text-[0.68rem]">
+          click to watch
+        </span>
       </div>
 
       <div className="pointer-events-none relative z-10 flex h-full flex-col justify-end px-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] pt-[calc(env(safe-area-inset-top)+6rem)] sm:px-6 sm:pb-28 sm:pt-28 md:px-10 md:pb-28 md:pt-32">
@@ -129,7 +126,14 @@ export default function SoundForFilmsSlide({
           <h2
             className={`max-w-full font-black uppercase leading-[0.88] tracking-[-0.06em] text-white [text-shadow:0_18px_48px_rgba(0,0,0,0.62)] sm:max-w-5xl sm:text-[clamp(3rem,9vw,7.4rem)] ${mobileTitleSizeClassName}`}
           >
-            {project.title}
+            {isCoronaCentenario ? (
+              <>
+                <span className="block">CORONA</span>
+                <span className="block whitespace-nowrap">100 AÑOS</span>
+              </>
+            ) : (
+              project.title
+            )}
           </h2>
           {project.description ? (
             <div className="mt-4 max-w-[18rem] space-y-1.5 sm:mt-5 sm:max-w-xl sm:space-y-2">
