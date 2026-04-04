@@ -44,7 +44,7 @@ const soundForFilmsCatalog: SoundForFilmsCatalogEntry[] = [
   {
     filename: "CHEVROLET.mp4",
     title: "CHEVROLET",
-    description: "SFX/MIX",
+    description: "SOUND DESIGN/MIX",
     partnerCredit: "in partnership with BDS creative studio.",
   },
   {
@@ -61,7 +61,7 @@ const soundForFilmsCatalog: SoundForFilmsCatalogEntry[] = [
   {
     filename: "GOOGLE PIXEL.mp4",
     title: "GOOGLE PIXEL",
-    description: "SFX/MIX",
+    description: "SOUND DESIGN/MIX",
     partnerCredit: "in partnership with BDS creative studio.",
   },
   {
@@ -72,7 +72,7 @@ const soundForFilmsCatalog: SoundForFilmsCatalogEntry[] = [
   {
     filename: "JEAN PAUL GAULTIER.mp4",
     title: "JEAN PAUL GAULTIER",
-    description: "SFX/MIX",
+    description: "SOUND DESIGN/MIX",
     partnerCredit: "in partnership with BDS creative studio.",
   },
   {
@@ -108,7 +108,7 @@ const soundForFilmsCatalog: SoundForFilmsCatalogEntry[] = [
   {
     filename: "SPORTS DIRECT.mp4",
     title: "SPORTS DIRECT",
-    description: "MUSIC/SFX/MIX",
+    description: "MUSIC/SOUND DESIGN/MIX",
     partnerCredit: "in partnership with BDS creative studio.",
   },
   {
