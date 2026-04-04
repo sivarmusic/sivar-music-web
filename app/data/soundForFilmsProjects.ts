@@ -42,14 +42,38 @@ const soundForFilmsCatalog: SoundForFilmsCatalogEntry[] = [
     partnerCredit: "in partnership with BDS creative studio.",
   },
   {
+    filename: "CHEVROLET.mp4",
+    title: "CHEVROLET",
+    description: "SFX/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
+  },
+  {
+    filename: "CORONA 100 AÑOS.mp4",
+    title: "CORONA 100 AÑOS",
+    description: "SOUND DESIGN/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
+  },
+  {
     filename: "DON JULIO.mp4",
     title: "DON JULIO",
     description: "SOUND DESIGN/MIX",
   },
   {
+    filename: "GOOGLE PIXEL.mp4",
+    title: "GOOGLE PIXEL",
+    description: "SFX/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
+  },
+  {
     filename: "HBO MAX.mp4",
     title: "HBO MAX",
     description: "SOUND DESIGN/MIX",
+  },
+  {
+    filename: "JEAN PAUL GAULTIER.mp4",
+    title: "JEAN PAUL GAULTIER",
+    description: "SFX/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
   },
   {
     filename: "KFC CARIBE.mp4",
@@ -79,6 +103,12 @@ const soundForFilmsCatalog: SoundForFilmsCatalogEntry[] = [
     filename: "OLYMPICS.mp4",
     title: "OLYMPICS",
     description: "MUSIC/SOUND DESIGN/MIX",
+    partnerCredit: "in partnership with BDS creative studio.",
+  },
+  {
+    filename: "SPORTS DIRECT.mp4",
+    title: "SPORTS DIRECT",
+    description: "MUSIC/SFX/MIX",
     partnerCredit: "in partnership with BDS creative studio.",
   },
   {
