@@ -100,7 +100,7 @@ export default function SoundForFilmsSlide({
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(214,207,191,0.16)_0%,transparent_32%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.08)_0%,transparent_28%)]" />
 
       <div
-        className={`pointer-events-auto absolute right-6 top-28 z-20 transition-all delay-150 duration-700 ease-out md:right-10 md:top-32 ${
+        className={`pointer-events-auto absolute right-4 top-[calc(env(safe-area-inset-top)+4.75rem)] z-20 hidden transition-all delay-150 duration-700 ease-out sm:block md:right-10 md:top-32 ${
           isActive ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
         }`}
       >
@@ -113,28 +113,28 @@ export default function SoundForFilmsSlide({
         </button>
       </div>
 
-      <div className="pointer-events-none relative z-10 flex h-full flex-col justify-end px-6 pb-24 pt-28 md:px-10 md:pb-28 md:pt-32">
+      <div className="pointer-events-none relative z-10 flex h-full flex-col justify-end px-4 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] pt-[calc(env(safe-area-inset-top)+6rem)] sm:px-6 sm:pb-28 sm:pt-28 md:px-10 md:pb-28 md:pt-32">
         <div
           className={`max-w-5xl transition-all delay-75 duration-700 ease-out ${
             isActive ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
           }`}
         >
-          <h2 className="max-w-5xl text-[clamp(3rem,9vw,7.4rem)] font-black uppercase leading-[0.86] tracking-[-0.06em] text-white [text-shadow:0_18px_48px_rgba(0,0,0,0.62)]">
+          <h2 className="max-w-5xl text-[clamp(2.4rem,16vw,7.4rem)] font-black uppercase leading-[0.88] tracking-[-0.06em] text-white [text-shadow:0_18px_48px_rgba(0,0,0,0.62)] sm:text-[clamp(3rem,9vw,7.4rem)]">
             {project.title}
           </h2>
           {project.description ? (
-            <div className="mt-5 max-w-xl space-y-2">
-              <p className="text-sm text-white/74 md:text-base">
+            <div className="mt-4 max-w-[18rem] space-y-1.5 sm:mt-5 sm:max-w-xl sm:space-y-2">
+              <p className="text-[0.78rem] leading-relaxed text-white/74 sm:text-sm md:text-base">
                 {project.description}
               </p>
               {project.partnerCredit ? (
-                <p className="text-[0.7rem] font-medium tracking-[0.08em] text-white/52">
+                <p className="max-w-[15rem] text-[0.64rem] font-medium leading-relaxed tracking-[0.08em] text-white/52 sm:max-w-xl sm:text-[0.7rem]">
                   {project.partnerCredit}
                 </p>
               ) : null}
             </div>
           ) : project.partnerCredit ? (
-            <p className="mt-5 max-w-xl text-[0.7rem] font-medium tracking-[0.08em] text-white/52">
+            <p className="mt-4 max-w-[15rem] text-[0.64rem] font-medium leading-relaxed tracking-[0.08em] text-white/52 sm:mt-5 sm:max-w-xl sm:text-[0.7rem]">
               {project.partnerCredit}
             </p>
           ) : null}

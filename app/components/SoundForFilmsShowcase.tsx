@@ -269,15 +269,15 @@ export default function SoundForFilmsShowcase({
           );
         })}
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-6 pb-6 md:px-10 md:pb-8">
-          <div className="pointer-events-auto flex items-center justify-end gap-3">
-            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/22 px-3 py-2 backdrop-blur-sm">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-[calc(env(safe-area-inset-bottom)+0.9rem)] sm:px-6 sm:pb-6 md:px-10 md:pb-8">
+          <div className="pointer-events-auto flex items-center justify-between gap-2 sm:justify-end sm:gap-3">
+            <div className="flex max-w-[calc(100vw-7.25rem)] items-center gap-1.5 overflow-x-auto rounded-full border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm sm:max-w-none sm:gap-2 sm:bg-black/22">
               {projects.map((project, index) => (
                 <button
                   key={project.slug}
                   type="button"
                   onClick={() => moveToIndex(index)}
-                  className={`h-2.5 w-2.5 rounded-full transition ${
+                  className={`h-2.5 w-2.5 shrink-0 rounded-full transition ${
                     index === activeIndex ? "bg-white" : "bg-white/28 hover:bg-white/52"
                   }`}
                   aria-label={`Go to ${project.title}`}
@@ -286,11 +286,11 @@ export default function SoundForFilmsShowcase({
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 type="button"
                 onClick={() => moveBy(-1)}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-black/28 text-white transition hover:border-white/32 hover:bg-black/48"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-black/34 text-white transition hover:border-white/32 hover:bg-black/48 sm:h-11 sm:w-11 sm:bg-black/28"
                 aria-label="Previous project"
               >
                 ←
@@ -298,7 +298,7 @@ export default function SoundForFilmsShowcase({
               <button
                 type="button"
                 onClick={() => moveBy(1)}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-black/28 text-white transition hover:border-white/32 hover:bg-black/48"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-black/34 text-white transition hover:border-white/32 hover:bg-black/48 sm:h-11 sm:w-11 sm:bg-black/28"
                 aria-label="Next project"
               >
                 →

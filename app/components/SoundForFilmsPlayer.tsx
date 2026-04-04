@@ -70,28 +70,28 @@ export default function SoundForFilmsPlayer({
       aria-modal="true"
       aria-label={`${project.title} full video player`}
     >
-      <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-end px-5 py-5 sm:px-6 md:px-10 md:py-6">
+      <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-end px-4 pt-[calc(env(safe-area-inset-top)+0.9rem)] sm:px-6 sm:pt-5 md:px-10 md:py-6">
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-black/34 text-white transition hover:border-white/28 hover:bg-black/52"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-black/46 text-white transition hover:border-white/28 hover:bg-black/52 sm:h-11 sm:w-11 sm:bg-black/34"
           aria-label="Close full player"
         >
           ✕
         </button>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center px-20 pt-5 sm:px-24 md:px-32 md:pt-6">
-        <div className="rounded-full border border-white/10 bg-black/34 px-5 py-3 text-center backdrop-blur-sm">
-          <h2 className="text-base font-black uppercase tracking-[-0.04em] text-white md:text-2xl">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center px-14 pt-[calc(env(safe-area-inset-top)+0.9rem)] sm:px-24 sm:pt-5 md:px-32 md:pt-6">
+        <div className="max-w-[calc(100vw-5.5rem)] rounded-full border border-white/10 bg-black/46 px-4 py-2.5 text-center sm:max-w-[min(80vw,28rem)] sm:bg-black/34 sm:px-5 sm:py-3">
+          <h2 className="text-sm font-black uppercase leading-none tracking-[-0.04em] text-white sm:text-base md:text-2xl">
             {project.title}
           </h2>
         </div>
       </div>
 
-      <div className="flex h-full items-center justify-center px-4 pb-6 pt-24 sm:px-6 md:px-10 md:pb-10 md:pt-28">
+      <div className="flex h-full items-center justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-[calc(env(safe-area-inset-top)+4.5rem)] sm:px-6 sm:pb-6 sm:pt-24 md:px-10 md:pb-10 md:pt-28">
         <div
-          className="relative w-full max-w-6xl overflow-hidden rounded-[1.2rem] border border-white/10 bg-black"
+          className="relative w-full max-w-6xl overflow-hidden rounded-[1rem] border border-white/10 bg-black sm:rounded-[1.2rem]"
           onClick={(event) => event.stopPropagation()}
         >
           {!isReady ? (
@@ -105,7 +105,7 @@ export default function SoundForFilmsPlayer({
           <video
             ref={videoRef}
             src={project.videoSrc}
-            className="h-full max-h-[82vh] w-full bg-black object-contain"
+            className="h-full max-h-[calc(100svh-7.5rem)] w-full bg-black object-contain sm:max-h-[82vh]"
             controls
             playsInline
             preload="auto"
