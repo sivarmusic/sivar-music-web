@@ -125,6 +125,15 @@ export default function HeaderNav({
             >
               PUBLISHING
             </Link>
+            <div className="my-1 h-px w-full bg-white/10" />
+            <Link
+              className="flex items-center gap-2 rounded-full border border-white/14 bg-white/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/90 transition hover:bg-white/10 sm:text-xs"
+              href="/members"
+              onClick={closeNav}
+            >
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Members Login
+            </Link>
           </nav>
         </div>
       </div>
