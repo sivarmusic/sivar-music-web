@@ -79,18 +79,18 @@ Responde ÚNICAMENTE con un array JSON válido con este formato exacto, sin text
 ]`;
 
   try {
-    const combinedPrompt = `${systemPrompt}\n\n---\n\n${userPrompt}`;
-
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: combinedPrompt }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
           generationConfig: {
             temperature: 0.9,
             maxOutputTokens: 4096,
+            thinkingConfig: { thinkingBudget: 0 },
           },
         }),
       }

@@ -56,6 +56,113 @@ function Field({
   );
 }
 
+function ERCalculator({
+  value,
+  followers,
+  onChange,
+}: {
+  value: string | number;
+  followers: number;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [likes, setLikes] = useState("");
+  const [comments, setComments] = useState("");
+  const [saves, setSaves] = useState("");
+
+  const interactions =
+    (Number(likes) || 0) + (Number(comments) || 0) + (Number(saves) || 0);
+  const er =
+    followers > 0 && interactions > 0
+      ? ((interactions / followers) * 100).toFixed(2)
+      : "";
+
+  function applyER() {
+    if (er) {
+      onChange(er);
+      setOpen(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5 sm:col-span-2">
+      <div className="flex items-center justify-between">
+        <label className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-white/40">
+          Tasa de engagement (%)
+        </label>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="text-[0.62rem] font-semibold text-emerald-300/60 transition hover:text-emerald-300/90"
+        >
+          {open ? "Cerrar calculadora" : "Calcular"}
+        </button>
+      </div>
+      <p className="text-[0.62rem] text-white/22 leading-relaxed">
+        Likes + comentarios + guardados ÷ seguidores × 100
+      </p>
+      <input
+        type="number"
+        value={value === 0 ? "" : value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="6.2"
+        className="w-full rounded-xl border border-white/10 bg-white/4 px-4 py-2.5 text-[0.85rem] font-semibold text-white placeholder-white/18 outline-none transition focus:border-white/22 focus:bg-white/6"
+      />
+
+      {open && (
+        <div className="mt-2 rounded-xl border border-emerald-500/15 bg-emerald-500/5 p-4">
+          <p className="mb-3 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-emerald-300/70">
+            Calculadora · usa el promedio de tus últimos 5-10 posts
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "❤️ Likes", v: likes, set: setLikes },
+              { label: "💬 Coment.", v: comments, set: setComments },
+              { label: "🔖 Guard.", v: saves, set: setSaves },
+            ].map((f) => (
+              <div key={f.label}>
+                <p className="mb-1 text-[0.58rem] font-semibold text-white/40">
+                  {f.label}
+                </p>
+                <input
+                  type="number"
+                  value={f.v}
+                  onChange={(e) => f.set(e.target.value)}
+                  placeholder="0"
+                  className="w-full rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-[0.78rem] font-semibold text-white placeholder-white/15 outline-none focus:border-emerald-500/30"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center justify-between rounded-lg bg-black/20 px-3 py-2.5">
+            <div>
+              <p className="text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                Resultado
+              </p>
+              <p className="text-[0.95rem] font-black text-white">
+                {er ? `${er}%` : "—"}
+              </p>
+              <p className="text-[0.6rem] text-white/30">
+                {followers > 0
+                  ? `${interactions.toLocaleString()} interacciones ÷ ${followers.toLocaleString()} seguidores`
+                  : "Llená seguidores arriba para calcular"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={applyER}
+              disabled={!er}
+              className="rounded-lg bg-white px-4 py-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-black transition hover:bg-white/90 disabled:opacity-40"
+            >
+              Usar este ER
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Section({
   emoji,
   title,
@@ -195,12 +302,10 @@ export default function ActualizarPage() {
             onChange={(v) => set("instagram.weeklyGrowth", v)}
             placeholder="320"
           />
-          <Field
-            label="Tasa de engagement (%)"
-            hint="Likes + comentarios + guardados ÷ seguidores × 100"
+          <ERCalculator
             value={stats.instagram.er}
+            followers={Number(stats.instagram.followers) || 0}
             onChange={(v) => set("instagram.er", v)}
-            placeholder="6.2"
           />
           <Field
             label="Alcance (últimos 30 días)"

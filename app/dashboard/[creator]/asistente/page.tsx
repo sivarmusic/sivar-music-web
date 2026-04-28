@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+
+type Msg = { role: "user" | "assistant"; text: string };
 
 export default function AsistentePage() {
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<Msg[]>([
     {
       role: "assistant",
       text: "Hola! Soy tu asistente de contenido. Puedo ayudarte a redactar captions, pensar ideas, analizar tendencias o responder preguntas sobre tu estrategia. ¿Por dónde empezamos?",
@@ -11,23 +13,35 @@ export default function AsistentePage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, loading]);
 
   async function handleSend() {
     if (!input.trim() || loading) return;
     const userMsg = input.trim();
     setInput("");
-    setMessages((m) => [...m, { role: "user", text: userMsg }]);
+    setError("");
+    const newMessages: Msg[] = [...messages, { role: "user", text: userMsg }];
+    setMessages(newMessages);
     setLoading(true);
-    // Placeholder response (connect to AI API later)
-    await new Promise((r) => setTimeout(r, 800));
-    setMessages((m) => [
-      ...m,
-      {
-        role: "assistant",
-        text: "Estoy procesando tu solicitud. Pronto podrás conectar esta sección con la API de Claude para respuestas en tiempo real.",
-      },
-    ]);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMessages.filter((m, i) => !(i === 0 && m.role === "assistant")) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error desconocido");
+      setMessages((m) => [...m, { role: "assistant", text: data.text }]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al enviar mensaje");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -42,7 +56,10 @@ export default function AsistentePage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto rounded-2xl border border-white/8 bg-white/3 p-5">
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto rounded-2xl border border-white/8 bg-white/3 p-5"
+      >
         <div className="flex flex-col gap-4">
           {messages.map((msg, i) => (
             <div
@@ -50,7 +67,7 @@ export default function AsistentePage() {
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 text-[0.82rem] leading-relaxed ${
+                className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-[0.82rem] leading-relaxed ${
                   msg.role === "user"
                     ? "bg-white text-black"
                     : "bg-white/8 text-white/80"
@@ -62,13 +79,21 @@ export default function AsistentePage() {
           ))}
           {loading && (
             <div className="flex justify-start">
-              <div className="rounded-2xl bg-white/8 px-4 py-3 text-[0.82rem] text-white/40">
-                Escribiendo...
+              <div className="flex items-center gap-1.5 rounded-2xl bg-white/8 px-4 py-3 text-[0.82rem] text-white/40">
+                <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "0ms" }} />
+                <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "150ms" }} />
+                <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-white/40" style={{ animationDelay: "300ms" }} />
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {error && (
+        <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/8 px-4 py-2.5">
+          <p className="text-[0.7rem] text-red-400">{error}</p>
+        </div>
+      )}
 
       {/* Input */}
       <div className="mt-4 shrink-0 flex gap-3">
@@ -78,7 +103,8 @@ export default function AsistentePage() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder="Pregunta o pide algo..."
-          className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 text-[0.85rem] text-white placeholder-white/20 outline-none transition focus:border-white/22 focus:bg-white/7"
+          disabled={loading}
+          className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-5 py-3.5 text-[0.85rem] text-white placeholder-white/20 outline-none transition focus:border-white/22 focus:bg-white/7 disabled:opacity-60"
         />
         <button
           onClick={handleSend}
