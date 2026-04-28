@@ -78,9 +78,9 @@ Responde ÚNICAMENTE con un array JSON válido con este formato exacto, sin text
   }
 ]`;
 
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+  async function callGemini(model: string) {
+    return fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,6 +95,16 @@ Responde ÚNICAMENTE con un array JSON válido con este formato exacto, sin text
         }),
       }
     );
+  }
+
+  try {
+    let res = await callGemini("gemini-2.5-flash");
+    if (res.status === 503 || res.status === 429) {
+      res = await callGemini("gemini-2.5-flash-lite");
+    }
+    if (res.status === 503 || res.status === 429) {
+      res = await callGemini("gemini-2.0-flash");
+    }
 
     if (!res.ok) {
       const errBody = await res.text();

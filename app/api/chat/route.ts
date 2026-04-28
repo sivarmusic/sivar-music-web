@@ -52,17 +52,33 @@ REGLAS:
     parts: [{ text: m.text }],
   }));
 
+  async function callGemini(model: string) {
+    return fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents,
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 2048,
+            thinkingConfig: { thinkingBudget: 0 },
+          },
+        }),
+      }
+    );
+  }
+
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents,
-        generationConfig: { temperature: 0.8, maxOutputTokens: 2048 },
-      }),
-    });
+    let res = await callGemini("gemini-2.5-flash");
+    if (res.status === 503 || res.status === 429) {
+      res = await callGemini("gemini-2.5-flash-lite");
+    }
+    if (res.status === 503 || res.status === 429) {
+      res = await callGemini("gemini-2.0-flash");
+    }
 
     if (!res.ok) {
       const err = await res.text();
