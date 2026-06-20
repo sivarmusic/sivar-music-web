@@ -1,106 +1,144 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-type Phase = 'ready' | 'starting' | 'scanning' | 'error'
+type Phase = 'ready' | 'scanning' | 'error'
 
 export default function VerificarPage() {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const rafRef = useRef<number>(0)
+  const streamRef = useRef<MediaStream | null>(null)
   const router = useRouter()
   const [phase, setPhase] = useState<Phase>('ready')
-  const [errorMsg, setErrorMsg] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (phase !== 'starting') return
+    if (phase !== 'scanning') return
+    if (!videoRef.current || !canvasRef.current) return
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let qr: any = null
-    let done = false
+    let active = true
+    const video = videoRef.current
+    const canvas = canvasRef.current
 
-    ;(async () => {
+    function stopStream() {
+      cancelAnimationFrame(rafRef.current)
+      streamRef.current?.getTracks().forEach(t => t.stop())
+      streamRef.current = null
+    }
+
+    function navigate(decoded: string) {
+      active = false
+      stopStream()
       try {
-        const { Html5Qrcode } = await import('html5-qrcode')
-
-        // El div debe existir en el DOM y tener display visible antes de este punto.
-        // Como useEffect corre después del render, aquí ya está visible.
-        qr = new Html5Qrcode('qr-scanner-target')
-
-        await qr.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: 250 },
-          (decoded: string) => {
-            if (done) return
-            done = true
-            qr?.stop().catch(() => {}).finally(() => {
-              try {
-                const url = new URL(decoded)
-                const token = url.pathname.split('/').filter(Boolean).pop()
-                router.push(`/pinkfest/verificar/${token}`)
-              } catch {
-                router.push(`/pinkfest/verificar/${decoded}`)
-              }
-            })
-          },
-          () => {}
-        )
-
-        if (!done) setPhase('scanning')
-      } catch (e) {
-        if (!done) {
-          const msg = e instanceof Error ? e.message : ''
-          setErrorMsg(
-            msg.toLowerCase().includes('permission')
-              ? 'Permiso de cámara denegado. Habilitalo en la configuración del navegador.'
-              : 'No se pudo iniciar la cámara. Probá recargar la página.'
-          )
-          setPhase('error')
-        }
+        const url = new URL(decoded)
+        const token = url.pathname.split('/').filter(Boolean).pop()
+        router.push(`/pinkfest/verificar/${token}`)
+      } catch {
+        router.push(`/pinkfest/verificar/${decoded}`)
       }
-    })()
+    }
+
+    async function start() {
+      try {
+        // Importar jsQR una sola vez antes de empezar el loop
+        const { default: jsQR } = await import('jsqr')
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+        })
+
+        if (!active) { stream.getTracks().forEach(t => t.stop()); return }
+
+        streamRef.current = stream
+        video.srcObject = stream
+        await video.play()
+
+        function scan() {
+          if (!active) return
+          if (video.readyState < 2 || !video.videoWidth) {
+            rafRef.current = requestAnimationFrame(scan)
+            return
+          }
+
+          canvas.width = video.videoWidth
+          canvas.height = video.videoHeight
+          const ctx = canvas.getContext('2d')
+          if (!ctx) return
+          ctx.drawImage(video, 0, 0)
+
+          const img = ctx.getImageData(0, 0, canvas.width, canvas.height)
+          const code = jsQR(img.data, img.width, img.height)
+
+          if (code?.data) {
+            navigate(code.data)
+            return
+          }
+          rafRef.current = requestAnimationFrame(scan)
+        }
+
+        rafRef.current = requestAnimationFrame(scan)
+      } catch (e) {
+        if (!active) return
+        const msg = (e instanceof Error ? e.message : '').toLowerCase()
+        setError(
+          msg.includes('permission') || msg.includes('denied')
+            ? 'Permiso de cámara denegado. Habilitalo en la configuración del navegador y recargá.'
+            : msg.includes('notfound') || msg.includes('notreadable')
+            ? 'No se encontró cámara disponible.'
+            : 'No se pudo acceder a la cámara. Intentá recargar la página.'
+        )
+        setPhase('error')
+      }
+    }
+
+    start()
 
     return () => {
-      done = true
-      qr?.stop().catch(() => {})
+      active = false
+      stopStream()
     }
   }, [phase, router])
 
   return (
     <div className="min-h-screen bg-[#0a0008] flex flex-col items-center px-4 pt-10 pb-10">
-      {/* Header */}
       <div className="text-center mb-8">
-        <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase mb-2">Pink Fest</p>
-        <h1 className="text-white text-2xl font-bold">Verificar entrada</h1>
-        <p className="text-white/50 text-sm mt-1">
-          {phase === 'scanning' ? 'Apuntá la cámara al QR del asistente' : 'Escáner de QR'}
+        <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase mb-2">
+          Pink Fest
         </p>
+        <h1 className="text-white text-2xl font-bold">Verificar entrada</h1>
+        {phase === 'scanning' && (
+          <p className="text-white/50 text-sm mt-1">Apuntá al código QR del asistente</p>
+        )}
       </div>
 
-      {/*
-        Este div SIEMPRE está en el DOM cuando phase != 'ready'.
-        Html5Qrcode lo necesita visible en el momento que corre el effect.
-        Usamos display inline style para que la librería lo encuentre.
-      */}
-      <div
-        id="qr-scanner-target"
-        style={{
-          width: '100%',
-          maxWidth: 360,
-          display: phase === 'ready' || phase === 'error' ? 'none' : 'block',
-        }}
-      />
+      {/* Cámara — video + canvas oculto para procesar frames */}
+      {phase === 'scanning' && (
+        <div className="w-full max-w-sm mb-6">
+          <video
+            ref={videoRef}
+            className="w-full rounded-2xl bg-black"
+            playsInline
+            muted
+            autoPlay
+          />
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
+      )}
 
-      {/* Estado: listo para empezar */}
+      {/* Pantalla inicial */}
       {phase === 'ready' && (
         <div className="w-full max-w-sm space-y-4">
           <div className="rounded-3xl bg-white/5 border border-white/10 p-8 flex flex-col items-center gap-4">
             <div className="w-16 h-16 rounded-2xl bg-[#F472B6]/15 flex items-center justify-center text-3xl">
               📷
             </div>
-            <p className="text-white/60 text-sm text-center">
+            <p className="text-white/60 text-sm text-center leading-relaxed">
               Activá la cámara para escanear el QR de la entrada del asistente
             </p>
           </div>
           <button
-            onClick={() => setPhase('starting')}
+            onClick={() => setPhase('scanning')}
             className="w-full bg-[#F472B6] hover:bg-[#ec4899] active:scale-[0.98] text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all"
           >
             Activar cámara
@@ -108,21 +146,14 @@ export default function VerificarPage() {
         </div>
       )}
 
-      {/* Estado: iniciando */}
-      {phase === 'starting' && (
-        <div className="w-full max-w-sm h-64 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-          <p className="text-white/40 text-sm">Iniciando cámara...</p>
-        </div>
-      )}
-
-      {/* Estado: error */}
+      {/* Error */}
       {phase === 'error' && (
         <div className="w-full max-w-sm space-y-4">
           <div className="rounded-2xl border border-red-400/25 bg-red-400/8 p-6 text-center">
-            <p className="text-red-400 text-sm leading-relaxed">{errorMsg}</p>
+            <p className="text-red-400 text-sm leading-relaxed">{error}</p>
           </div>
           <button
-            onClick={() => { setErrorMsg(''); setPhase('ready') }}
+            onClick={() => { setError(''); setPhase('ready') }}
             className="w-full border border-white/15 text-white/60 hover:text-white rounded-2xl py-3 text-sm transition"
           >
             Reintentar
