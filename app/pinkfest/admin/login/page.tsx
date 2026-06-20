@@ -1,9 +1,12 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
-export default function PinkFestAdminLogin() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get('redirect') || '/pinkfest/admin'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -20,7 +23,7 @@ export default function PinkFestAdminLogin() {
         body: JSON.stringify({ email, password }),
       })
       if (res.ok) {
-        router.push('/pinkfest/admin')
+        router.push(redirect)
       } else {
         const data = await res.json()
         setError(data.error || 'Error al iniciar sesión')
@@ -78,5 +81,13 @@ export default function PinkFestAdminLogin() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function PinkFestAdminLogin() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/pinkfest-auth'
+import crypto from 'crypto'
 
 export async function PATCH(
   req: NextRequest,
@@ -16,9 +17,27 @@ export async function PATCH(
     return NextResponse.json({ error: 'Estado inválido' }, { status: 400 })
   }
 
+  const updateData: Record<string, unknown> = {
+    status,
+    rechazo_motivo: rechazo_motivo || null,
+  }
+
+  // Generar qr_token único al confirmar (solo si no tiene uno ya)
+  if (status === 'confirmado') {
+    const { data: existing } = await supabase
+      .from('pinkfest_orders')
+      .select('qr_token')
+      .eq('id', id)
+      .single()
+
+    if (!existing?.qr_token) {
+      updateData.qr_token = crypto.randomUUID()
+    }
+  }
+
   const { data, error } = await supabase
     .from('pinkfest_orders')
-    .update({ status, rechazo_motivo: rechazo_motivo || null })
+    .update(updateData)
     .eq('id', id)
     .select()
     .single()

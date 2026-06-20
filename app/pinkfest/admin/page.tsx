@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import StatusBadge from './components/StatusBadge'
 import OrderModal from './components/OrderModal'
+import QRModal from './components/QRModal'
 
 interface Order {
   id: string
@@ -14,6 +15,8 @@ interface Order {
   status: 'pendiente_comprobante' | 'en_revision' | 'confirmado' | 'rechazado'
   comprobante_path: string | null
   rechazo_motivo: string | null
+  qr_token: string | null
+  check_in_at: string | null
   created_at: string
 }
 
@@ -34,6 +37,7 @@ export default function PinkFestAdmin() {
   const [filter, setFilter] = useState<FilterStatus>('todas')
   const [search, setSearch] = useState('')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [qrOrder, setQrOrder] = useState<Order | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
@@ -115,6 +119,12 @@ export default function PinkFestAdmin() {
             title="Actualizar"
           >
             ↻
+          </button>
+          <button
+            onClick={() => window.open('/pinkfest/verificar', '_blank')}
+            className="text-[#F472B6]/70 hover:text-[#F472B6] text-xs uppercase tracking-wider transition"
+          >
+            Escanear
           </button>
           <button
             onClick={logout}
@@ -229,6 +239,25 @@ export default function PinkFestAdmin() {
                   <p className="text-white/25 text-xs italic">Sin comprobante aún</p>
                 )}
 
+                {/* QR entrada — solo si está confirmada */}
+                {order.status === 'confirmado' && order.qr_token && (
+                  <button
+                    onClick={() => setQrOrder(order)}
+                    className="w-full text-xs border border-green-500/30 text-green-400 rounded-xl py-2.5 hover:bg-green-500/8 transition"
+                  >
+                    Ver QR de entrada →
+                  </button>
+                )}
+
+                {/* Check-in status */}
+                {order.status === 'confirmado' && (
+                  <p className={`text-xs ${order.check_in_at ? 'text-green-400/70' : 'text-white/25 italic'}`}>
+                    {order.check_in_at
+                      ? `Ingresó a las ${new Date(order.check_in_at).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}`
+                      : 'Aún no ingresó'}
+                  </p>
+                )}
+
                 {/* Motivo de rechazo */}
                 {order.status === 'rechazado' && order.rechazo_motivo && (
                   <p className="text-red-400/70 text-xs bg-red-500/8 border border-red-500/15 rounded-xl px-3 py-2">
@@ -294,6 +323,14 @@ export default function PinkFestAdmin() {
         <OrderModal
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
+        />
+      )}
+
+      {/* Modal QR entrada */}
+      {qrOrder && qrOrder.qr_token && (
+        <QRModal
+          order={{ ...qrOrder, qr_token: qrOrder.qr_token }}
+          onClose={() => setQrOrder(null)}
         />
       )}
     </div>
