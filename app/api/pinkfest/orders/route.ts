@@ -33,7 +33,6 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) {
-    // Race condition: otro request insertó primero con el mismo teléfono
     if (error.code === '23505') {
       const { data: race } = await supabase
         .from('pinkfest_orders')
@@ -55,7 +54,7 @@ export async function GET() {
 
   const { data: orders, error } = await supabase
     .from('pinkfest_orders')
-    .select('*')
+    .select('*, pinkfest_tickets(id, ticket_number, qr_token, check_in_at)')
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

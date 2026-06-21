@@ -5,6 +5,13 @@ import StatusBadge from './components/StatusBadge'
 import OrderModal from './components/OrderModal'
 import QRModal from './components/QRModal'
 
+interface Ticket {
+  id: string
+  ticket_number: number
+  qr_token: string
+  check_in_at: string | null
+}
+
 interface Order {
   id: string
   order_code: string
@@ -15,9 +22,8 @@ interface Order {
   status: 'pendiente_comprobante' | 'en_revision' | 'confirmado' | 'rechazado'
   comprobante_path: string | null
   rechazo_motivo: string | null
-  qr_token: string | null
-  check_in_at: string | null
   created_at: string
+  pinkfest_tickets: Ticket[]
 }
 
 type FilterStatus = 'todas' | 'pendiente_comprobante' | 'en_revision' | 'confirmado' | 'rechazado'
@@ -41,6 +47,7 @@ export default function PinkFestAdmin() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const fetchOrders = useCallback(async () => {
     const res = await fetch('/api/pinkfest/orders')
@@ -75,6 +82,17 @@ export default function PinkFestAdmin() {
       }
     } finally {
       setActionLoading(null)
+    }
+  }
+
+  async function deleteOrder(id: string) {
+    if (!confirm('¿Eliminás esta orden? Esta acción no se puede deshacer.')) return
+    setDeletingId(id)
+    try {
+      await fetch(`/api/pinkfest/orders/${id}`, { method: 'DELETE' })
+      await fetchOrders()
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -239,24 +257,39 @@ export default function PinkFestAdmin() {
                   <p className="text-white/25 text-xs italic">Sin comprobante aún</p>
                 )}
 
-                {/* QR entrada — solo si está confirmada */}
-                {order.status === 'confirmado' && order.qr_token && (
-                  <button
-                    onClick={() => setQrOrder(order)}
-                    className="w-full text-xs border border-green-500/30 text-green-400 rounded-xl py-2.5 hover:bg-green-500/8 transition"
-                  >
-                    Ver QR de entrada →
-                  </button>
+                {/* QR + check-in — solo órdenes confirmadas */}
+                {order.status === 'confirmado' && (
+                  <>
+                    <button
+                      onClick={() => setQrOrder(order)}
+                      className="w-full text-xs border border-green-500/30 text-green-400 rounded-xl py-2.5 hover:bg-green-500/8 transition"
+                    >
+                      Ver QR{order.cantidad > 1 ? `s (${order.cantidad} entradas)` : ' de entrada'} →
+                    </button>
+                    {order.pinkfest_tickets?.length > 0 && (
+                      <div className="space-y-1">
+                        {order.pinkfest_tickets
+                          .sort((a, b) => a.ticket_number - b.ticket_number)
+                          .map(t => (
+                            <p key={t.id} className={`text-xs ${t.check_in_at ? 'text-green-400/70' : 'text-white/25 italic'}`}>
+                              {t.check_in_at
+                                ? `Entrada ${t.ticket_number}: ingresó ${new Date(t.check_in_at).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}`
+                                : `Entrada ${t.ticket_number}: pendiente de ingreso`}
+                            </p>
+                          ))}
+                      </div>
+                    )}
+                  </>
                 )}
 
-                {/* Check-in status */}
-                {order.status === 'confirmado' && (
-                  <p className={`text-xs ${order.check_in_at ? 'text-green-400/70' : 'text-white/25 italic'}`}>
-                    {order.check_in_at
-                      ? `Ingresó a las ${new Date(order.check_in_at).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}`
-                      : 'Aún no ingresó'}
-                  </p>
-                )}
+                {/* Botón eliminar */}
+                <button
+                  onClick={() => deleteOrder(order.id)}
+                  disabled={deletingId === order.id}
+                  className="w-full text-xs border border-red-500/20 text-red-400/60 hover:text-red-400 hover:border-red-500/40 rounded-xl py-2 transition disabled:opacity-40"
+                >
+                  {deletingId === order.id ? 'Eliminando...' : 'Eliminar orden'}
+                </button>
 
                 {/* Motivo de rechazo */}
                 {order.status === 'rechazado' && order.rechazo_motivo && (
@@ -327,9 +360,9 @@ export default function PinkFestAdmin() {
       )}
 
       {/* Modal QR entrada */}
-      {qrOrder && qrOrder.qr_token && (
+      {qrOrder && (
         <QRModal
-          order={{ ...qrOrder, qr_token: qrOrder.qr_token }}
+          order={qrOrder}
           onClose={() => setQrOrder(null)}
         />
       )}
