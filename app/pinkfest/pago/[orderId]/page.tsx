@@ -12,6 +12,8 @@ interface Order {
   status: string
 }
 
+const STORAGE_KEY = 'pf_pending'
+
 export default function PagoPage() {
   const { orderId } = useParams<{ orderId: string }>()
   const router = useRouter()
@@ -22,11 +24,29 @@ export default function PagoPage() {
     fetch(`/api/pinkfest/order/${orderId}`)
       .then(r => r.json())
       .then(d => {
-        if (d.order) setOrder(d.order)
-        else setNotFound(true)
+        if (!d.order) { setNotFound(true); return }
+
+        setOrder(d.order)
+
+        // Guardar en localStorage para recuperar si vuelven desde Instagram
+        if (d.order.status === 'pendiente_comprobante') {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+              orderId: d.order.id,
+              orderCode: d.order.code,
+              nombre: d.order.nombre,
+              expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+            }))
+          } catch {}
+        }
       })
       .catch(() => setNotFound(true))
   }, [orderId])
+
+  function handleSuccess() {
+    try { localStorage.removeItem(STORAGE_KEY) } catch {}
+    router.push(`/pinkfest/gracias/${orderId}`)
+  }
 
   if (notFound) {
     return (
@@ -56,6 +76,7 @@ export default function PagoPage() {
 
   // Si ya subió comprobante, redirigir a gracias
   if (order.status === 'en_revision' || order.status === 'confirmado') {
+    try { localStorage.removeItem(STORAGE_KEY) } catch {}
     router.replace(`/pinkfest/gracias/${orderId}`)
     return null
   }
@@ -71,7 +92,7 @@ export default function PagoPage() {
       <PaymentStep
         order={order}
         onBack={() => router.push('/pinkfest')}
-        onSuccess={() => router.push(`/pinkfest/gracias/${orderId}`)}
+        onSuccess={handleSuccess}
       />
     </PinkFestShell>
   )

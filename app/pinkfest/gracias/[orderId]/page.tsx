@@ -19,6 +19,7 @@ export default function GraciasPage() {
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
+    try { localStorage.removeItem('pf_pending') } catch {}
     fetch(`/api/pinkfest/order/${orderId}`)
       .then(r => r.json())
       .then(d => {
