@@ -19,6 +19,18 @@ export default function PinkFestPage() {
           priority
         />
       </div>
+      {/* Banner refugio */}
+      <div className="w-full max-w-sm mb-6 rounded-2xl border border-[#F472B6]/25 bg-[#F472B6]/8 px-5 py-4 text-center">
+        <p className="text-[#F472B6] text-[11px] font-bold tracking-[0.2em] uppercase mb-1">
+          100% de las ganancias
+        </p>
+        <p className="text-white/70 text-sm leading-relaxed">
+          Todas las ganancias del evento se donan al{' '}
+          <span className="text-white font-semibold">Refugio Hogar Felino</span>,
+          un espacio dedicado al rescate y cuidado de gatos en situación de calle.
+        </p>
+      </div>
+
       <TicketForm
         onSuccess={order => router.push(`/pinkfest/pago/${order.id}`)}
       />
