@@ -12,6 +12,14 @@ interface Ticket {
   check_in_at: string | null
 }
 
+interface Analytics {
+  visits: number
+  orders: number
+  withComprobante: number
+  confirmed: number
+  daily: { date: string; count: number }[]
+}
+
 interface Order {
   id: string
   order_code: string
@@ -48,6 +56,8 @@ export default function PinkFestAdmin() {
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [analytics, setAnalytics] = useState<Analytics | null>(null)
+  const [showAnalytics, setShowAnalytics] = useState(false)
 
   const fetchOrders = useCallback(async () => {
     const res = await fetch('/api/pinkfest/orders')
@@ -60,7 +70,18 @@ export default function PinkFestAdmin() {
     setLoading(false)
   }, [router])
 
-  useEffect(() => { fetchOrders() }, [fetchOrders])
+  const fetchAnalytics = useCallback(async () => {
+    const res = await fetch('/api/pinkfest/analytics')
+    if (res.ok) {
+      const data = await res.json()
+      setAnalytics(data)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchOrders()
+    fetchAnalytics()
+  }, [fetchOrders, fetchAnalytics])
 
   async function logout() {
     await fetch('/api/pinkfest/auth/logout', { method: 'POST' })
@@ -174,6 +195,91 @@ export default function PinkFestAdmin() {
         <div className="bg-[#F472B6]/10 border border-[#F472B6]/20 rounded-2xl px-4 py-3 flex items-center justify-between">
           <span className="text-white/60 text-sm">Entradas confirmadas</span>
           <span className="text-[#F472B6] font-bold text-xl">{totalEntradas}</span>
+        </div>
+
+        {/* Analítica de conversión */}
+        <div className="bg-white/4 border border-white/8 rounded-2xl overflow-hidden">
+          <button
+            onClick={() => setShowAnalytics(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm text-white/60 hover:text-white transition"
+          >
+            <span className="font-semibold">Analítica de conversión</span>
+            <span className="text-white/30 text-xs">{showAnalytics ? '▲ ocultar' : '▼ ver'}</span>
+          </button>
+
+          {showAnalytics && analytics && (
+            <div className="border-t border-white/8 px-4 py-4 space-y-4">
+
+              {/* Funnel */}
+              {(() => {
+                const pct = (a: number, b: number) =>
+                  b === 0 ? '—' : `${Math.round((a / b) * 100)}%`
+                const steps = [
+                  { label: 'Visitaron la página', value: analytics.visits, color: 'text-white' },
+                  { label: 'Llenaron el formulario', value: analytics.orders, color: 'text-blue-300', pctOf: analytics.visits },
+                  { label: 'Subieron comprobante', value: analytics.withComprobante, color: 'text-yellow-300', pctOf: analytics.orders },
+                  { label: 'Entradas confirmadas', value: analytics.confirmed, color: 'text-green-400', pctOf: analytics.withComprobante },
+                ]
+                return (
+                  <div className="space-y-2">
+                    {steps.map((step, i) => (
+                      <div key={i}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-white/55 text-xs">{step.label}</span>
+                          <div className="flex items-center gap-2">
+                            {step.pctOf !== undefined && (
+                              <span className="text-white/30 text-[10px]">
+                                {pct(step.value, step.pctOf)} del paso anterior
+                              </span>
+                            )}
+                            <span className={`font-bold text-sm ${step.color}`}>{step.value}</span>
+                          </div>
+                        </div>
+                        {i < steps.length - 1 && (
+                          <div className="mt-1 ml-1 h-3 w-px bg-white/15" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+
+              {/* Visitas últimos 7 días */}
+              {analytics.daily.length > 0 && (
+                <div>
+                  <p className="text-white/40 text-[10px] uppercase tracking-wider mb-2">Últimos 7 días</p>
+                  <div className="space-y-1">
+                    {analytics.daily.map(({ date, count }) => {
+                      const max = Math.max(...analytics.daily.map(d => d.count))
+                      const pctBar = max === 0 ? 0 : (count / max) * 100
+                      const label = new Date(date + 'T12:00:00').toLocaleDateString('es-SV', {
+                        weekday: 'short', month: 'short', day: 'numeric',
+                      })
+                      return (
+                        <div key={date} className="flex items-center gap-2">
+                          <span className="text-white/35 text-[10px] w-20 flex-none">{label}</span>
+                          <div className="flex-1 bg-white/8 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="h-full bg-[#F472B6]/60 rounded-full transition-all"
+                              style={{ width: `${pctBar}%` }}
+                            />
+                          </div>
+                          <span className="text-white/50 text-[10px] w-4 text-right">{count}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={fetchAnalytics}
+                className="text-white/25 hover:text-white/50 text-[10px] transition"
+              >
+                Actualizar
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Búsqueda */}

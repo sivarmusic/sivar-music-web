@@ -1,4 +1,5 @@
 'use client'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import PinkFestShell from './components/PinkFestShell'
@@ -6,6 +7,10 @@ import TicketForm from './components/TicketForm'
 
 export default function PinkFestPage() {
   const router = useRouter()
+
+  useEffect(() => {
+    fetch('/api/pinkfest/track', { method: 'POST' }).catch(() => {})
+  }, [])
 
   return (
     <PinkFestShell>
