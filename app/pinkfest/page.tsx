@@ -73,6 +73,7 @@ export default function PinkFestPage() {
           <PaymentStep
             order={order}
             onSuccess={() => setStep('confirmed')}
+            onBack={() => setStep('form')}
           />
         )}
 

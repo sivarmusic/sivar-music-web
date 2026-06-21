@@ -9,8 +9,9 @@ interface Ticket {
 }
 
 interface Props {
-  order: { order_code: string; nombre: string; cantidad: number; pinkfest_tickets: Ticket[] }
+  order: { id: string; order_code: string; nombre: string; cantidad: number; pinkfest_tickets: Ticket[] }
   onClose: () => void
+  onRefresh: () => void
 }
 
 function QRImage({ token, label }: { token: string; label: string }) {
@@ -55,9 +56,24 @@ function QRImage({ token, label }: { token: string; label: string }) {
   )
 }
 
-export default function QRModal({ order, onClose }: Props) {
+export default function QRModal({ order, onClose, onRefresh }: Props) {
+  const [generating, setGenerating] = useState(false)
   const tickets = order.pinkfest_tickets ?? []
   const total = order.cantidad
+
+  async function generateTickets() {
+    setGenerating(true)
+    try {
+      await fetch(`/api/pinkfest/orders/${order.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'confirmado' }),
+      })
+      await onRefresh()
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   return (
     <div
@@ -83,9 +99,18 @@ export default function QRModal({ order, onClose }: Props) {
         {/* QRs scrollable */}
         <div className="overflow-y-auto flex-1 p-5 space-y-8">
           {tickets.length === 0 ? (
-            <p className="text-white/40 text-sm text-center py-8">
-              No hay tickets generados aún. Confirmá la orden primero.
-            </p>
+            <div className="flex flex-col items-center gap-4 py-8">
+              <p className="text-white/40 text-sm text-center">
+                No hay tickets generados para esta orden.
+              </p>
+              <button
+                onClick={generateTickets}
+                disabled={generating}
+                className="bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white text-sm font-bold rounded-2xl px-6 py-3 transition"
+              >
+                {generating ? 'Generando...' : 'Generar tickets ahora'}
+              </button>
+            </div>
           ) : (
             tickets
               .sort((a, b) => a.ticket_number - b.ticket_number)

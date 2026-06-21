@@ -364,6 +364,7 @@ export default function PinkFestAdmin() {
         <QRModal
           order={qrOrder}
           onClose={() => setQrOrder(null)}
+          onRefresh={fetchOrders}
         />
       )}
     </div>

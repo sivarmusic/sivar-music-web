@@ -12,9 +12,10 @@ interface Order {
 interface Props {
   order: Order
   onSuccess: () => void
+  onBack: () => void
 }
 
-export default function PaymentStep({ order, onSuccess }: Props) {
+export default function PaymentStep({ order, onSuccess, onBack }: Props) {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -70,6 +71,14 @@ export default function PaymentStep({ order, onSuccess }: Props) {
 
   return (
     <div className="w-full max-w-sm space-y-4 pb-10">
+
+      {/* Botón volver */}
+      <button
+        onClick={onBack}
+        className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs transition -mt-2 mb-2"
+      >
+        ← Volver
+      </button>
 
       {/* Código de orden */}
       <div className="rounded-2xl border border-[#F472B6]/40 bg-[#F472B6]/10 p-5 text-center">
