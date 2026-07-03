@@ -107,6 +107,7 @@ export default function PaymentStep({ order, onSuccess, onBack }: Props) {
           { label: 'Titular', value: 'Andrea Vanessa Garcia Garcia' },
           { label: 'Tipo de cuenta', value: 'Ahorros' },
           { label: 'Cuenta', value: '3110950846', mono: true },
+          { label: 'Correo electrónico', value: 'admin@sivarmusic.com' },
           { label: 'Concepto', value: order.order_code, pink: true },
           { label: 'Monto', value: `$${total}.00`, bold: true },
         ].map(({ label, value, mono, pink, bold }) => (
