@@ -100,9 +100,35 @@ export default function PaymentStep({ order, onSuccess, onBack }: Props) {
         <p className="text-white text-3xl font-bold">${total}</p>
       </div>
 
+      {/* Datos bancarios en texto */}
+      <div className="rounded-2xl bg-white/5 border border-white/10 divide-y divide-white/8">
+        {[
+          { label: 'Banco', value: 'Banco Agrícola' },
+          { label: 'Titular', value: 'Andrea Vanessa Garcia Garcia' },
+          { label: 'Tipo de cuenta', value: 'Ahorros' },
+          { label: 'Cuenta', value: '3110950846', mono: true },
+          { label: 'Concepto', value: order.order_code, pink: true },
+          { label: 'Monto', value: `$${total}.00`, bold: true },
+        ].map(({ label, value, mono, pink, bold }) => (
+          <div key={label} className="flex items-center justify-between px-4 py-3">
+            <span className="text-white/45 text-sm">{label}</span>
+            <span className={`text-sm ${mono ? 'font-mono' : ''} ${pink ? 'text-[#F472B6] font-bold' : ''} ${bold ? 'font-bold text-white' : 'text-white'}`}>
+              {value}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Separador */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px bg-white/10" />
+        <span className="text-white/35 text-xs">o si tenés Banco Agrícola, escaneá el QR</span>
+        <div className="flex-1 h-px bg-white/10" />
+      </div>
+
       {/* QR del banco */}
       <div className="rounded-2xl bg-white p-5 flex flex-col items-center gap-3">
-        <p className="text-[#BE185D] text-[10px] font-bold tracking-[0.22em] uppercase">Escaneá el QR para transferir</p>
+        <p className="text-[#BE185D] text-[10px] font-bold tracking-[0.22em] uppercase text-center">Escanea el QR para transferir desde la app del Banco Agrícola</p>
         <Image
           src="/pinkfest/qr-banco.png"
           alt="QR transferencia Banco Agrícola Andrea Garcia"
@@ -115,31 +141,6 @@ export default function PaymentStep({ order, onSuccess, onBack }: Props) {
           <p className="text-gray-500 text-xs">Banco Agrícola</p>
           <p className="text-gray-700 font-mono text-sm font-semibold mt-1">3110950846</p>
         </div>
-      </div>
-
-      {/* Separador */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-white/10" />
-        <span className="text-white/35 text-xs">o transferí manualmente con estos datos</span>
-        <div className="flex-1 h-px bg-white/10" />
-      </div>
-
-      {/* Datos bancarios en texto */}
-      <div className="rounded-2xl bg-white/5 border border-white/10 divide-y divide-white/8">
-        {[
-          { label: 'Banco', value: 'Banco Agrícola' },
-          { label: 'Titular', value: 'Andrea Vanessa Garcia Garcia' },
-          { label: 'Cuenta', value: '3110950846', mono: true },
-          { label: 'Concepto', value: order.order_code, pink: true },
-          { label: 'Monto', value: `$${total}.00`, bold: true },
-        ].map(({ label, value, mono, pink, bold }) => (
-          <div key={label} className="flex items-center justify-between px-4 py-3">
-            <span className="text-white/45 text-sm">{label}</span>
-            <span className={`text-sm ${mono ? 'font-mono' : ''} ${pink ? 'text-[#F472B6] font-bold' : ''} ${bold ? 'font-bold text-white' : 'text-white'}`}>
-              {value}
-            </span>
-          </div>
-        ))}
       </div>
 
       {/* Upload comprobante */}
