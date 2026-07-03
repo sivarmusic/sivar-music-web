@@ -113,7 +113,7 @@ export default function PaymentStep({ order, onSuccess, onBack }: Props) {
         <div className="text-center">
           <p className="text-gray-800 text-sm font-bold">Andrea Vanessa Garcia Garcia</p>
           <p className="text-gray-500 text-xs">Banco Agrícola</p>
-          <p className="text-gray-700 font-mono text-sm font-semibold mt-1">409421382102</p>
+          <p className="text-gray-700 font-mono text-sm font-semibold mt-1">3110950846</p>
         </div>
       </div>
 
@@ -129,7 +129,7 @@ export default function PaymentStep({ order, onSuccess, onBack }: Props) {
         {[
           { label: 'Banco', value: 'Banco Agrícola' },
           { label: 'Titular', value: 'Andrea Vanessa Garcia Garcia' },
-          { label: 'Cuenta', value: '409421382102', mono: true },
+          { label: 'Cuenta', value: '3110950846', mono: true },
           { label: 'Concepto', value: order.order_code, pink: true },
           { label: 'Monto', value: `$${total}.00`, bold: true },
         ].map(({ label, value, mono, pink, bold }) => (
