@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import EventMap from '../components/EventMap'
+import { supabaseBrowser } from '@/lib/supabase-browser'
 
 interface Event {
   id: string; slug: string; nombre: string; descripcion: string
@@ -10,19 +11,13 @@ interface Event {
   imagen_url: string | null; precio: number; artistas: string[]
 }
 
-interface FormState {
-  nombre: string; telefono: string; email: string; cantidad: number
-  password: string; createAccount: boolean
-}
-
 export default function EventPage() {
   const { slug } = useParams<{ slug: string }>()
   const router = useRouter()
   const [event, setEvent] = useState<Event | null>(null)
   const [notFound, setNotFound] = useState(false)
-  const [form, setForm] = useState<FormState>({ nombre: '', telefono: '', email: '', cantidad: 1, password: '', createAccount: false })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [cantidad, setCantidad] = useState(1)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     fetch(`/api/eventos/events/${slug}`)
@@ -31,23 +26,15 @@ export default function EventPage() {
       .catch(() => setNotFound(true))
   }, [slug])
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleComprar() {
     if (!event) return
-    setError(''); setLoading(true)
-    try {
-      const res = await fetch('/api/eventos/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event_id: event.id, ...form, password: form.createAccount ? form.password : undefined }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Error al registrar')
-      router.push(`/eventos/${slug}/pago/${data.order.id}`)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado')
-    } finally {
-      setLoading(false)
+    setBusy(true)
+    const { data: { session } } = await supabaseBrowser.auth.getSession()
+    const checkoutUrl = `/eventos/${slug}/checkout?cantidad=${cantidad}`
+    if (session) {
+      router.push(checkoutUrl)
+    } else {
+      router.push(`/eventos/mi-cuenta/login?next=${encodeURIComponent(checkoutUrl)}`)
     }
   }
 
@@ -67,19 +54,19 @@ export default function EventPage() {
   }
 
   const fecha = new Date(event.fecha)
-  const total = form.cantidad * event.precio
+  const total = cantidad * event.precio
 
   return (
     <div className="min-h-screen bg-[#0a0008] text-white">
       {/* Imagen hero */}
       {event.imagen_url ? (
-        <div className="relative h-56 w-full">
+        <div className="relative h-64 w-full">
           <Image src={event.imagen_url} alt={event.nombre} fill className="object-cover" priority />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0008]/40 to-[#0a0008]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0008]/30 to-[#0a0008]" />
         </div>
       ) : <div className="h-16" />}
 
-      <div className="px-5 pb-12 max-w-lg mx-auto -mt-8 relative z-10 space-y-5">
+      <div className="px-5 pb-16 max-w-lg mx-auto -mt-10 relative z-10 space-y-6">
         {/* Volver */}
         <a href="/eventos" className="text-white/35 hover:text-white text-xs transition">← Todos los eventos</a>
 
@@ -87,9 +74,10 @@ export default function EventPage() {
         <div>
           <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase mb-2">Sivar Music</p>
           <h1 className="text-white text-2xl font-bold mb-3">{event.nombre}</h1>
-          <div className="space-y-1 text-sm">
+          <div className="space-y-1.5 text-sm">
             <p className="text-white/60">
-              📅 {fecha.toLocaleDateString('es-SV', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              📅{' '}
+              {fecha.toLocaleDateString('es-SV', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               {' a las '}
               {fecha.toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}
             </p>
@@ -97,7 +85,6 @@ export default function EventPage() {
             {event.artistas?.length > 0 && (
               <p className="text-white/50">🎤 {event.artistas.join(', ')}</p>
             )}
-            <p className="text-[#F472B6] font-bold">${event.precio} por entrada</p>
           </div>
         </div>
 
@@ -114,78 +101,46 @@ export default function EventPage() {
           </div>
         )}
 
-        {/* Formulario de compra */}
-        <div className="pt-2">
+        {/* Selector de entradas + botón de compra */}
+        <div className="border-t border-white/8 pt-6">
           <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-4">Reservar entradas</p>
-          <form onSubmit={handleSubmit} className="space-y-3">
-            {[
-              { label: 'Nombre completo', name: 'nombre', type: 'text', placeholder: 'Tu nombre completo' },
-              { label: 'WhatsApp / Teléfono', name: 'telefono', type: 'tel', placeholder: '+503 7000 0000' },
-              { label: 'Correo electrónico', name: 'email', type: 'email', placeholder: 'tu@correo.com' },
-            ].map(({ label, name, type, placeholder }) => (
-              <div key={name}>
-                <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{label}</label>
-                <input
-                  type={type}
-                  value={form[name as keyof FormState] as string}
-                  onChange={e => setForm(p => ({ ...p, [name]: e.target.value }))}
-                  placeholder={placeholder}
-                  required
-                  className="w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition"
-                />
-              </div>
-            ))}
 
-            <div>
-              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">Cantidad de entradas</label>
-              <select
-                value={form.cantidad}
-                onChange={e => setForm(p => ({ ...p, cantidad: Number(e.target.value) }))}
-                className="w-full bg-[#1a0014] border border-white/10 text-white rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition"
-              >
-                {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
-                  <option key={n} value={n}>{n} entrada{n > 1 ? 's' : ''} — ${n * event.precio}</option>
-                ))}
-              </select>
+          <div className="bg-white/4 border border-white/10 rounded-2xl p-4 space-y-4 mb-4">
+            {/* Tipo y cantidad */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white font-semibold text-sm">General</p>
+                <p className="text-[#F472B6] font-bold text-sm">${event.precio} por entrada</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setCantidad(c => Math.max(1, c - 1))}
+                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xl transition flex items-center justify-center leading-none"
+                >−</button>
+                <span className="text-white font-bold text-lg w-5 text-center tabular-nums">{cantidad}</span>
+                <button
+                  onClick={() => setCantidad(c => Math.min(10, c + 1))}
+                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xl transition flex items-center justify-center leading-none"
+                >+</button>
+              </div>
             </div>
 
-            {/* Crear cuenta opcional */}
-            <label className="flex items-center gap-3 cursor-pointer py-1">
-              <div
-                onClick={() => setForm(p => ({ ...p, createAccount: !p.createAccount }))}
-                className={`w-10 h-6 rounded-full transition-colors flex-none ${form.createAccount ? 'bg-[#F472B6]' : 'bg-white/15'}`}
-              >
-                <div className={`w-5 h-5 bg-white rounded-full shadow mt-0.5 transition-transform ${form.createAccount ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
-              </div>
-              <span className="text-white/55 text-sm">Crear cuenta para ver mis entradas después</span>
-            </label>
+            <div className="border-t border-white/8" />
 
-            {form.createAccount && (
-              <div>
-                <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">Contraseña</label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                  placeholder="Mínimo 6 caracteres"
-                  minLength={6}
-                  className="w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition"
-                />
-              </div>
-            )}
+            <div className="flex items-center justify-between">
+              <span className="text-white/40 text-sm">{cantidad} entrada{cantidad > 1 ? 's' : ''}</span>
+              <span className="text-white font-bold">${total}</span>
+            </div>
+          </div>
 
-            {error && (
-              <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-center">{error}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#F472B6] hover:bg-[#ec4899] active:scale-[0.98] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all"
-            >
-              {loading ? 'Procesando...' : `Continuar → $${total}`}
-            </button>
-          </form>
+          <button
+            onClick={handleComprar}
+            disabled={busy}
+            className="w-full bg-[#F472B6] hover:bg-[#ec4899] active:scale-[0.98] disabled:opacity-60 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all"
+          >
+            {busy ? 'Cargando...' : `Comprar → $${total}`}
+          </button>
+          <p className="text-center text-white/20 text-[11px] mt-2">Pago por transferencia bancaria</p>
         </div>
       </div>
     </div>

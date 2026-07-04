@@ -4,9 +4,22 @@ import { verifyAdminSession } from '@/lib/pinkfest-auth'
 import { sendOrderConfirmation } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
-  const { event_id, nombre, telefono, email, cantidad, password } = await req.json()
+  // Autenticación requerida via Bearer token
+  const authHeader = req.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Se requiere autenticación' }, { status: 401 })
+  }
 
-  if (!event_id || !nombre?.trim() || !telefono?.trim() || !email?.trim()) {
+  const token = authHeader.slice(7)
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Sesión inválida. Iniciá sesión de nuevo.' }, { status: 401 })
+  }
+
+  const { event_id, nombre, telefono, cantidad } = await req.json()
+  const email = user.email!
+
+  if (!event_id || !nombre?.trim() || !telefono?.trim()) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
   }
 
@@ -21,12 +34,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Evento no disponible' }, { status: 404 })
   }
 
-  // Recuperar orden activa existente (mismo teléfono + evento)
+  // Recuperar orden activa existente del mismo usuario
   const { data: existing } = await supabase
     .from('event_orders')
     .select('*')
     .eq('event_id', event_id)
-    .eq('telefono', telefono.trim())
+    .eq('user_id', user.id)
     .in('status', ['pendiente_comprobante', 'en_revision'])
     .maybeSingle()
 
@@ -34,33 +47,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ order: existing, recovered: true })
   }
 
-  // Crear cuenta de asistente si viene contraseña
-  let user_id: string | null = null
-  if (password && password.length >= 6) {
-    const { data: authData } = await supabase.auth.admin.createUser({
-      email: email.trim(),
-      password,
-      user_metadata: { nombre: nombre.trim() },
-      email_confirm: true,
-    })
-    if (authData?.user) {
-      user_id = authData.user.id
-      await supabase.from('attendee_profiles').upsert({
-        id: authData.user.id,
-        nombre: nombre.trim(),
-        telefono: telefono.trim(),
-      })
-    }
-  }
+  // Guardar/actualizar perfil
+  await supabase.from('attendee_profiles').upsert({
+    id: user.id,
+    nombre: nombre.trim(),
+    telefono: telefono.trim(),
+  })
 
   const { data: order, error } = await supabase
     .from('event_orders')
     .insert({
       event_id,
-      user_id,
+      user_id: user.id,
       nombre: nombre.trim(),
       telefono: telefono.trim(),
-      email: email.trim(),
+      email,
       cantidad: Math.max(1, Math.min(20, Number(cantidad) || 1)),
     })
     .select()
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
         .from('event_orders')
         .select('*')
         .eq('event_id', event_id)
-        .eq('telefono', telefono.trim())
+        .eq('user_id', user.id)
         .in('status', ['pendiente_comprobante', 'en_revision'])
         .maybeSingle()
       if (race) return NextResponse.json({ order: race, recovered: true })
@@ -80,10 +81,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // Enviar email de confirmación
-  const pagoUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL ? 'https://sivarmusic.com' : 'http://localhost:3000'}/eventos/${event.slug}/pago/${order.id}`
+  const pagoUrl = `https://sivarmusic.com/eventos/${event.slug}/pago/${order.id}`
   sendOrderConfirmation({
-    to: email.trim(),
+    to: email,
     nombre: nombre.trim(),
     orderCode: order.order_code,
     eventName: event.nombre,

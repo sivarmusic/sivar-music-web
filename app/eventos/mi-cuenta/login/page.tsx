@@ -41,20 +41,22 @@ function LoginForm() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault(); setError(''); setLoading(true)
     try {
-      const res = await fetch('/api/eventos/user/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, nombre }),
+      const { data, error: signUpErr } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { nombre } },
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Error al crear cuenta')
-      // Iniciar sesión automáticamente
-      const { error: loginErr } = await supabase.auth.signInWithPassword({ email, password })
-      if (loginErr) {
-        setSuccess('Cuenta creada. Ya podés iniciar sesión.')
-        switchTab('login')
-      } else {
+      if (signUpErr) {
+        if (signUpErr.message.toLowerCase().includes('already')) throw new Error('Ya existe una cuenta con ese correo.')
+        throw new Error(signUpErr.message)
+      }
+      if (data.session) {
+        // Confirmación de email deshabilitada — sesión inmediata
         router.push(next)
+      } else {
+        // Confirmación requerida
+        setSuccess('¡Cuenta creada! Revisá tu correo para confirmarla y después iniciá sesión.')
+        switchTab('login')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado')
