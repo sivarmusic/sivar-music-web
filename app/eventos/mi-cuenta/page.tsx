@@ -16,7 +16,7 @@ const QRCode = dynamic(() => import('qrcode').then(mod => ({
 })), { ssr: false })
 
 interface Ticket {
-  id: string; qr_token: string; ticket_number: number; checked_in_at: string | null
+  id: string; qr_token: string; ticket_number: number; check_in_at: string | null
 }
 interface Order {
   id: string; order_code: string; cantidad: number; status: string; created_at: string
@@ -150,8 +150,8 @@ function OrderCard({ order, isExpanded, onExpand, showQR, dim }: {
                   <div className="bg-white p-3 rounded-xl">
                     <QRCode value={ticket.qr_token} size={160} />
                   </div>
-                  {ticket.checked_in_at ? (
-                    <p className="text-green-400 text-xs font-semibold">Ingresó a las {new Date(ticket.checked_in_at).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}</p>
+                  {ticket.check_in_at ? (
+                    <p className="text-green-400 text-xs font-semibold">Ingresó a las {new Date(ticket.check_in_at).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}</p>
                   ) : (
                     <p className="text-white/30 text-xs">No ha ingresado</p>
                   )}
@@ -163,8 +163,8 @@ function OrderCard({ order, isExpanded, onExpand, showQR, dim }: {
               {order.event_tickets.map(ticket => (
                 <div key={ticket.id} className="flex items-center justify-between bg-white/3 rounded-xl px-3 py-2">
                   <span className="text-white/55 text-xs">Entrada {ticket.ticket_number}</span>
-                  {ticket.checked_in_at
-                    ? <span className="text-green-400 text-xs">Ingresó {new Date(ticket.checked_in_at).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}</span>
+                  {ticket.check_in_at
+                    ? <span className="text-green-400 text-xs">Ingresó {new Date(ticket.check_in_at).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}</span>
                     : <span className="text-white/25 text-xs">No ingresó</span>}
                 </div>
               ))}
