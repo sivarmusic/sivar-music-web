@@ -127,12 +127,12 @@ export default function HeaderNav({
             </Link>
             <div className="my-1 h-px w-full bg-white/10" />
             <Link
-              className="flex items-center gap-2 rounded-full border border-white/14 bg-white/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/90 transition hover:bg-white/10 sm:text-xs"
-              href="/members"
+              className="flex items-center gap-2 rounded-full border border-[#F472B6]/30 bg-[#F472B6]/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#F472B6] transition hover:bg-[#F472B6]/20 sm:text-xs"
+              href="/eventos"
               onClick={closeNav}
             >
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              Members Login
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#F472B6]" />
+              Sivar Events
             </Link>
           </nav>
         </div>

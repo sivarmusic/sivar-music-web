@@ -1,0 +1,250 @@
+'use client'
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+
+interface Ticket { id: string; ticket_number: number; qr_token: string; check_in_at: string | null }
+interface Order {
+  id: string; order_code: string; nombre: string; telefono: string; email: string
+  cantidad: number; status: string; created_at: string; comprobante_path: string | null
+  events: { id: string; nombre: string; slug: string } | null
+  event_tickets: Ticket[]
+}
+interface Event { id: string; nombre: string; slug: string; fecha: string; precio: number; visible: boolean }
+
+const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+  pendiente_comprobante: { label: 'Sin comprobante', color: 'text-white/50', bg: 'bg-white/8' },
+  en_revision: { label: 'En revisión', color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+  confirmado: { label: 'Confirmado', color: 'text-green-400', bg: 'bg-green-400/10' },
+  rechazado: { label: 'Rechazado', color: 'text-red-400', bg: 'bg-red-400/10' },
+}
+
+export default function EventosAdminPage() {
+  const router = useRouter()
+  const [events, setEvents] = useState<Event[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [selectedEvent, setSelectedEvent] = useState<string>('all')
+  const [loading, setLoading] = useState(true)
+  const [actionId, setActionId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  const fetchData = useCallback(async () => {
+    const [evRes, ordRes] = await Promise.all([
+      fetch('/api/eventos/events?admin=1'),
+      fetch('/api/eventos/orders'),
+    ])
+    if (evRes.status === 401 || ordRes.status === 401) { router.push('/eventos/admin/login'); return }
+    const [evData, ordData] = await Promise.all([evRes.json(), ordRes.json()])
+    setEvents(evData.events ?? [])
+    setOrders(ordData.orders ?? [])
+    setLoading(false)
+  }, [router])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  async function setStatus(orderId: string, status: 'confirmado' | 'rechazado') {
+    setActionId(orderId)
+    await fetch(`/api/eventos/orders/${orderId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    await fetchData()
+    setActionId(null)
+  }
+
+  async function deleteOrder(orderId: string) {
+    if (!window.confirm('¿Eliminar esta orden? Esta acción no se puede deshacer.')) return
+    setDeletingId(orderId)
+    await fetch(`/api/eventos/orders/${orderId}`, { method: 'DELETE' })
+    await fetchData()
+    setDeletingId(null)
+  }
+
+  async function toggleVisible(eventId: string, current: boolean) {
+    await fetch(`/api/eventos/events/${eventId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visible: !current }),
+    })
+    await fetchData()
+  }
+
+  const filtered = selectedEvent === 'all' ? orders : orders.filter(o => o.events?.id === selectedEvent)
+
+  const counts = {
+    en_revision: filtered.filter(o => o.status === 'en_revision').length,
+    confirmado: filtered.filter(o => o.status === 'confirmado').length,
+    total: filtered.length,
+  }
+
+  if (loading) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">Cargando...</p></div>
+
+  return (
+    <div className="min-h-screen bg-[#0a0008] text-white">
+      {/* Header */}
+      <div className="border-b border-white/8 px-5 py-5 flex items-center justify-between">
+        <div>
+          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase">Sivar Music</p>
+          <h1 className="text-white text-lg font-bold">Admin — Eventos</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/pinkfest/admin" className="text-white/30 hover:text-white text-xs transition">Pink Fest</Link>
+          <Link href="/eventos/admin/nuevo"
+            className="bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl transition">
+            + Nuevo
+          </Link>
+        </div>
+      </div>
+
+      <div className="px-5 py-6 max-w-2xl mx-auto space-y-6">
+        {/* Eventos */}
+        {events.length > 0 && (
+          <div>
+            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">Eventos</p>
+            <div className="space-y-2">
+              {events.map(event => (
+                <div key={event.id} className="rounded-2xl border border-white/10 bg-white/4 px-4 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-white font-semibold text-sm truncate">{event.nombre}</p>
+                    <p className="text-white/35 text-xs mt-0.5">
+                      {new Date(event.fecha).toLocaleDateString('es-SV', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {' · '}<span className="font-mono">${event.precio}</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-none">
+                    <button onClick={() => toggleVisible(event.id, event.visible)}
+                      className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition ${event.visible ? 'bg-green-400/15 text-green-400 hover:bg-red-400/15 hover:text-red-400' : 'bg-white/8 text-white/40 hover:bg-green-400/15 hover:text-green-400'}`}>
+                      {event.visible ? 'Visible' : 'Oculto'}
+                    </button>
+                    <a href={`/eventos/${event.slug}`} target="_blank" rel="noopener noreferrer"
+                      className="text-white/25 hover:text-white text-xs transition">↗</a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Filtro por evento */}
+        {events.length > 1 && (
+          <div>
+            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-2">Filtrar órdenes</p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setSelectedEvent('all')}
+                className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition ${selectedEvent === 'all' ? 'bg-[#F472B6] text-white' : 'bg-white/8 text-white/50 hover:text-white'}`}>
+                Todos
+              </button>
+              {events.map(e => (
+                <button key={e.id} onClick={() => setSelectedEvent(e.id)}
+                  className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition ${selectedEvent === e.id ? 'bg-[#F472B6] text-white' : 'bg-white/8 text-white/50 hover:text-white'}`}>
+                  {e.nombre}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Total órdenes', value: counts.total, color: 'text-white' },
+            { label: 'En revisión', value: counts.en_revision, color: 'text-yellow-400' },
+            { label: 'Confirmadas', value: counts.confirmado, color: 'text-green-400' },
+          ].map(s => (
+            <div key={s.label} className="rounded-2xl bg-white/5 border border-white/8 p-3 text-center">
+              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+              <p className="text-white/35 text-[10px] mt-1">{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Órdenes */}
+        <div>
+          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">Órdenes</p>
+          {filtered.length === 0 ? (
+            <p className="text-white/25 text-sm text-center py-12">No hay órdenes.</p>
+          ) : (
+            <div className="space-y-3">
+              {filtered.map(order => {
+                const statusInfo = STATUS_LABELS[order.status] ?? { label: order.status, color: 'text-white/40', bg: 'bg-white/5' }
+                const isExpanded = expandedId === order.id
+
+                return (
+                  <div key={order.id} className="rounded-2xl border border-white/10 bg-white/3 overflow-hidden">
+                    <button onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                      className="w-full px-4 py-4 text-left flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-white font-semibold text-sm">{order.nombre}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusInfo.bg} ${statusInfo.color}`}>
+                            {statusInfo.label}
+                          </span>
+                        </div>
+                        <p className="text-white/35 text-xs">{order.telefono} · {order.email}</p>
+                        {order.events && <p className="text-white/25 text-xs mt-0.5">{order.events.nombre}</p>}
+                      </div>
+                      <div className="text-right flex-none">
+                        <p className="text-[#F472B6] font-bold text-sm">{order.order_code}</p>
+                        <p className="text-white/30 text-xs">{order.cantidad} entrada{order.cantidad > 1 ? 's' : ''}</p>
+                        <p className="text-white/20 text-xs mt-1">{isExpanded ? '▲' : '▼'}</p>
+                      </div>
+                    </button>
+
+                    {isExpanded && (
+                      <div className="border-t border-white/8 px-4 py-4 space-y-3">
+                        {/* Comprobante */}
+                        {order.comprobante_path && (
+                          <a href={`/api/pinkfest/comprobante/${order.comprobante_path.split('/').pop()}`}
+                            target="_blank" rel="noopener noreferrer"
+                            className="block text-center text-[#F472B6] text-xs underline underline-offset-2">
+                            Ver comprobante ↗
+                          </a>
+                        )}
+
+                        {/* Tickets */}
+                        {order.event_tickets.length > 0 && (
+                          <div className="space-y-1">
+                            {order.event_tickets.map(t => (
+                              <div key={t.id} className="flex items-center justify-between bg-white/4 rounded-xl px-3 py-2">
+                                <span className="text-white/50 text-xs">Entrada {t.ticket_number}</span>
+                                <span className={`text-xs font-semibold ${t.check_in_at ? 'text-green-400' : 'text-white/25'}`}>
+                                  {t.check_in_at
+                                    ? `Ingresó ${new Date(t.check_in_at).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}`
+                                    : 'Pendiente'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex gap-2 flex-wrap">
+                          {order.status === 'en_revision' && (
+                            <>
+                              <button onClick={() => setStatus(order.id, 'confirmado')} disabled={actionId === order.id}
+                                className="flex-1 bg-green-500/20 hover:bg-green-500/30 text-green-400 text-xs font-bold py-2.5 rounded-xl transition disabled:opacity-50">
+                                {actionId === order.id ? '...' : 'Confirmar'}
+                              </button>
+                              <button onClick={() => setStatus(order.id, 'rechazado')} disabled={actionId === order.id}
+                                className="flex-1 bg-red-500/15 hover:bg-red-500/25 text-red-400 text-xs font-bold py-2.5 rounded-xl transition disabled:opacity-50">
+                                Rechazar
+                              </button>
+                            </>
+                          )}
+                          <button onClick={() => deleteOrder(order.id)} disabled={deletingId === order.id}
+                            className="bg-white/6 hover:bg-red-500/15 hover:text-red-400 text-white/30 text-xs font-bold px-4 py-2.5 rounded-xl transition disabled:opacity-50">
+                            {deletingId === order.id ? '...' : 'Eliminar'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
