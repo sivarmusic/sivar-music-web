@@ -56,6 +56,8 @@ export default function PinkFestAdmin() {
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [resendingId, setResendingId] = useState<string | null>(null)
+  const [resentId, setResentId] = useState<string | null>(null)
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
   const [showAnalytics, setShowAnalytics] = useState(false)
 
@@ -114,6 +116,17 @@ export default function PinkFestAdmin() {
       await fetchOrders()
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  async function resendEmail(id: string) {
+    setResendingId(id)
+    setResentId(null)
+    const res = await fetch(`/api/pinkfest/orders/${id}/resend`, { method: 'POST' })
+    setResendingId(null)
+    if (res.ok) {
+      setResentId(id)
+      setTimeout(() => setResentId(null), 4000)
     }
   }
 
@@ -385,6 +398,18 @@ export default function PinkFestAdmin() {
                           ))}
                       </div>
                     )}
+                    <div className="space-y-1.5">
+                      <button
+                        onClick={() => resendEmail(order.id)}
+                        disabled={resendingId === order.id}
+                        className="w-full text-xs border border-white/10 hover:border-[#F472B6]/30 text-white/40 hover:text-[#F472B6] hover:bg-[#F472B6]/8 rounded-xl py-2.5 transition disabled:opacity-40"
+                      >
+                        {resendingId === order.id ? 'Enviando...' : '✉ Reenviar mail de confirmación'}
+                      </button>
+                      {resentId === order.id && (
+                        <p className="text-green-400 text-xs text-center">Mail enviado a {order.email}</p>
+                      )}
+                    </div>
                   </>
                 )}
 

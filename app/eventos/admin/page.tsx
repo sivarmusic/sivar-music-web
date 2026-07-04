@@ -28,6 +28,8 @@ export default function EventosAdminPage() {
   const [actionId, setActionId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [resendingId, setResendingId] = useState<string | null>(null)
+  const [resentId, setResentId] = useState<string | null>(null)
 
   const fetchData = useCallback(async () => {
     const [evRes, ordRes] = await Promise.all([
@@ -59,6 +61,17 @@ export default function EventosAdminPage() {
     await fetch(`/api/eventos/orders/${orderId}`, { method: 'DELETE' })
     await fetchData()
     setDeletingId(null)
+  }
+
+  async function resendEmail(orderId: string) {
+    setResendingId(orderId)
+    setResentId(null)
+    const res = await fetch(`/api/eventos/orders/${orderId}/resend`, { method: 'POST' })
+    setResendingId(null)
+    if (res.ok) {
+      setResentId(orderId)
+      setTimeout(() => setResentId(null), 4000)
+    }
   }
 
   async function toggleVisible(eventId: string, current: boolean) {
@@ -241,6 +254,22 @@ export default function EventosAdminPage() {
                                 </span>
                               </div>
                             ))}
+                          </div>
+                        )}
+
+                        {/* Reenviar mail */}
+                        {order.status === 'confirmado' && (
+                          <div className="space-y-1.5">
+                            <button
+                              onClick={() => resendEmail(order.id)}
+                              disabled={resendingId === order.id}
+                              className="w-full bg-white/5 hover:bg-[#F472B6]/15 hover:text-[#F472B6] border border-white/10 hover:border-[#F472B6]/30 text-white/50 text-xs font-semibold rounded-xl py-2.5 transition disabled:opacity-40"
+                            >
+                              {resendingId === order.id ? 'Enviando...' : '✉ Reenviar mail de confirmación'}
+                            </button>
+                            {resentId === order.id && (
+                              <p className="text-green-400 text-xs text-center">Mail enviado a {order.email}</p>
+                            )}
                           </div>
                         )}
 
