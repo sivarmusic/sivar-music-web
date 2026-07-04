@@ -98,9 +98,17 @@ export default function EventosAdminPage() {
 
       <div className="px-5 py-6 max-w-2xl mx-auto space-y-6">
         {/* Eventos */}
-        {events.length > 0 && (
-          <div>
-            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">Eventos</p>
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider">Eventos</p>
+            <Link href="/eventos/admin/nuevo" className="text-[#F472B6] text-xs font-semibold hover:text-white transition">+ Nuevo evento</Link>
+          </div>
+          {events.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center">
+              <p className="text-white/25 text-sm">No hay eventos creados.</p>
+              <Link href="/eventos/admin/nuevo" className="text-[#F472B6] text-xs mt-2 block hover:text-white transition">Crear primer evento →</Link>
+            </div>
+          ) : (
             <div className="space-y-2">
               {events.map(event => (
                 <div key={event.id} className="rounded-2xl border border-white/10 bg-white/4 px-4 py-3 flex items-center justify-between gap-3">
@@ -116,14 +124,18 @@ export default function EventosAdminPage() {
                       className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition ${event.visible ? 'bg-green-400/15 text-green-400 hover:bg-red-400/15 hover:text-red-400' : 'bg-white/8 text-white/40 hover:bg-green-400/15 hover:text-green-400'}`}>
                       {event.visible ? 'Visible' : 'Oculto'}
                     </button>
+                    <Link href={`/eventos/admin/editar/${event.id}`}
+                      className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
+                      Editar
+                    </Link>
                     <a href={`/eventos/${event.slug}`} target="_blank" rel="noopener noreferrer"
                       className="text-white/25 hover:text-white text-xs transition">↗</a>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Filtro por evento */}
         {events.length > 1 && (
