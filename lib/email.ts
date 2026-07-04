@@ -51,27 +51,50 @@ export async function sendTicketConfirmed({
   return resend.emails.send({
     from,
     to,
-    subject: `✓ Entrada confirmada — ${eventName}`,
+    subject: `¡Tu entrada está confirmada! — ${eventName}`,
     html: `
-      <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px">
-        <h2 style="color:#F472B6;margin:0 0 8px">Sivar Music</h2>
-        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:20px;margin-bottom:20px;text-align:center">
-          <p style="font-size:36px;margin:0">🎉</p>
-          <h3 style="color:#166534;margin:8px 0 4px">¡Tu entrada está confirmada!</h3>
-          <p style="margin:0;color:#15803d;font-weight:bold;letter-spacing:2px">${orderCode}</p>
-        </div>
-        <p style="color:#374151"><strong>Evento:</strong> ${eventName}</p>
-        <p style="color:#374151"><strong>Fecha:</strong> ${eventDate}</p>
-        <p style="color:#374151"><strong>Lugar:</strong> ${eventVenue}</p>
-        <div style="margin:24px 0">
-          <a href="${verUrl}" style="background:#22c55e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">
-            Ver mis entradas y QR →
-          </a>
-        </div>
-        <p style="color:#6b7280;font-size:13px">Presentá el código QR en la entrada del evento. Podés guardarlo en tu galería o tenerlo listo en este link.</p>
-        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
-        <p style="color:#9ca3af;font-size:12px;text-align:center">Sivar Music Group</p>
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background-color:#0a0008;padding:40px 20px;">
+  <div style="max-width:480px;margin:0 auto;">
+
+    <div style="text-align:center;margin-bottom:28px;">
+      <p style="color:#F472B6;font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;margin:0 0 6px;">Sivar Music</p>
+      <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;">Sivar Events</h1>
+    </div>
+
+    <div style="background-color:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 28px;text-align:center;margin-bottom:12px;">
+      <p style="font-size:40px;margin:0 0 16px;">🎉</p>
+      <h2 style="color:#ffffff;font-size:20px;font-weight:700;margin:0 0 8px;">¡Tu entrada está confirmada!</h2>
+      <p style="color:rgba(255,255,255,0.5);font-size:14px;margin:0 0 24px;line-height:1.6;">
+        Hola ${nombre.split(' ')[0]}, tus entradas para <strong style="color:#ffffff;">${eventName}</strong> están listas.
+      </p>
+
+      <div style="background-color:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.25);border-radius:12px;padding:14px 20px;margin-bottom:20px;">
+        <p style="color:rgba(255,255,255,0.4);font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin:0 0 4px;">Código de orden</p>
+        <p style="color:#F472B6;font-size:26px;font-weight:700;letter-spacing:0.12em;margin:0;">${orderCode}</p>
       </div>
+
+      <div style="text-align:left;border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;margin-bottom:24px;">
+        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 8px;">📅 ${eventDate}</p>
+        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0;">📍 ${eventVenue}</p>
+      </div>
+
+      <a href="${verUrl}" style="display:inline-block;background-color:#F472B6;color:#ffffff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;text-decoration:none;padding:14px 32px;border-radius:14px;">
+        Ver mis entradas y QR →
+      </a>
+    </div>
+
+    <div style="background-color:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 20px;text-align:center;margin-bottom:24px;">
+      <p style="color:rgba(255,255,255,0.35);font-size:12px;margin:0;line-height:1.6;">
+        Iniciá sesión o creá una cuenta en Sivar Events para ver tu código QR y presentarlo en la entrada del evento.
+      </p>
+    </div>
+
+    <p style="text-align:center;color:rgba(255,255,255,0.15);font-size:11px;margin:0;">
+      Sivar Music Group · El Salvador
+    </p>
+
+  </div>
+</div>
     `,
   })
 }

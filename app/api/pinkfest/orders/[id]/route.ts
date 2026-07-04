@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/pinkfest-auth'
+import { sendTicketConfirmed } from '@/lib/email'
 import crypto from 'crypto'
 
 export async function PATCH(
@@ -42,6 +43,16 @@ export async function PATCH(
       }))
       await supabase.from('pinkfest_tickets').insert(tickets)
     }
+
+    sendTicketConfirmed({
+      to: data.email,
+      nombre: data.nombre,
+      orderCode: data.order_code,
+      eventName: 'Pink Fest',
+      eventDate: 'sábado, 12 de julio · 8:00 PM',
+      eventVenue: 'Beerhaus · San Salvador',
+      verUrl: 'https://sivarmusic.com/eventos/mi-cuenta/login',
+    }).catch(() => {})
   }
 
   return NextResponse.json({ order: data })
