@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { Suspense } from 'react'
+import { supabaseBrowser } from '@/lib/supabase-browser'
 
 type Tab = 'login' | 'register' | 'forgot'
 
@@ -20,10 +20,7 @@ function LoginForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
+  const supabase = supabaseBrowser
 
   function switchTab(t: Tab) { setTab(t); setError(''); setSuccess('') }
 
@@ -54,9 +51,8 @@ function LoginForm() {
         // Confirmación de email deshabilitada — sesión inmediata
         router.push(next)
       } else {
-        // Confirmación requerida
-        setSuccess('¡Cuenta creada! Revisá tu correo para confirmarla y después iniciá sesión.')
-        switchTab('login')
+        // Confirmación requerida — llevar a página de verificación
+        router.push(`/eventos/mi-cuenta/verificar?email=${encodeURIComponent(email)}`)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado')

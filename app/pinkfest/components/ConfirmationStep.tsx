@@ -16,7 +16,7 @@ export default function ConfirmationStep({ order }: { order: Order }) {
         <h2 className="text-white text-2xl font-bold mb-2">¡Gracias, {firstName}!</h2>
         <p className="text-white/55 text-sm leading-relaxed max-w-xs mx-auto">
           Recibimos tu comprobante y lo estamos revisando.
-          Te confirmaremos por WhatsApp en las próximas horas.
+          Te confirmaremos por correo electrónico en las próximas horas.
         </p>
       </div>
 
