@@ -43,14 +43,28 @@ export default function EventosPage() {
       </div>
 
       <div className="px-5 py-6 max-w-lg mx-auto space-y-4">
-        {loading ? (
-          <p className="text-white/30 text-sm text-center py-16">Cargando eventos...</p>
-        ) : events.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-white/30 text-sm">No hay eventos disponibles por ahora.</p>
-            <p className="text-white/20 text-xs mt-2">Volvé pronto 🎵</p>
+        {/* Pink Fest — tarjeta fija */}
+        <Link href="/pinkfest">
+          <div className="bg-white/4 border border-white/10 hover:border-[#F472B6]/30 hover:bg-white/6 rounded-2xl overflow-hidden transition">
+            <div className="relative h-44 w-full">
+              <Image src="/pinkfest/poster.jpg" alt="Pink Fest" fill className="object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0008]/80 via-transparent to-transparent" />
+            </div>
+            <div className="p-4">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <h2 className="text-white font-bold text-base leading-tight">Pink Fest</h2>
+                <span className="text-[#F472B6] font-bold text-sm flex-none">$10</span>
+              </div>
+              <p className="text-white/50 text-xs mb-1">sáb. 12 jul · 8:00 PM</p>
+              <p className="text-white/40 text-xs">Beerhaus · San Salvador</p>
+              <p className="text-white/30 text-xs mt-2">Vanessa García · Jazay · Danie</p>
+            </div>
           </div>
-        ) : (
+        </Link>
+
+        {loading ? (
+          <p className="text-white/30 text-sm text-center py-8">Cargando eventos...</p>
+        ) : events.length === 0 ? null : (
           events.map(event => {
             const fecha = new Date(event.fecha)
             const isPast = fecha < new Date()
