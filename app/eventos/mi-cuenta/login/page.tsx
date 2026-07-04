@@ -41,7 +41,10 @@ function LoginForm() {
       const { data, error: signUpErr } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { nombre } },
+        options: {
+          data: { nombre },
+          emailRedirectTo: `${window.location.origin}/eventos/mi-cuenta/login`,
+        },
       })
       if (signUpErr) {
         if (signUpErr.message.toLowerCase().includes('already')) throw new Error('Ya existe una cuenta con ese correo.')

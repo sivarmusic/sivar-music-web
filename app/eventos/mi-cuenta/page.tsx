@@ -1,9 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import { supabaseBrowser } from '@/lib/supabase-browser'
 
 const QRCode = dynamic(() => import('qrcode').then(mod => ({
   default: ({ value, size }: { value: string; size: number }) => {
@@ -38,13 +38,8 @@ export default function MiCuentaPage() {
   const [email, setEmail] = useState('')
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
-
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
+    supabaseBrowser.auth.getSession().then(async ({ data }) => {
       const session = data.session
       if (!session) { router.push('/eventos/mi-cuenta/login'); return }
       setEmail(session.user.email ?? '')
@@ -55,10 +50,10 @@ export default function MiCuentaPage() {
       setOrders(d.orders ?? [])
       setLoading(false)
     })
-  }, [router, supabase.auth])
+  }, [router])
 
   async function handleLogout() {
-    await supabase.auth.signOut()
+    await supabaseBrowser.auth.signOut()
     router.push('/eventos/mi-cuenta/login')
   }
 
