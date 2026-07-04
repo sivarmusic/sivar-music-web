@@ -28,7 +28,13 @@ function LoginForm() {
     e.preventDefault(); setError(''); setLoading(true)
     try {
       const { error: err } = await supabase.auth.signInWithPassword({ email, password })
-      if (err) throw new Error(err.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos.' : err.message)
+      if (err) {
+        if (err.message === 'Email not confirmed') {
+          router.push(`/eventos/mi-cuenta/verificar?email=${encodeURIComponent(email)}`)
+          return
+        }
+        throw new Error(err.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos.' : err.message)
+      }
       router.push(next)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado')
