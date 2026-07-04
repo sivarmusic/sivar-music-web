@@ -7,11 +7,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .or(`id.eq.${id},slug.eq.${id}`)
-    .single()
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
+  const query = supabase.from('events').select('*')
+  const { data, error } = await (isUuid
+    ? query.or(`id.eq.${id},slug.eq.${id}`)
+    : query.eq('slug', id)
+  ).single()
 
   if (error || !data) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
   return NextResponse.json({ event: data })
