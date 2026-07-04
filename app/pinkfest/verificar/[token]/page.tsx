@@ -6,7 +6,7 @@ interface TicketInfo {
   order_code: string
   nombre: string
   cantidad: number
-  status: string
+  ticket_number: number
   check_in_at: string | null
 }
 
@@ -26,8 +26,8 @@ export default function VerificarTokenPage() {
       .then(async r => {
         const data = await r.json()
         if (r.ok) {
-          setTicket(data.order)
-          setPageState(data.order.check_in_at ? 'already_used' : 'valid')
+          setTicket(data.ticket)
+          setPageState(data.ticket.check_in_at ? 'already_used' : 'valid')
         } else if (r.status === 400) {
           setPageState('not_confirmed')
         } else if (r.status === 404) {
@@ -118,7 +118,7 @@ export default function VerificarTokenPage() {
           {[
             { label: 'Código', value: ticket.order_code, pink: true },
             { label: 'Nombre', value: ticket.nombre, bold: true },
-            { label: 'Entradas', value: `${ticket.cantidad}` },
+            { label: 'Entrada', value: `${ticket.ticket_number} de ${ticket.cantidad}` },
           ].map(({ label, value, pink, bold }) => (
             <div key={label} className="flex justify-between items-center px-4 py-3">
               <span className="text-white/45 text-sm">{label}</span>
