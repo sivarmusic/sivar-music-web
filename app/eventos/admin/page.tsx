@@ -103,14 +103,33 @@ export default function EventosAdminPage() {
             <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider">Eventos</p>
             <Link href="/eventos/admin/nuevo" className="text-[#F472B6] text-xs font-semibold hover:text-white transition">+ Nuevo evento</Link>
           </div>
-          {events.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center">
-              <p className="text-white/25 text-sm">No hay eventos creados.</p>
-              <Link href="/eventos/admin/nuevo" className="text-[#F472B6] text-xs mt-2 block hover:text-white transition">Crear primer evento →</Link>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {events.map(event => (
+          <div className="space-y-2">
+              {/* Pink Fest — tarjeta fija */}
+              <div className="rounded-2xl border border-[#F472B6]/20 bg-[#F472B6]/5 px-4 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-white font-semibold text-sm">Pink Fest</p>
+                    <span className="text-[10px] text-[#F472B6] font-bold bg-[#F472B6]/10 px-2 py-0.5 rounded-full">Independiente</span>
+                  </div>
+                  <p className="text-white/35 text-xs mt-0.5">sáb. 12 jul · $10 · Beerhaus</p>
+                </div>
+                <div className="flex items-center gap-2 flex-none">
+                  <span className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-green-400/15 text-green-400">Visible</span>
+                  <Link href="/pinkfest/admin"
+                    className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
+                    Gestionar
+                  </Link>
+                  <a href="/pinkfest" target="_blank" rel="noopener noreferrer"
+                    className="text-white/25 hover:text-white text-xs transition">↗</a>
+                </div>
+              </div>
+
+              {events.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center">
+                  <p className="text-white/25 text-sm">No hay otros eventos creados.</p>
+                  <Link href="/eventos/admin/nuevo" className="text-[#F472B6] text-xs mt-2 block hover:text-white transition">Crear evento →</Link>
+                </div>
+              ) : events.map(event => (
                 <div key={event.id} className="rounded-2xl border border-white/10 bg-white/4 px-4 py-3 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-white font-semibold text-sm truncate">{event.nombre}</p>
@@ -133,8 +152,7 @@ export default function EventosAdminPage() {
                   </div>
                 </div>
               ))}
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Filtro por evento */}
