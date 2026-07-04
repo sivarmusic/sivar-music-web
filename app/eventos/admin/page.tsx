@@ -87,13 +87,10 @@ export default function EventosAdminPage() {
           <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase">Sivar Music</p>
           <h1 className="text-white text-lg font-bold">Admin — Eventos</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <Link href="/pinkfest/admin" className="text-white/30 hover:text-white text-xs transition">Pink Fest</Link>
-          <Link href="/eventos/admin/nuevo"
-            className="bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl transition">
-            + Nuevo
-          </Link>
-        </div>
+        <Link href="/eventos/admin/nuevo"
+          className="bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl transition">
+          + Nuevo
+        </Link>
       </div>
 
       <div className="px-5 py-6 max-w-2xl mx-auto space-y-6">
