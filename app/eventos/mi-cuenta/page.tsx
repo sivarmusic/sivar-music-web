@@ -23,6 +23,9 @@ interface Order {
   events: { nombre: string; fecha: string; venue: string; slug: string } | null
   event_tickets: Ticket[]
 }
+interface FullscreenQR {
+  token: string; orderCode: string; label: string
+}
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pendiente_comprobante: { label: 'Pendiente comprobante', color: 'text-white/40' },
@@ -37,6 +40,7 @@ export default function MiCuentaPage() {
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
+  const [fullscreenQR, setFullscreenQR] = useState<FullscreenQR | null>(null)
 
   useEffect(() => {
     supabaseBrowser.auth.getSession().then(async ({ data }) => {
@@ -65,6 +69,32 @@ export default function MiCuentaPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0008] text-white">
+      {/* Modal QR fullscreen */}
+      {fullscreenQR && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm px-6"
+          onClick={() => setFullscreenQR(null)}
+        >
+          <div
+            className="flex flex-col items-center gap-5"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider">{fullscreenQR.label}</p>
+            <div className="bg-white p-5 rounded-3xl shadow-2xl">
+              <QRCode value={fullscreenQR.token} size={260} />
+            </div>
+            <p className="text-[#F472B6] font-bold text-xl tracking-widest">{fullscreenQR.orderCode}</p>
+            <p className="text-white/30 text-xs">Mostrá este código en la entrada</p>
+          </div>
+          <button
+            onClick={() => setFullscreenQR(null)}
+            className="absolute bottom-10 text-white/25 hover:text-white text-xs uppercase tracking-widest transition"
+          >
+            Cerrar ✕
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="border-b border-white/8 px-5 py-5 flex items-center justify-between">
         <div>
@@ -72,9 +102,14 @@ export default function MiCuentaPage() {
           <h1 className="text-white text-lg font-bold">Mi cuenta</h1>
           <p className="text-white/35 text-xs">{email}</p>
         </div>
-        <button onClick={handleLogout} className="text-white/30 hover:text-white text-xs uppercase tracking-wider transition">
-          Salir
-        </button>
+        <div className="flex items-center gap-4">
+          <Link href="/eventos" className="text-white/30 hover:text-white text-xs uppercase tracking-wider transition">
+            Eventos
+          </Link>
+          <button onClick={handleLogout} className="text-white/30 hover:text-white text-xs uppercase tracking-wider transition">
+            Salir
+          </button>
+        </div>
       </div>
 
       <div className="px-5 py-6 max-w-lg mx-auto space-y-8">
@@ -85,9 +120,9 @@ export default function MiCuentaPage() {
           </div>
         ) : (
           <>
-            {pending.length > 0 && <Section title="Pendientes" orders={pending} expanded={expandedOrder} onExpand={setExpandedOrder} />}
-            {upcoming.length > 0 && <Section title="Próximos eventos" orders={upcoming} expanded={expandedOrder} onExpand={setExpandedOrder} showQR />}
-            {past.length > 0 && <Section title="Eventos pasados" orders={past} expanded={expandedOrder} onExpand={setExpandedOrder} dim />}
+            {pending.length > 0 && <Section title="Pendientes" orders={pending} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} />}
+            {upcoming.length > 0 && <Section title="Próximos eventos" orders={upcoming} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} showQR />}
+            {past.length > 0 && <Section title="Eventos pasados" orders={past} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} dim />}
           </>
         )}
       </div>
@@ -95,21 +130,36 @@ export default function MiCuentaPage() {
   )
 }
 
-function Section({ title, orders, expanded, onExpand, showQR, dim }: {
-  title: string; orders: Order[]; expanded: string | null; onExpand: (id: string | null) => void; showQR?: boolean; dim?: boolean
+function Section({ title, orders, expanded, onExpand, onOpenQR, showQR, dim }: {
+  title: string; orders: Order[]; expanded: string | null
+  onExpand: (id: string | null) => void
+  onOpenQR: (qr: FullscreenQR) => void
+  showQR?: boolean; dim?: boolean
 }) {
   return (
     <div>
       <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">{title}</p>
       <div className="space-y-3">
-        {orders.map(order => <OrderCard key={order.id} order={order} isExpanded={expanded === order.id} onExpand={() => onExpand(expanded === order.id ? null : order.id)} showQR={showQR} dim={dim} />)}
+        {orders.map(order => (
+          <OrderCard
+            key={order.id}
+            order={order}
+            isExpanded={expanded === order.id}
+            onExpand={() => onExpand(expanded === order.id ? null : order.id)}
+            onOpenQR={onOpenQR}
+            showQR={showQR}
+            dim={dim}
+          />
+        ))}
       </div>
     </div>
   )
 }
 
-function OrderCard({ order, isExpanded, onExpand, showQR, dim }: {
-  order: Order; isExpanded: boolean; onExpand: () => void; showQR?: boolean; dim?: boolean
+function OrderCard({ order, isExpanded, onExpand, onOpenQR, showQR, dim }: {
+  order: Order; isExpanded: boolean; onExpand: () => void
+  onOpenQR: (qr: FullscreenQR) => void
+  showQR?: boolean; dim?: boolean
 }) {
   const statusInfo = STATUS_LABELS[order.status] ?? { label: order.status, color: 'text-white/40' }
   const fecha = order.events ? new Date(order.events.fecha) : null
@@ -147,9 +197,18 @@ function OrderCard({ order, isExpanded, onExpand, showQR, dim }: {
                   <p className="text-white/55 text-xs font-semibold uppercase tracking-wider">
                     Entrada {ticket.ticket_number} de {order.cantidad}
                   </p>
-                  <div className="bg-white p-3 rounded-xl">
+                  <button
+                    onClick={() => onOpenQR({
+                      token: ticket.qr_token,
+                      orderCode: order.order_code,
+                      label: `${order.events?.nombre ?? 'Evento'} · Entrada ${ticket.ticket_number}`,
+                    })}
+                    className="bg-white p-3 rounded-xl active:scale-95 transition-transform cursor-pointer"
+                    title="Tap para ampliar"
+                  >
                     <QRCode value={ticket.qr_token} size={160} />
-                  </div>
+                  </button>
+                  <p className="text-white/20 text-[10px] uppercase tracking-wider">Toca para ampliar</p>
                   {ticket.check_in_at ? (
                     <p className="text-green-400 text-xs font-semibold">Ingresó a las {new Date(ticket.check_in_at).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}</p>
                   ) : (

@@ -68,12 +68,10 @@ export default function EventoGraciasPage() {
           ))}
         </div>
 
-        {order.status === 'confirmado' && (
-          <Link href="/eventos/mi-cuenta"
-            className="w-full bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 text-center block transition">
-            Ver mis entradas
-          </Link>
-        )}
+        <Link href="/eventos/mi-cuenta"
+          className="w-full bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 text-center block transition">
+          {order.status === 'confirmado' ? 'Ver mis entradas' : 'Ver mi cuenta'}
+        </Link>
 
         <Link href="/eventos" className="text-white/30 hover:text-white text-xs transition">
           ← Ver todos los eventos
