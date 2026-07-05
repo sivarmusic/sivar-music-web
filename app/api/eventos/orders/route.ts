@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/pinkfest-auth'
-import { sendOrderConfirmation } from '@/lib/email'
+import { sendOrderConfirmation, sendAdminNewOrderRequest } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   // Autenticación requerida via Bearer token
@@ -82,14 +82,25 @@ export async function POST(req: NextRequest) {
   }
 
   const pagoUrl = `https://sivarmusic.com/eventos/${event.slug}/pago/${order.id}`
+  const total = order.cantidad * Number(event.precio)
   sendOrderConfirmation({
     to: email,
     nombre: nombre.trim(),
     orderCode: order.order_code,
     eventName: event.nombre,
     cantidad: order.cantidad,
-    total: order.cantidad * Number(event.precio),
+    total,
     pagoUrl,
+  }).catch(() => {})
+
+  sendAdminNewOrderRequest({
+    orderCode: order.order_code,
+    eventName: event.nombre,
+    nombre: nombre.trim(),
+    telefono: telefono.trim(),
+    email,
+    cantidad: order.cantidad,
+    total,
   }).catch(() => {})
 
   return NextResponse.json({ order })

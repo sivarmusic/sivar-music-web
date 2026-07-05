@@ -42,6 +42,34 @@ export async function sendOrderConfirmation({
   })
 }
 
+const ADMIN_EMAIL = 'admin@sivarmusic.com'
+
+export async function sendAdminNewOrderRequest({
+  orderCode, eventName, nombre, telefono, email, cantidad, total,
+}: {
+  orderCode: string; eventName: string; nombre: string
+  telefono: string; email: string; cantidad: number; total: number
+}) {
+  return resend.emails.send({
+    from,
+    to: ADMIN_EMAIL,
+    subject: `Nueva solicitud de entrada — ${eventName} (${orderCode})`,
+    html: `
+      <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px">
+        <h2 style="color:#F472B6;margin:0 0 8px">Sivar Music — Nueva solicitud</h2>
+        <p style="color:#374151"><strong>Evento:</strong> ${eventName}</p>
+        <p style="color:#374151"><strong>Código de orden:</strong> ${orderCode}</p>
+        <p style="color:#374151"><strong>Nombre:</strong> ${nombre}</p>
+        <p style="color:#374151"><strong>Teléfono:</strong> ${telefono}</p>
+        <p style="color:#374151"><strong>Email:</strong> ${email}</p>
+        <p style="color:#374151"><strong>Entradas:</strong> ${cantidad} × total <strong>$${total}.00</strong></p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+        <p style="color:#9ca3af;font-size:12px;text-align:center">Revisá el panel admin para confirmar el comprobante cuando llegue.</p>
+      </div>
+    `,
+  })
+}
+
 export async function sendTicketConfirmed({
   to, nombre, orderCode, eventName, eventDate, eventVenue, verUrl,
 }: {
