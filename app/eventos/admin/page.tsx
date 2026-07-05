@@ -28,6 +28,7 @@ export default function EventosAdminPage() {
   const [actionId, setActionId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null)
   const [resendingId, setResendingId] = useState<string | null>(null)
   const [resentId, setResentId] = useState<string | null>(null)
 
@@ -80,6 +81,14 @@ export default function EventosAdminPage() {
       body: JSON.stringify({ visible: !current }),
     })
     await fetchData()
+  }
+
+  async function deleteEvent(eventId: string, nombre: string) {
+    if (!window.confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`)) return
+    setDeletingEventId(eventId)
+    await fetch(`/api/eventos/events/${eventId}`, { method: 'DELETE' })
+    await fetchData()
+    setDeletingEventId(null)
   }
 
   const filtered = selectedEvent === 'all' ? orders : orders.filter(o => o.events?.id === selectedEvent)
@@ -159,6 +168,13 @@ export default function EventosAdminPage() {
                     </Link>
                     <a href={`/eventos/${event.slug}`} target="_blank" rel="noopener noreferrer"
                       className="text-white/25 hover:text-white text-xs transition">↗</a>
+                    <button
+                      onClick={() => deleteEvent(event.id, event.nombre)}
+                      disabled={deletingEventId === event.id}
+                      className="text-xs px-2 py-1.5 rounded-xl font-semibold bg-red-500/10 text-red-400/50 hover:bg-red-500/20 hover:text-red-400 transition disabled:opacity-40"
+                    >
+                      {deletingEventId === event.id ? '...' : 'Eliminar'}
+                    </button>
                   </div>
                 </div>
               ))}
