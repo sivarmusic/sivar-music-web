@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useLanguage } from '@/lib/i18n'
 import LanguageSwitcher from './components/LanguageSwitcher'
+import { supabaseBrowser } from '@/lib/supabase-browser'
 
 interface Event {
   id: string; slug: string; nombre: string; fecha: string
@@ -23,6 +24,11 @@ export default function EventosPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(null)
+  const [loggedIn, setLoggedIn] = useState(false)
+
+  useEffect(() => {
+    supabaseBrowser.auth.getSession().then(({ data }) => setLoggedIn(!!data.session))
+  }, [])
 
   useEffect(() => {
     fetch('/api/eventos/events')
@@ -112,7 +118,7 @@ export default function EventosPage() {
             href="/eventos/mi-cuenta"
             className="flex-none bg-[#F472B6] hover:bg-[#ec4899] active:scale-95 text-white font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all whitespace-nowrap"
           >
-            {t('home.signIn')}
+            {loggedIn ? t('home.myAccount') : t('home.signIn')}
           </Link>
         </div>
 

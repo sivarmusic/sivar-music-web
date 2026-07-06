@@ -8,6 +8,7 @@ const STORAGE_KEY = 'sm_lang'
 const es = {
   'home.search': 'Buscar eventos, artistas, venues...',
   'home.signIn': 'Iniciar sesión/Registrarme',
+  'home.myAccount': 'Mi cuenta',
   'home.time.24h': '24 HRS',
   'home.time.7d': '7 DÍAS',
   'home.time.30d': '30 DÍAS',
@@ -173,6 +174,7 @@ type Key = keyof typeof es
 const en: Record<Key, string> = {
   'home.search': 'Search events, artists, venues...',
   'home.signIn': 'Sign In/Register',
+  'home.myAccount': 'My account',
   'home.time.24h': '24 HRS',
   'home.time.7d': '7 DAYS',
   'home.time.30d': '30 DAYS',
