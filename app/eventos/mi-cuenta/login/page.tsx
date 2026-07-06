@@ -4,10 +4,13 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { supabaseBrowser } from '@/lib/supabase-browser'
+import { useLanguage } from '@/lib/i18n'
+import LanguageSwitcher from '../../components/LanguageSwitcher'
 
 type Tab = 'login' | 'register' | 'forgot'
 
 function LoginForm() {
+  const { t } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? '/eventos/mi-cuenta'
@@ -42,11 +45,11 @@ function LoginForm() {
           router.push(`/eventos/mi-cuenta/verificar?email=${encodeURIComponent(email)}`)
           return
         }
-        throw new Error(err.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos.' : err.message)
+        throw new Error(err.message === 'Invalid login credentials' ? t('login.errorInvalid') : err.message)
       }
       router.push(next)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado')
+      setError(err instanceof Error ? err.message : t('login.errorUnexpected'))
     } finally { setLoading(false) }
   }
 
@@ -62,7 +65,7 @@ function LoginForm() {
         },
       })
       if (signUpErr) {
-        if (signUpErr.message.toLowerCase().includes('already')) throw new Error('Ya existe una cuenta con ese correo.')
+        if (signUpErr.message.toLowerCase().includes('already')) throw new Error(t('login.errorAlreadyExists'))
         throw new Error(signUpErr.message)
       }
       if (data.session) {
@@ -73,7 +76,7 @@ function LoginForm() {
         router.push(`/eventos/mi-cuenta/verificar?email=${encodeURIComponent(email)}`)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado')
+      setError(err instanceof Error ? err.message : t('login.errorUnexpected'))
     } finally { setLoading(false) }
   }
 
@@ -85,9 +88,9 @@ function LoginForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       })
-      setSuccess('Si existe una cuenta con ese correo, recibirás un enlace para cambiar tu contraseña.')
+      setSuccess(t('login.forgotSuccess'))
     } catch {
-      setSuccess('Si existe una cuenta con ese correo, recibirás un enlace para cambiar tu contraseña.')
+      setSuccess(t('login.forgotSuccess'))
     } finally { setLoading(false) }
   }
 
@@ -96,10 +99,14 @@ function LoginForm() {
   return (
     <div className="min-h-screen bg-[#0a0008] text-white flex flex-col items-center justify-center px-5 py-12">
       <div className="w-full max-w-sm space-y-6">
+        <div className="flex justify-end">
+          <LanguageSwitcher />
+        </div>
+
         <div className="text-center">
           <Link href="/eventos" className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase">Sivar Events</Link>
           <h1 className="text-white text-xl font-bold mt-2">
-            {tab === 'login' ? 'Iniciar sesión' : tab === 'register' ? 'Crear cuenta' : 'Recuperar contraseña'}
+            {tab === 'login' ? t('login.tabSignIn') : tab === 'register' ? t('login.tabCreate') : t('login.tabForgot')}
           </h1>
         </div>
 
@@ -107,11 +114,11 @@ function LoginForm() {
         <div className="flex bg-white/5 rounded-2xl p-1 gap-1">
           <button onClick={() => switchTab('login')}
             className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition ${tab === 'login' ? 'bg-[#F472B6] text-white' : 'text-white/40 hover:text-white'}`}>
-            Entrar
+            {t('login.enter')}
           </button>
           <button onClick={() => switchTab('register')}
             className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition ${tab === 'register' ? 'bg-[#F472B6] text-white' : 'text-white/40 hover:text-white'}`}>
-            Crear cuenta
+            {t('login.createAccount')}
           </button>
         </div>
 
@@ -125,11 +132,11 @@ function LoginForm() {
                 <path fill="#FBBC05" d="M5.29 14.29a7.2 7.2 0 0 1 0-4.58V6.6H1.28a12 12 0 0 0 0 10.8l4.01-3.11z"/>
                 <path fill="#EA4335" d="M12 4.77c1.76 0 3.35.61 4.59 1.8l3.45-3.45C17.95 1.19 15.24 0 12 0 7.3 0 3.26 2.7 1.28 6.6l4.01 3.11C6.23 6.88 8.88 4.77 12 4.77z"/>
               </svg>
-              Continuar con Google
+              {t('login.continueGoogle')}
             </button>
             <div className="flex items-center gap-3">
               <div className="h-px bg-white/10 flex-1" />
-              <span className="text-white/25 text-[10px] uppercase tracking-wider">o con correo</span>
+              <span className="text-white/25 text-[10px] uppercase tracking-wider">{t('login.orWithEmail')}</span>
               <div className="h-px bg-white/10 flex-1" />
             </div>
           </div>
@@ -138,22 +145,22 @@ function LoginForm() {
         {tab === 'login' && (
           <form onSubmit={handleLogin} className="space-y-3">
             <div>
-              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">Correo electrónico</label>
+              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('login.email')}</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="tu@correo.com" className={INPUT} />
             </div>
             <div>
-              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">Contraseña</label>
+              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('login.password')}</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" className={INPUT} />
             </div>
             {error && <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-center">{error}</p>}
             {success && <p className="text-green-400 text-sm bg-green-400/10 border border-green-400/20 rounded-2xl px-4 py-3 text-center">{success}</p>}
             <button type="submit" disabled={loading}
               className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading ? t('login.entering') : t('login.enter')}
             </button>
             <button type="button" onClick={() => switchTab('forgot')}
               className="w-full text-white/30 hover:text-white/60 text-xs text-center transition py-1">
-              Olvidé mi contraseña
+              {t('login.forgotPassword')}
             </button>
           </form>
         )}
@@ -161,24 +168,24 @@ function LoginForm() {
         {tab === 'register' && (
           <form onSubmit={handleRegister} className="space-y-3">
             <div>
-              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">Nombre completo</label>
-              <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} required placeholder="Tu nombre" className={INPUT} />
+              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('login.fullName')}</label>
+              <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} required placeholder={t('login.fullNamePh')} className={INPUT} />
             </div>
             <div>
-              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">Correo electrónico</label>
+              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('login.email')}</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="tu@correo.com" className={INPUT} />
             </div>
             <div>
-              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">Contraseña</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Mínimo 6 caracteres" minLength={6} className={INPUT} />
+              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('login.password')}</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder={t('login.passwordMinPh')} minLength={6} className={INPUT} />
             </div>
             {error && <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-center">{error}</p>}
             <button type="submit" disabled={loading}
               className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-              {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+              {loading ? t('login.creatingAccount') : t('login.createAccount')}
             </button>
             <p className="text-white/20 text-xs text-center leading-relaxed">
-              Al crear una cuenta podés ver tus entradas y recibir notificaciones de eventos.
+              {t('login.createAccountNote')}
             </p>
           </form>
         )}
@@ -186,7 +193,7 @@ function LoginForm() {
         {tab === 'forgot' && (
           <form onSubmit={handleForgot} className="space-y-3">
             <div>
-              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">Tu correo electrónico</label>
+              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('login.yourEmail')}</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="tu@correo.com" className={INPUT} />
             </div>
             {error && <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-center">{error}</p>}
@@ -195,12 +202,12 @@ function LoginForm() {
               : (
                 <button type="submit" disabled={loading}
                   className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-                  {loading ? 'Enviando...' : 'Enviar enlace'}
+                  {loading ? t('login.sending') : t('login.sendLink')}
                 </button>
               )}
             <button type="button" onClick={() => switchTab('login')}
               className="w-full text-white/30 hover:text-white/60 text-xs text-center transition py-1">
-              ← Volver al inicio de sesión
+              {t('login.backToSignIn')}
             </button>
           </form>
         )}

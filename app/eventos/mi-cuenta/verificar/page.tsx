@@ -3,10 +3,12 @@ import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase-browser'
+import { useLanguage } from '@/lib/i18n'
 
 const RESEND_WAIT = 60
 
 function VerificarContent() {
+  const { t } = useLanguage()
   const searchParams = useSearchParams()
   const email = searchParams.get('email') ?? ''
 
@@ -34,7 +36,7 @@ function VerificarContent() {
       setSent(true)
       setSeconds(RESEND_WAIT)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo reenviar.')
+      setError(e instanceof Error ? e.message : t('verify.errorResend'))
     } finally {
       setSending(false)
     }
@@ -47,23 +49,23 @@ function VerificarContent() {
         <div>
           <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase mb-3">Sivar Events</p>
           <div className="text-5xl mb-4">📬</div>
-          <h1 className="text-white text-2xl font-bold mb-3">Revisá tu correo</h1>
+          <h1 className="text-white text-2xl font-bold mb-3">{t('verify.title')}</h1>
           <p className="text-white/50 text-sm leading-relaxed">
-            Te enviamos un enlace de confirmación a{' '}
-            {email && <strong className="text-white">{email}</strong>}.
-            Hacé clic en el enlace para activar tu cuenta.
+            {t('verify.body1')}{' '}
+            {email && <strong className="text-white">{email}</strong>}.{' '}
+            {t('verify.body2')}
           </p>
         </div>
 
         <div className="bg-white/4 border border-white/10 rounded-2xl p-5 text-left space-y-4">
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider">¿No te llegó?</p>
+          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider">{t('verify.notReceived')}</p>
           <p className="text-white/50 text-sm leading-relaxed">
-            Revisá la carpeta de spam o correo no deseado. Puede tardar unos minutos en llegar.
+            {t('verify.checkSpam')}
           </p>
 
           {sent && !error && (
             <p className="text-green-400 text-sm bg-green-400/10 border border-green-400/20 rounded-xl px-3 py-2 text-center">
-              Correo reenviado — revisá tu bandeja.
+              {t('verify.resent')}
             </p>
           )}
           {error && (
@@ -74,7 +76,7 @@ function VerificarContent() {
 
           {seconds > 0 ? (
             <div className="flex items-center justify-between">
-              <p className="text-white/30 text-sm">Reenviar correo</p>
+              <p className="text-white/30 text-sm">{t('verify.resend')}</p>
               <div className="flex items-center gap-2">
                 <div className="relative w-8 h-8">
                   <svg className="w-8 h-8 -rotate-90" viewBox="0 0 32 32">
@@ -100,7 +102,7 @@ function VerificarContent() {
               disabled={sending}
               className="w-full bg-white/8 hover:bg-[#F472B6]/20 hover:text-[#F472B6] disabled:opacity-50 text-white/70 text-sm font-semibold rounded-xl py-2.5 transition-all"
             >
-              {sending ? 'Enviando...' : 'Reenviar correo'}
+              {sending ? t('verify.sending') : t('verify.resend')}
             </button>
           )}
         </div>
@@ -109,11 +111,11 @@ function VerificarContent() {
           href="/eventos/mi-cuenta/login"
           className="block w-full bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all text-center"
         >
-          Ya confirmé — Iniciar sesión
+          {t('verify.confirmed')}
         </Link>
 
         <Link href="/eventos" className="block text-white/25 hover:text-white text-xs transition">
-          ← Volver a eventos
+          {t('verify.backToEvents')}
         </Link>
       </div>
     </div>

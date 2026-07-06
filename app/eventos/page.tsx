@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useLanguage } from '@/lib/i18n'
+import LanguageSwitcher from './components/LanguageSwitcher'
 
 interface Event {
   id: string; slug: string; nombre: string; fecha: string
@@ -12,10 +14,11 @@ const PINKFEST_DATE = new Date('2026-07-12T20:00:00')
 const PINKFEST_TERMS = 'pink fest beerhaus san salvador sivar'
 
 type TimeFilter = '24h' | '7d' | '30d' | null
-const TIME_LABELS: Record<string, string> = { '24h': '24 HRS', '7d': '7 DÍAS', '30d': '30 DÍAS' }
 const TIME_MS: Record<string, number> = { '24h': 86_400_000, '7d': 604_800_000, '30d': 2_592_000_000 }
 
 export default function EventosPage() {
+  const { t, dateLocale } = useLanguage()
+  const TIME_LABELS: Record<string, string> = { '24h': t('home.time.24h'), '7d': t('home.time.7d'), '30d': t('home.time.30d') }
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -73,7 +76,7 @@ export default function EventosPage() {
             </div>
             <input
               type="text"
-              placeholder="Buscar eventos, artistas, venues..."
+              placeholder={t('home.search')}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full bg-white/6 border border-white/10 text-white placeholder-white/30 rounded-xl px-4 py-2.5 pl-9 text-sm focus:outline-none focus:border-[#F472B6]/50 transition"
@@ -102,12 +105,14 @@ export default function EventosPage() {
             </a>
           </div>
 
+          <LanguageSwitcher />
+
           {/* Mi Cuenta */}
           <Link
             href="/eventos/mi-cuenta"
             className="flex-none bg-[#F472B6] hover:bg-[#ec4899] active:scale-95 text-white font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl transition-all whitespace-nowrap"
           >
-            Mi Cuenta
+            {t('home.signIn')}
           </Link>
         </div>
 
@@ -134,7 +139,7 @@ export default function EventosPage() {
               onClick={() => { setTimeFilter(null); setSearch('') }}
               className="flex-none text-white/25 hover:text-white/60 text-xs ml-1 transition"
             >
-              ✕ Limpiar
+              {t('home.clear')}
             </button>
           )}
         </div>
@@ -143,15 +148,15 @@ export default function EventosPage() {
       {/* ── Contenido ──────────────────────────────────────── */}
       <div className="px-4 py-6 max-w-6xl mx-auto">
         {loading ? (
-          <p className="text-white/30 text-sm text-center py-16">Cargando eventos...</p>
+          <p className="text-white/30 text-sm text-center py-16">{t('home.loading')}</p>
         ) : !hasResults ? (
           <div className="text-center py-16 space-y-3">
-            <p className="text-white/30 text-sm">No hay eventos para este período.</p>
+            <p className="text-white/30 text-sm">{t('home.empty')}</p>
             <button
               onClick={() => { setSearch(''); setTimeFilter(null) }}
               className="text-[#F472B6] text-sm hover:text-white transition"
             >
-              Ver todos los eventos →
+              {t('home.seeAll')}
             </button>
           </div>
         ) : (
@@ -193,7 +198,7 @@ export default function EventosPage() {
                       )}
                       {isPast && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <span className="text-white/70 text-xs font-semibold bg-black/40 px-3 py-1 rounded-full">Evento pasado</span>
+                          <span className="text-white/70 text-xs font-semibold bg-black/40 px-3 py-1 rounded-full">{t('home.pastEvent')}</span>
                         </div>
                       )}
                     </div>
@@ -203,9 +208,9 @@ export default function EventosPage() {
                       </p>
                       <h2 className="text-white font-bold text-sm leading-tight">{event.nombre}</h2>
                       <p className="text-white/50 text-xs mt-1">
-                        {fecha.toLocaleDateString('es-SV', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        {fecha.toLocaleDateString(dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })}
                         {' · '}
-                        {fecha.toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}
+                        {fecha.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
                       </p>
                       <p className="text-white/40 text-xs">{event.venue}</p>
                       <p className="text-[#F472B6] font-bold text-sm mt-2">${event.precio}</p>

@@ -1,0 +1,384 @@
+'use client'
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+
+export type Lang = 'es' | 'en'
+
+const STORAGE_KEY = 'sm_lang'
+
+const es = {
+  'home.search': 'Buscar eventos, artistas, venues...',
+  'home.signIn': 'Iniciar sesión/Registrarme',
+  'home.time.24h': '24 HRS',
+  'home.time.7d': '7 DÍAS',
+  'home.time.30d': '30 DÍAS',
+  'home.clear': '✕ Limpiar',
+  'home.loading': 'Cargando eventos...',
+  'home.empty': 'No hay eventos para este período.',
+  'home.seeAll': 'Ver todos los eventos →',
+  'home.pastEvent': 'Evento pasado',
+
+  'detail.notFound': 'Evento no encontrado.',
+  'detail.backToAll': '← Ver todos los eventos',
+  'detail.loading': 'Cargando...',
+  'detail.back': '← Todos los eventos',
+  'detail.at': 'a las',
+  'detail.location': 'Ubicación',
+  'detail.reserve': 'Reservar entradas',
+  'detail.general': 'General',
+  'detail.perTicket': 'por entrada',
+  'detail.ticket': 'entrada',
+  'detail.tickets': 'entradas',
+  'detail.buy': 'Comprar',
+  'detail.bankTransfer': 'Pago por transferencia bancaria',
+
+  'checkout.loading': 'Cargando...',
+  'checkout.title': 'Confirmar compra',
+  'checkout.yourOrder': 'Tu orden',
+  'checkout.yourData': 'Tus datos',
+  'checkout.fullName': 'Nombre completo',
+  'checkout.fullNamePh': 'Tu nombre completo',
+  'checkout.phone': 'WhatsApp / Teléfono',
+  'checkout.email': 'Correo electrónico',
+  'checkout.processing': 'Procesando...',
+  'checkout.confirm': 'Confirmar',
+  'checkout.footerNote': 'A continuación verás los datos de pago por transferencia',
+  'checkout.errorProcess': 'Error al procesar',
+  'checkout.errorUnexpected': 'Error inesperado',
+
+  'pago.notFound': 'Orden no encontrada.',
+  'pago.backToEvent': '← Volver al evento',
+  'pago.loading': 'Cargando...',
+  'pago.back': '← Volver',
+  'pago.yourCode': 'Tu código de orden',
+  'pago.codeNote': 'Incluí este código en el',
+  'pago.codeNoteBold': 'concepto',
+  'pago.codeNoteEnd': 'de tu transferencia',
+  'pago.totalToTransfer': 'Total a transferir',
+  'pago.bank': 'Banco',
+  'pago.holder': 'Titular',
+  'pago.accountType': 'Tipo de cuenta',
+  'pago.accountTypeValue': 'Ahorros',
+  'pago.account': 'Cuenta',
+  'pago.email': 'Correo electrónico',
+  'pago.reference': 'Concepto',
+  'pago.amount': 'Monto',
+  'pago.orQr': 'o si tenés Banco Agrícola, escaneá el QR',
+  'pago.scanQr': 'Escanea el QR desde la app del Banco Agrícola',
+  'pago.bankSavings': 'Banco Agrícola · Ahorros',
+  'pago.uploadTitle': '¿Ya transferiste? Subí el comprobante',
+  'pago.uploadCta': 'Tocá para adjuntar el comprobante',
+  'pago.uploadTypes': 'JPG · PNG · WebP · PDF · máx. 5MB',
+  'pago.errorType': 'Solo JPG, PNG, WebP o PDF.',
+  'pago.errorSize': 'El archivo supera los 5MB.',
+  'pago.errorUpload': 'Error al subir',
+  'pago.errorUnexpected': 'Error inesperado',
+  'pago.uploading': 'Subiendo...',
+  'pago.sendReceipt': 'Enviar comprobante',
+  'pago.receiptReceived': 'Comprobante recibido ✓',
+
+  'gracias.loading': 'Cargando...',
+  'gracias.confirmedTitle': '¡Entrada confirmada!',
+  'gracias.pendingTitle': '¡Solicitud recibida!',
+  'gracias.statusEnRevision': 'En revisión',
+  'gracias.descEnRevision': 'Recibimos tu comprobante y lo estamos verificando. Te notificaremos por correo cuando tu entrada esté confirmada.',
+  'gracias.statusConfirmado': 'Confirmado',
+  'gracias.descConfirmado': 'Tu entrada está confirmada. El código QR llegará a tu correo.',
+  'gracias.statusRechazado': 'Rechazado',
+  'gracias.descRechazado': 'No pudimos verificar el pago. Contactá a admin@sivarmusic.com.',
+  'gracias.orderCode': 'Código de orden',
+  'gracias.event': 'Evento',
+  'gracias.tickets': 'Entradas',
+  'gracias.venue': 'Venue',
+  'gracias.date': 'Fecha',
+  'gracias.seeMyTickets': 'Ver mis entradas',
+  'gracias.seeMyAccount': 'Ver mi cuenta',
+  'gracias.seeAll': '← Ver todos los eventos',
+
+  'account.title': 'Mi cuenta',
+  'account.statusPendingProof': 'Pendiente comprobante',
+  'account.statusEnRevision': 'En revisión',
+  'account.statusConfirmado': 'Confirmado',
+  'account.statusRechazado': 'Rechazado',
+  'account.loading': 'Cargando...',
+  'account.nav.events': 'Eventos',
+  'account.nav.logout': 'Salir',
+  'account.empty': 'No tenés órdenes aún.',
+  'account.seeEvents': 'Ver eventos →',
+  'account.pending': 'Pendientes',
+  'account.upcoming': 'Próximos eventos',
+  'account.past': 'Eventos pasados',
+  'account.ticket': 'entrada',
+  'account.tickets': 'entradas',
+  'account.ticketsArriving': 'Las entradas llegarán pronto.',
+  'account.pendingConfirmation': 'Pendiente de confirmación.',
+  'account.ticketOf': 'Entrada {n} de {total}',
+  'account.ticketShort': 'Entrada {n}',
+  'account.checkedInAt': 'Ingresó a las {time}',
+  'account.notCheckedIn': 'No ha ingresado',
+  'account.tapToEnlarge': 'Toca para ampliar',
+  'account.showAtEntrance': 'Mostrá este código en la entrada',
+  'account.close': 'Cerrar ✕',
+
+  'login.tabSignIn': 'Iniciar sesión',
+  'login.tabCreate': 'Crear cuenta',
+  'login.tabForgot': 'Recuperar contraseña',
+  'login.enter': 'Entrar',
+  'login.createAccount': 'Crear cuenta',
+  'login.continueGoogle': 'Continuar con Google',
+  'login.orWithEmail': 'o con correo',
+  'login.email': 'Correo electrónico',
+  'login.password': 'Contraseña',
+  'login.entering': 'Entrando...',
+  'login.forgotPassword': 'Olvidé mi contraseña',
+  'login.fullName': 'Nombre completo',
+  'login.fullNamePh': 'Tu nombre',
+  'login.passwordMinPh': 'Mínimo 6 caracteres',
+  'login.creatingAccount': 'Creando cuenta...',
+  'login.createAccountNote': 'Al crear una cuenta podés ver tus entradas y recibir notificaciones de eventos.',
+  'login.yourEmail': 'Tu correo electrónico',
+  'login.sending': 'Enviando...',
+  'login.sendLink': 'Enviar enlace',
+  'login.forgotSuccess': 'Si existe una cuenta con ese correo, recibirás un enlace para cambiar tu contraseña.',
+  'login.backToSignIn': '← Volver al inicio de sesión',
+  'login.errorInvalid': 'Correo o contraseña incorrectos.',
+  'login.errorUnexpected': 'Error inesperado',
+  'login.errorAlreadyExists': 'Ya existe una cuenta con ese correo.',
+
+  'resetPw.verifying': 'Verificando enlace...',
+  'resetPw.title': 'Nueva contraseña',
+  'resetPw.newPassword': 'Nueva contraseña',
+  'resetPw.confirmPassword': 'Confirmar contraseña',
+  'resetPw.confirmPasswordPh': 'Repetí la contraseña',
+  'resetPw.errorMismatch': 'Las contraseñas no coinciden.',
+  'resetPw.errorMinLength': 'La contraseña debe tener al menos 6 caracteres.',
+  'resetPw.errorUnexpected': 'Error inesperado',
+  'resetPw.saving': 'Guardando...',
+  'resetPw.save': 'Guardar contraseña',
+
+  'verify.title': 'Revisá tu correo',
+  'verify.body1': 'Te enviamos un enlace de confirmación a',
+  'verify.body2': 'Hacé clic en el enlace para activar tu cuenta.',
+  'verify.notReceived': '¿No te llegó?',
+  'verify.checkSpam': 'Revisá la carpeta de spam o correo no deseado. Puede tardar unos minutos en llegar.',
+  'verify.resent': 'Correo reenviado — revisá tu bandeja.',
+  'verify.errorResend': 'No se pudo reenviar.',
+  'verify.resend': 'Reenviar correo',
+  'verify.sending': 'Enviando...',
+  'verify.confirmed': 'Ya confirmé — Iniciar sesión',
+  'verify.backToEvents': '← Volver a eventos',
+} as const
+
+type Key = keyof typeof es
+
+const en: Record<Key, string> = {
+  'home.search': 'Search events, artists, venues...',
+  'home.signIn': 'Sign In/Register',
+  'home.time.24h': '24 HRS',
+  'home.time.7d': '7 DAYS',
+  'home.time.30d': '30 DAYS',
+  'home.clear': '✕ Clear',
+  'home.loading': 'Loading events...',
+  'home.empty': 'No events for this period.',
+  'home.seeAll': 'See all events →',
+  'home.pastEvent': 'Past event',
+
+  'detail.notFound': 'Event not found.',
+  'detail.backToAll': '← See all events',
+  'detail.loading': 'Loading...',
+  'detail.back': '← All events',
+  'detail.at': 'at',
+  'detail.location': 'Location',
+  'detail.reserve': 'Reserve tickets',
+  'detail.general': 'General',
+  'detail.perTicket': 'per ticket',
+  'detail.ticket': 'ticket',
+  'detail.tickets': 'tickets',
+  'detail.buy': 'Buy',
+  'detail.bankTransfer': 'Payment by bank transfer',
+
+  'checkout.loading': 'Loading...',
+  'checkout.title': 'Confirm purchase',
+  'checkout.yourOrder': 'Your order',
+  'checkout.yourData': 'Your details',
+  'checkout.fullName': 'Full name',
+  'checkout.fullNamePh': 'Your full name',
+  'checkout.phone': 'WhatsApp / Phone',
+  'checkout.email': 'Email',
+  'checkout.processing': 'Processing...',
+  'checkout.confirm': 'Confirm',
+  'checkout.footerNote': "Next you'll see the bank transfer payment details",
+  'checkout.errorProcess': 'Error processing',
+  'checkout.errorUnexpected': 'Unexpected error',
+
+  'pago.notFound': 'Order not found.',
+  'pago.backToEvent': '← Back to event',
+  'pago.loading': 'Loading...',
+  'pago.back': '← Back',
+  'pago.yourCode': 'Your order code',
+  'pago.codeNote': 'Include this code in the',
+  'pago.codeNoteBold': 'reference',
+  'pago.codeNoteEnd': 'of your transfer',
+  'pago.totalToTransfer': 'Total to transfer',
+  'pago.bank': 'Bank',
+  'pago.holder': 'Account holder',
+  'pago.accountType': 'Account type',
+  'pago.accountTypeValue': 'Savings',
+  'pago.account': 'Account number',
+  'pago.email': 'Email',
+  'pago.reference': 'Reference',
+  'pago.amount': 'Amount',
+  'pago.orQr': 'or if you have Banco Agrícola, scan the QR',
+  'pago.scanQr': 'Scan the QR from the Banco Agrícola app',
+  'pago.bankSavings': 'Banco Agrícola · Savings',
+  'pago.uploadTitle': 'Already transferred? Upload your receipt',
+  'pago.uploadCta': 'Tap to attach your receipt',
+  'pago.uploadTypes': 'JPG · PNG · WebP · PDF · max. 5MB',
+  'pago.errorType': 'Only JPG, PNG, WebP or PDF.',
+  'pago.errorSize': 'File exceeds 5MB.',
+  'pago.errorUpload': 'Error uploading',
+  'pago.errorUnexpected': 'Unexpected error',
+  'pago.uploading': 'Uploading...',
+  'pago.sendReceipt': 'Send receipt',
+  'pago.receiptReceived': 'Receipt received ✓',
+
+  'gracias.loading': 'Loading...',
+  'gracias.confirmedTitle': 'Ticket confirmed!',
+  'gracias.pendingTitle': 'Request received!',
+  'gracias.statusEnRevision': 'Under review',
+  'gracias.descEnRevision': "We received your receipt and we're verifying it. We'll notify you by email once your ticket is confirmed.",
+  'gracias.statusConfirmado': 'Confirmed',
+  'gracias.descConfirmado': 'Your ticket is confirmed. The QR code will arrive by email.',
+  'gracias.statusRechazado': 'Rejected',
+  'gracias.descRechazado': "We couldn't verify the payment. Contact admin@sivarmusic.com.",
+  'gracias.orderCode': 'Order code',
+  'gracias.event': 'Event',
+  'gracias.tickets': 'Tickets',
+  'gracias.venue': 'Venue',
+  'gracias.date': 'Date',
+  'gracias.seeMyTickets': 'See my tickets',
+  'gracias.seeMyAccount': 'See my account',
+  'gracias.seeAll': '← See all events',
+
+  'account.title': 'My account',
+  'account.statusPendingProof': 'Pending receipt',
+  'account.statusEnRevision': 'Under review',
+  'account.statusConfirmado': 'Confirmed',
+  'account.statusRechazado': 'Rejected',
+  'account.loading': 'Loading...',
+  'account.nav.events': 'Events',
+  'account.nav.logout': 'Log out',
+  'account.empty': "You don't have any orders yet.",
+  'account.seeEvents': 'See events →',
+  'account.pending': 'Pending',
+  'account.upcoming': 'Upcoming events',
+  'account.past': 'Past events',
+  'account.ticket': 'ticket',
+  'account.tickets': 'tickets',
+  'account.ticketsArriving': 'Your tickets will arrive soon.',
+  'account.pendingConfirmation': 'Pending confirmation.',
+  'account.ticketOf': 'Ticket {n} of {total}',
+  'account.ticketShort': 'Ticket {n}',
+  'account.checkedInAt': 'Checked in at {time}',
+  'account.notCheckedIn': 'Not checked in',
+  'account.tapToEnlarge': 'Tap to enlarge',
+  'account.showAtEntrance': 'Show this code at the entrance',
+  'account.close': 'Close ✕',
+
+  'login.tabSignIn': 'Sign in',
+  'login.tabCreate': 'Create account',
+  'login.tabForgot': 'Reset password',
+  'login.enter': 'Sign in',
+  'login.createAccount': 'Create account',
+  'login.continueGoogle': 'Continue with Google',
+  'login.orWithEmail': 'or with email',
+  'login.email': 'Email',
+  'login.password': 'Password',
+  'login.entering': 'Signing in...',
+  'login.forgotPassword': 'Forgot my password',
+  'login.fullName': 'Full name',
+  'login.fullNamePh': 'Your name',
+  'login.passwordMinPh': 'At least 6 characters',
+  'login.creatingAccount': 'Creating account...',
+  'login.createAccountNote': 'By creating an account you can see your tickets and receive event notifications.',
+  'login.yourEmail': 'Your email',
+  'login.sending': 'Sending...',
+  'login.sendLink': 'Send link',
+  'login.forgotSuccess': "If an account exists with that email, you'll receive a link to reset your password.",
+  'login.backToSignIn': '← Back to sign in',
+  'login.errorInvalid': 'Incorrect email or password.',
+  'login.errorUnexpected': 'Unexpected error',
+  'login.errorAlreadyExists': 'An account with that email already exists.',
+
+  'resetPw.verifying': 'Verifying link...',
+  'resetPw.title': 'New password',
+  'resetPw.newPassword': 'New password',
+  'resetPw.confirmPassword': 'Confirm password',
+  'resetPw.confirmPasswordPh': 'Repeat your password',
+  'resetPw.errorMismatch': "Passwords don't match.",
+  'resetPw.errorMinLength': 'Password must be at least 6 characters.',
+  'resetPw.errorUnexpected': 'Unexpected error',
+  'resetPw.saving': 'Saving...',
+  'resetPw.save': 'Save password',
+
+  'verify.title': 'Check your email',
+  'verify.body1': 'We sent a confirmation link to',
+  'verify.body2': 'Click the link to activate your account.',
+  'verify.notReceived': "Didn't get it?",
+  'verify.checkSpam': 'Check your spam or junk folder. It can take a few minutes to arrive.',
+  'verify.resent': 'Email resent — check your inbox.',
+  'verify.errorResend': "Couldn't resend.",
+  'verify.resend': 'Resend email',
+  'verify.sending': 'Sending...',
+  'verify.confirmed': 'I confirmed — Sign in',
+  'verify.backToEvents': '← Back to events',
+}
+
+const DICTS: Record<Lang, Record<Key, string>> = { es, en }
+
+interface Ctx {
+  lang: Lang
+  setLang: (l: Lang) => void
+  t: (key: Key, vars?: Record<string, string | number>) => string
+  dateLocale: string
+}
+
+const LanguageContext = createContext<Ctx>({
+  lang: 'es',
+  setLang: () => {},
+  t: key => key,
+  dateLocale: 'es-SV',
+})
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Lang>('es')
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved === 'es' || saved === 'en') setLangState(saved)
+    } catch {}
+  }, [])
+
+  function setLang(l: Lang) {
+    setLangState(l)
+    try { localStorage.setItem(STORAGE_KEY, l) } catch {}
+  }
+
+  function t(key: Key, vars?: Record<string, string | number>) {
+    let text = DICTS[lang][key] ?? key
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) text = text.replaceAll(`{${k}}`, String(v))
+    }
+    return text
+  }
+
+  return (
+    <LanguageContext.Provider value={{ lang, setLang, t, dateLocale: lang === 'en' ? 'en-US' : 'es-SV' }}>
+      {children}
+    </LanguageContext.Provider>
+  )
+}
+
+export function useLanguage() {
+  return useContext(LanguageContext)
+}

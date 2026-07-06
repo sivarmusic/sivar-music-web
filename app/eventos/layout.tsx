@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { LanguageProvider } from '@/lib/i18n'
 
 export const metadata: Metadata = {
   title: 'Eventos — Sivar Music',
@@ -6,5 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function EventosLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
+  return <LanguageProvider>{children}</LanguageProvider>
 }

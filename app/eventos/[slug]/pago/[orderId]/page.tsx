@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useLanguage } from '@/lib/i18n'
 
 interface Order {
   id: string; order_code: string; nombre: string; cantidad: number; status: string
@@ -11,6 +12,7 @@ interface Order {
 const STORAGE_KEY = 'sm_pending'
 
 export default function EventoPagoPage() {
+  const { t } = useLanguage()
   const { slug, orderId } = useParams<{ slug: string; orderId: string }>()
   const router = useRouter()
   const [order, setOrder] = useState<Order | null>(null)
@@ -44,8 +46,8 @@ export default function EventoPagoPage() {
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]; if (!f) return; setError('')
-    if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(f.type)) { setError('Solo JPG, PNG, WebP o PDF.'); return }
-    if (f.size > 5 * 1024 * 1024) { setError('El archivo supera los 5MB.'); return }
+    if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(f.type)) { setError(t('pago.errorType')); return }
+    if (f.size > 5 * 1024 * 1024) { setError(t('pago.errorSize')); return }
     setFile(f)
     if (f.type.startsWith('image/')) setPreview(URL.createObjectURL(f))
   }
@@ -56,32 +58,32 @@ export default function EventoPagoPage() {
       const fd = new FormData(); fd.append('orderId', orderId); fd.append('file', file)
       const res = await fetch('/api/eventos/upload', { method: 'POST', body: fd })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Error al subir')
+      if (!res.ok) throw new Error(data.error || t('pago.errorUpload'))
       setDone(true)
       try { localStorage.removeItem(STORAGE_KEY) } catch {}
       setTimeout(() => router.push(`/eventos/${slug}/gracias/${orderId}`), 900)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado')
+      setError(err instanceof Error ? err.message : t('pago.errorUnexpected'))
     } finally { setUploading(false) }
   }
 
   if (notFound) return (
     <div className="min-h-screen bg-[#0a0008] flex items-center justify-center">
       <div className="text-center">
-        <p className="text-white/50 text-sm mb-4">Orden no encontrada.</p>
-        <a href={`/eventos/${slug}`} className="text-[#F472B6] text-sm">← Volver al evento</a>
+        <p className="text-white/50 text-sm mb-4">{t('pago.notFound')}</p>
+        <a href={`/eventos/${slug}`} className="text-[#F472B6] text-sm">{t('pago.backToEvent')}</a>
       </div>
     </div>
   )
 
-  if (!order) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">Cargando...</p></div>
+  if (!order) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">{t('pago.loading')}</p></div>
 
   const total = order.cantidad * (order.events?.precio ?? 10)
 
   return (
     <div className="min-h-screen bg-[#0a0008] text-white">
       <div className="px-5 py-8 max-w-sm mx-auto space-y-4">
-        <a href={`/eventos/${slug}`} className="text-white/35 hover:text-white text-xs transition">← Volver</a>
+        <a href={`/eventos/${slug}`} className="text-white/35 hover:text-white text-xs transition">{t('pago.back')}</a>
 
         <div className="text-center mb-2">
           <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase mb-1">Sivar Music</p>
@@ -90,16 +92,16 @@ export default function EventoPagoPage() {
 
         {/* Código de orden */}
         <div className="rounded-2xl border border-[#F472B6]/40 bg-[#F472B6]/10 p-5 text-center">
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase mb-2">Tu código de orden</p>
+          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase mb-2">{t('pago.yourCode')}</p>
           <p className="text-white text-4xl font-bold tracking-wider mb-2">{order.order_code}</p>
-          <p className="text-white/55 text-xs">Incluí este código en el <strong>concepto</strong> de tu transferencia</p>
+          <p className="text-white/55 text-xs">{t('pago.codeNote')} <strong>{t('pago.codeNoteBold')}</strong> {t('pago.codeNoteEnd')}</p>
         </div>
 
         {/* Total */}
         <div className="rounded-2xl bg-white/5 border border-white/10 p-4 flex items-center justify-between">
           <div>
-            <p className="text-white/50 text-xs uppercase">Total a transferir</p>
-            <p className="text-white/35 text-xs mt-0.5">{order.cantidad} entrada{order.cantidad > 1 ? 's' : ''} × ${order.events?.precio ?? 10}</p>
+            <p className="text-white/50 text-xs uppercase">{t('pago.totalToTransfer')}</p>
+            <p className="text-white/35 text-xs mt-0.5">{order.cantidad} {order.cantidad > 1 ? t('detail.tickets') : t('detail.ticket')} × ${order.events?.precio ?? 10}</p>
           </div>
           <p className="text-white text-3xl font-bold">${total}</p>
         </div>
@@ -107,13 +109,13 @@ export default function EventoPagoPage() {
         {/* Datos bancarios */}
         <div className="rounded-2xl bg-white/5 border border-white/10 divide-y divide-white/8">
           {[
-            { label: 'Banco', value: 'Banco Agrícola' },
-            { label: 'Titular', value: 'Andrea Vanessa Garcia Garcia' },
-            { label: 'Tipo de cuenta', value: 'Ahorros' },
-            { label: 'Cuenta', value: '3110950846', mono: true },
-            { label: 'Correo electrónico', value: 'admin@sivarmusic.com' },
-            { label: 'Concepto', value: order.order_code, pink: true },
-            { label: 'Monto', value: `$${total}.00`, bold: true },
+            { label: t('pago.bank'), value: 'Banco Agrícola' },
+            { label: t('pago.holder'), value: 'Andrea Vanessa Garcia Garcia' },
+            { label: t('pago.accountType'), value: t('pago.accountTypeValue') },
+            { label: t('pago.account'), value: '3110950846', mono: true },
+            { label: t('pago.email'), value: 'admin@sivarmusic.com' },
+            { label: t('pago.reference'), value: order.order_code, pink: true },
+            { label: t('pago.amount'), value: `$${total}.00`, bold: true },
           ].map(({ label, value, mono, pink, bold }) => (
             <div key={label} className="flex items-center justify-between px-4 py-3">
               <span className="text-white/45 text-sm">{label}</span>
@@ -125,24 +127,24 @@ export default function EventoPagoPage() {
         {/* Separador QR */}
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-white/10" />
-          <span className="text-white/35 text-xs">o si tenés Banco Agrícola, escaneá el QR</span>
+          <span className="text-white/35 text-xs">{t('pago.orQr')}</span>
           <div className="flex-1 h-px bg-white/10" />
         </div>
 
         {/* QR banco */}
         <div className="rounded-2xl bg-white p-5 flex flex-col items-center gap-3">
-          <p className="text-[#BE185D] text-[10px] font-bold tracking-[0.22em] uppercase text-center">Escanea el QR desde la app del Banco Agrícola</p>
+          <p className="text-[#BE185D] text-[10px] font-bold tracking-[0.22em] uppercase text-center">{t('pago.scanQr')}</p>
           <Image src="/pinkfest/qr-banco.png" alt="QR Banco Agrícola" width={190} height={190} className="rounded-xl" />
           <div className="text-center">
             <p className="text-gray-800 text-sm font-bold">Andrea Vanessa Garcia Garcia</p>
-            <p className="text-gray-500 text-xs">Banco Agrícola · Ahorros</p>
+            <p className="text-gray-500 text-xs">{t('pago.bankSavings')}</p>
             <p className="text-gray-700 font-mono text-sm font-semibold mt-1">3110950846</p>
           </div>
         </div>
 
         {/* Upload */}
         <div className="space-y-3 pt-2">
-          <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.18em]">¿Ya transferiste? Subí el comprobante</p>
+          <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.18em]">{t('pago.uploadTitle')}</p>
           <div
             role="button" tabIndex={0}
             onClick={() => document.getElementById('file-input')?.click()}
@@ -153,8 +155,8 @@ export default function EventoPagoPage() {
               : <div className="w-12 h-12 rounded-xl bg-white/8 flex items-center justify-center text-2xl">📎</div>
             }
             <div className="text-center">
-              <p className="text-white/60 text-sm">{file ? file.name : 'Tocá para adjuntar el comprobante'}</p>
-              <p className="text-white/25 text-xs mt-1">JPG · PNG · WebP · PDF · máx. 5MB</p>
+              <p className="text-white/60 text-sm">{file ? file.name : t('pago.uploadCta')}</p>
+              <p className="text-white/25 text-xs mt-1">{t('pago.uploadTypes')}</p>
             </div>
           </div>
           <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={handleFile} className="hidden" />
@@ -164,10 +166,10 @@ export default function EventoPagoPage() {
           {file && !done && (
             <button onClick={handleUpload} disabled={uploading}
               className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-              {uploading ? 'Subiendo...' : 'Enviar comprobante'}
+              {uploading ? t('pago.uploading') : t('pago.sendReceipt')}
             </button>
           )}
-          {done && <p className="text-green-400 font-semibold text-sm text-center py-2">Comprobante recibido ✓</p>}
+          {done && <p className="text-green-400 font-semibold text-sm text-center py-2">{t('pago.receiptReceived')}</p>}
         </div>
       </div>
     </div>

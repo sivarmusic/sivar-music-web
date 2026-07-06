@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { supabaseBrowser } from '@/lib/supabase-browser'
+import { useLanguage } from '@/lib/i18n'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 
 const QRCode = dynamic(() => import('qrcode').then(mod => ({
   default: ({ value, size }: { value: string; size: number }) => {
@@ -27,14 +29,18 @@ interface FullscreenQR {
   token: string; orderCode: string; label: string
 }
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  pendiente_comprobante: { label: 'Pendiente comprobante', color: 'text-white/40' },
-  en_revision: { label: 'En revisión', color: 'text-yellow-400' },
-  confirmado: { label: 'Confirmado', color: 'text-green-400' },
-  rechazado: { label: 'Rechazado', color: 'text-red-400' },
+function statusInfo(status: string, t: ReturnType<typeof useLanguage>['t']) {
+  const map: Record<string, { label: string; color: string }> = {
+    pendiente_comprobante: { label: t('account.statusPendingProof'), color: 'text-white/40' },
+    en_revision: { label: t('account.statusEnRevision'), color: 'text-yellow-400' },
+    confirmado: { label: t('account.statusConfirmado'), color: 'text-green-400' },
+    rechazado: { label: t('account.statusRechazado'), color: 'text-red-400' },
+  }
+  return map[status] ?? { label: status, color: 'text-white/40' }
 }
 
 export default function MiCuentaPage() {
+  const { t } = useLanguage()
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -61,7 +67,7 @@ export default function MiCuentaPage() {
     router.push('/eventos/mi-cuenta/login')
   }
 
-  if (loading) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">Cargando...</p></div>
+  if (loading) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">{t('account.loading')}</p></div>
 
   const upcoming = orders.filter(o => o.events && new Date(o.events.fecha) >= new Date() && o.status === 'confirmado')
   const past = orders.filter(o => o.events && new Date(o.events.fecha) < new Date())
@@ -84,13 +90,13 @@ export default function MiCuentaPage() {
               <QRCode value={fullscreenQR.token} size={260} />
             </div>
             <p className="text-[#F472B6] font-bold text-xl tracking-widest">{fullscreenQR.orderCode}</p>
-            <p className="text-white/30 text-xs">Mostrá este código en la entrada</p>
+            <p className="text-white/30 text-xs">{t('account.showAtEntrance')}</p>
           </div>
           <button
             onClick={() => setFullscreenQR(null)}
             className="absolute bottom-10 text-white/25 hover:text-white text-xs uppercase tracking-widest transition"
           >
-            Cerrar ✕
+            {t('account.close')}
           </button>
         </div>
       )}
@@ -99,15 +105,16 @@ export default function MiCuentaPage() {
       <div className="border-b border-white/8 px-5 py-5 flex items-center justify-between">
         <div>
           <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase">Sivar Music</p>
-          <h1 className="text-white text-lg font-bold">Mi cuenta</h1>
+          <h1 className="text-white text-lg font-bold">{t('account.title')}</h1>
           <p className="text-white/35 text-xs">{email}</p>
         </div>
         <div className="flex items-center gap-4">
+          <LanguageSwitcher />
           <Link href="/eventos" className="text-white/30 hover:text-white text-xs uppercase tracking-wider transition">
-            Eventos
+            {t('account.nav.events')}
           </Link>
           <button onClick={handleLogout} className="text-white/30 hover:text-white text-xs uppercase tracking-wider transition">
-            Salir
+            {t('account.nav.logout')}
           </button>
         </div>
       </div>
@@ -115,14 +122,14 @@ export default function MiCuentaPage() {
       <div className="px-5 py-6 max-w-lg mx-auto space-y-8">
         {orders.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-white/30 text-sm">No tenés órdenes aún.</p>
-            <Link href="/eventos" className="text-[#F472B6] text-sm mt-4 block">Ver eventos →</Link>
+            <p className="text-white/30 text-sm">{t('account.empty')}</p>
+            <Link href="/eventos" className="text-[#F472B6] text-sm mt-4 block">{t('account.seeEvents')}</Link>
           </div>
         ) : (
           <>
-            {pending.length > 0 && <Section title="Pendientes" orders={pending} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} />}
-            {upcoming.length > 0 && <Section title="Próximos eventos" orders={upcoming} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} showQR />}
-            {past.length > 0 && <Section title="Eventos pasados" orders={past} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} dim />}
+            {pending.length > 0 && <Section title={t('account.pending')} orders={pending} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} />}
+            {upcoming.length > 0 && <Section title={t('account.upcoming')} orders={upcoming} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} showQR />}
+            {past.length > 0 && <Section title={t('account.past')} orders={past} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} dim />}
           </>
         )}
       </div>
@@ -161,7 +168,8 @@ function OrderCard({ order, isExpanded, onExpand, onOpenQR, showQR, dim }: {
   onOpenQR: (qr: FullscreenQR) => void
   showQR?: boolean; dim?: boolean
 }) {
-  const statusInfo = STATUS_LABELS[order.status] ?? { label: order.status, color: 'text-white/40' }
+  const { t, dateLocale } = useLanguage()
+  const status = statusInfo(order.status, t)
   const fecha = order.events ? new Date(order.events.fecha) : null
 
   return (
@@ -171,15 +179,15 @@ function OrderCard({ order, isExpanded, onExpand, onOpenQR, showQR, dim }: {
           <p className="text-white font-semibold text-sm">{order.events?.nombre ?? 'Evento'}</p>
           {fecha && (
             <p className="text-white/40 text-xs mt-0.5">
-              {fecha.toLocaleDateString('es-SV', { weekday: 'short', day: 'numeric', month: 'short' })}
+              {fecha.toLocaleDateString(dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })}
               {' · '}{order.events?.venue}
             </p>
           )}
-          <p className={`text-xs mt-1 font-semibold ${statusInfo.color}`}>{statusInfo.label}</p>
+          <p className={`text-xs mt-1 font-semibold ${status.color}`}>{status.label}</p>
         </div>
         <div className="text-right flex-none">
           <p className="text-[#F472B6] font-bold text-sm">{order.order_code}</p>
-          <p className="text-white/30 text-xs mt-1">{order.cantidad} entrada{order.cantidad > 1 ? 's' : ''}</p>
+          <p className="text-white/30 text-xs mt-1">{order.cantidad} {order.cantidad > 1 ? t('account.tickets') : t('account.ticket')}</p>
           <p className="text-white/20 text-xs mt-1">{isExpanded ? '▲' : '▼'}</p>
         </div>
       </button>
@@ -188,31 +196,31 @@ function OrderCard({ order, isExpanded, onExpand, onOpenQR, showQR, dim }: {
         <div className="border-t border-white/8 px-4 py-4 space-y-4">
           {order.event_tickets.length === 0 ? (
             <p className="text-white/30 text-sm text-center py-2">
-              {order.status === 'confirmado' ? 'Las entradas llegarán pronto.' : 'Pendiente de confirmación.'}
+              {order.status === 'confirmado' ? t('account.ticketsArriving') : t('account.pendingConfirmation')}
             </p>
           ) : showQR ? (
             <div className="space-y-4">
               {order.event_tickets.map(ticket => (
                 <div key={ticket.id} className="flex flex-col items-center gap-3 bg-white/4 rounded-2xl p-4">
                   <p className="text-white/55 text-xs font-semibold uppercase tracking-wider">
-                    Entrada {ticket.ticket_number} de {order.cantidad}
+                    {t('account.ticketOf', { n: ticket.ticket_number, total: order.cantidad })}
                   </p>
                   <button
                     onClick={() => onOpenQR({
                       token: ticket.qr_token,
                       orderCode: order.order_code,
-                      label: `${order.events?.nombre ?? 'Evento'} · Entrada ${ticket.ticket_number}`,
+                      label: `${order.events?.nombre ?? 'Evento'} · ${t('account.ticketShort', { n: ticket.ticket_number })}`,
                     })}
                     className="bg-white p-3 rounded-xl active:scale-95 transition-transform cursor-pointer"
-                    title="Tap para ampliar"
+                    title={t('account.tapToEnlarge')}
                   >
                     <QRCode value={ticket.qr_token} size={160} />
                   </button>
-                  <p className="text-white/20 text-[10px] uppercase tracking-wider">Toca para ampliar</p>
+                  <p className="text-white/20 text-[10px] uppercase tracking-wider">{t('account.tapToEnlarge')}</p>
                   {ticket.check_in_at ? (
-                    <p className="text-green-400 text-xs font-semibold">Ingresó a las {new Date(ticket.check_in_at).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className="text-green-400 text-xs font-semibold">{t('account.checkedInAt', { time: new Date(ticket.check_in_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' }) })}</p>
                   ) : (
-                    <p className="text-white/30 text-xs">No ha ingresado</p>
+                    <p className="text-white/30 text-xs">{t('account.notCheckedIn')}</p>
                   )}
                 </div>
               ))}
@@ -221,10 +229,10 @@ function OrderCard({ order, isExpanded, onExpand, onOpenQR, showQR, dim }: {
             <div className="space-y-2">
               {order.event_tickets.map(ticket => (
                 <div key={ticket.id} className="flex items-center justify-between bg-white/3 rounded-xl px-3 py-2">
-                  <span className="text-white/55 text-xs">Entrada {ticket.ticket_number}</span>
+                  <span className="text-white/55 text-xs">{t('account.ticketShort', { n: ticket.ticket_number })}</span>
                   {ticket.check_in_at
-                    ? <span className="text-green-400 text-xs">Ingresó {new Date(ticket.check_in_at).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}</span>
-                    : <span className="text-white/25 text-xs">No ingresó</span>}
+                    ? <span className="text-green-400 text-xs">{t('account.checkedInAt', { time: new Date(ticket.check_in_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' }) })}</span>
+                    : <span className="text-white/25 text-xs">{t('account.notCheckedIn')}</span>}
                 </div>
               ))}
             </div>
