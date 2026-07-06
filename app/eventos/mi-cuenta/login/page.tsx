@@ -24,6 +24,15 @@ function LoginForm() {
 
   function switchTab(t: Tab) { setTab(t); setError(''); setSuccess('') }
 
+  async function handleGoogleLogin() {
+    setError(''); setLoading(true)
+    const { error: err } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}${next}` },
+    })
+    if (err) { setError(err.message); setLoading(false) }
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault(); setError(''); setLoading(true)
     try {
@@ -105,6 +114,26 @@ function LoginForm() {
             Crear cuenta
           </button>
         </div>
+
+        {tab !== 'forgot' && (
+          <div className="space-y-3">
+            <button type="button" onClick={handleGoogleLogin} disabled={loading}
+              className="w-full flex items-center justify-center gap-2.5 bg-white hover:bg-white/90 disabled:opacity-50 text-[#1f1f1f] font-semibold text-sm rounded-2xl py-3.5 transition-all">
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47c-.28 1.5-1.13 2.78-2.4 3.63v3.02h3.89c2.28-2.1 3.56-5.2 3.56-8.84z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.96-1.08 7.95-2.9l-3.89-3.02c-1.08.72-2.45 1.15-4.06 1.15-3.12 0-5.77-2.11-6.71-4.94H1.28v3.11C3.26 21.3 7.3 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.29 14.29a7.2 7.2 0 0 1 0-4.58V6.6H1.28a12 12 0 0 0 0 10.8l4.01-3.11z"/>
+                <path fill="#EA4335" d="M12 4.77c1.76 0 3.35.61 4.59 1.8l3.45-3.45C17.95 1.19 15.24 0 12 0 7.3 0 3.26 2.7 1.28 6.6l4.01 3.11C6.23 6.88 8.88 4.77 12 4.77z"/>
+              </svg>
+              Continuar con Google
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="h-px bg-white/10 flex-1" />
+              <span className="text-white/25 text-[10px] uppercase tracking-wider">o con correo</span>
+              <div className="h-px bg-white/10 flex-1" />
+            </div>
+          </div>
+        )}
 
         {tab === 'login' && (
           <form onSubmit={handleLogin} className="space-y-3">
