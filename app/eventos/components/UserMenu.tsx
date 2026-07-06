@@ -18,15 +18,19 @@ export default function UserMenu() {
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    supabaseBrowser.auth.getSession().then(({ data }) => {
-      const user = data.session?.user
+    function applySession(session: { user: { user_metadata?: Record<string, string>; email?: string } } | null) {
+      const user = session?.user
       if (!user) { setProfile(null); return }
       const meta = user.user_metadata ?? {}
       setProfile({
         name: meta.full_name || meta.name || user.email?.split('@')[0] || '',
         avatarUrl: meta.avatar_url || meta.picture || null,
       })
-    })
+    }
+
+    supabaseBrowser.auth.getSession().then(({ data }) => applySession(data.session))
+    const { data: listener } = supabaseBrowser.auth.onAuthStateChange((_event, session) => applySession(session))
+    return () => listener.subscription.unsubscribe()
   }, [])
 
   useEffect(() => {
@@ -38,9 +42,9 @@ export default function UserMenu() {
   }, [])
 
   async function handleLogout() {
+    setOpen(false)
     await supabaseBrowser.auth.signOut()
     router.push('/eventos')
-    router.refresh()
   }
 
   if (profile === undefined) return <div className="w-9 h-9 rounded-full bg-white/5 animate-pulse flex-none" />
