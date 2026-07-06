@@ -56,7 +56,8 @@ function CheckoutForm() {
         setNombre(profRes.data.nombre ?? '')
         setTelefono(profRes.data.telefono ?? '')
       } else {
-        setNombre(session.user.user_metadata?.nombre ?? '')
+        const meta = session.user.user_metadata ?? {}
+        setNombre(meta.nombre || meta.full_name || meta.name || '')
       }
     }
     init()

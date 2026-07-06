@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
-import LanguageSwitcher from '../../components/LanguageSwitcher'
 
 type Tab = 'login' | 'register' | 'forgot'
 
@@ -99,10 +98,6 @@ function LoginForm() {
   return (
     <div className="min-h-screen bg-[#0a0008] text-white flex flex-col items-center justify-center px-5 py-12">
       <div className="w-full max-w-sm space-y-6">
-        <div className="flex justify-end">
-          <LanguageSwitcher />
-        </div>
-
         <div className="text-center">
           <Link href="/eventos" className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase">Sivar Events</Link>
           <h1 className="text-white text-xl font-bold mt-2">
