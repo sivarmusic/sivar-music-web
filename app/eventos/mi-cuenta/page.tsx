@@ -52,6 +52,17 @@ export default function MiCuentaPage() {
     supabaseBrowser.auth.getSession().then(async ({ data }) => {
       const session = data.session
       if (!session) { router.push('/eventos/mi-cuenta/login'); return }
+
+      const { data: profile, error: profileErr } = await supabaseBrowser
+        .from('attendee_profiles')
+        .select('onboarding_completed_at')
+        .eq('id', session.user.id)
+        .maybeSingle()
+      if (!profileErr && !profile?.onboarding_completed_at) {
+        router.replace('/eventos/mi-cuenta/onboarding')
+        return
+      }
+
       setEmail(session.user.email ?? '')
       const res = await fetch('/api/eventos/user/tickets', {
         headers: { 'Authorization': `Bearer ${session.access_token}` },

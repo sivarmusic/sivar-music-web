@@ -70,6 +70,32 @@ export async function sendAdminNewOrderRequest({
   })
 }
 
+export async function sendAdminNewArtistApplication({
+  nombreArtistico, nombreContacto, email, telefono, genero, bio,
+}: {
+  nombreArtistico: string; nombreContacto: string; email: string
+  telefono: string; genero: string; bio: string
+}) {
+  return resend.emails.send({
+    from,
+    to: ADMIN_EMAIL,
+    subject: `Nueva solicitud de artista — ${nombreArtistico}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px">
+        <h2 style="color:#F472B6;margin:0 0 8px">Sivar Events for Artists</h2>
+        <p style="color:#374151"><strong>Nombre artístico:</strong> ${nombreArtistico}</p>
+        <p style="color:#374151"><strong>Contacto:</strong> ${nombreContacto}</p>
+        <p style="color:#374151"><strong>Email:</strong> ${email}</p>
+        <p style="color:#374151"><strong>Teléfono:</strong> ${telefono || '—'}</p>
+        <p style="color:#374151"><strong>Género:</strong> ${genero || '—'}</p>
+        <p style="color:#374151"><strong>Bio:</strong> ${bio || '—'}</p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+        <p style="color:#9ca3af;font-size:12px;text-align:center">Revisá y aprobá la solicitud en el panel de admin.</p>
+      </div>
+    `,
+  })
+}
+
 export async function sendTicketConfirmed({
   to, nombre, orderCode, eventName, eventDate, eventVenue, verUrl,
 }: {

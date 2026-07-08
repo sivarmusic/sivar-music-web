@@ -7,8 +7,9 @@ import LanguageSwitcher from './components/LanguageSwitcher'
 import UserMenu from './components/UserMenu'
 
 interface Event {
-  id: string; slug: string; nombre: string; fecha: string
-  venue: string; imagen_url: string | null; precio: number; artistas: string[]
+  id: string; slug?: string; nombre: string; fecha: string
+  venue: string; imagen_url: string | null; precio?: number; artistas: string[]
+  kind: 'ticket' | 'info'; artistSlug?: string | null
 }
 
 const PINKFEST_DATE = new Date('2026-07-12T20:00:00')
@@ -179,8 +180,9 @@ export default function EventosPage() {
             {filteredEvents.map(event => {
               const fecha = new Date(event.fecha)
               const isPast = fecha < now
+              const href = event.kind === 'info' ? `/eventos/artistas/${event.artistSlug}` : `/eventos/${event.slug}`
               return (
-                <Link key={event.id} href={`/eventos/${event.slug}`} className="group block">
+                <Link key={event.id} href={href} className="group block">
                   <div className={`bg-white/4 border rounded-2xl overflow-hidden transition h-full ${
                     isPast ? 'border-white/8 opacity-60' : 'border-white/10 group-hover:border-[#F472B6]/30'
                   }`}>
@@ -197,6 +199,11 @@ export default function EventosPage() {
                           <span className="text-white/70 text-xs font-semibold bg-black/40 px-3 py-1 rounded-full">{t('home.pastEvent')}</span>
                         </div>
                       )}
+                      {event.kind === 'info' && (
+                        <span className="absolute top-2 right-2 text-[10px] font-bold uppercase tracking-wider bg-black/60 text-white/80 px-2 py-1 rounded-full">
+                          {t('home.infoEvent')}
+                        </span>
+                      )}
                     </div>
                     <div className="p-3 sm:p-4">
                       <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1">
@@ -209,7 +216,7 @@ export default function EventosPage() {
                         {fecha.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
                       </p>
                       <p className="text-white/40 text-xs">{event.venue}</p>
-                      <p className="text-[#F472B6] font-bold text-sm mt-2">${event.precio}</p>
+                      {event.kind === 'ticket' && <p className="text-[#F472B6] font-bold text-sm mt-2">${event.precio}</p>}
                     </div>
                   </div>
                 </Link>
@@ -219,7 +226,12 @@ export default function EventosPage() {
         )}
       </div>
 
-      <p className="text-center text-white/15 text-[10px] pb-8">Sivar Music Group</p>
+      <div className="text-center pb-8 space-y-2">
+        <Link href="/eventos/artistas" className="block text-white/25 hover:text-[#F472B6] text-xs transition">
+          {t('home.forArtists')}
+        </Link>
+        <p className="text-white/15 text-[10px]">Sivar Music Group</p>
+      </div>
     </div>
   )
 }
