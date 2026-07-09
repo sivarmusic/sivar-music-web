@@ -22,7 +22,7 @@ interface Ticket {
 }
 interface Order {
   id: string; order_code: string; cantidad: number; status: string; created_at: string
-  events: { nombre: string; fecha: string; venue: string; slug: string } | null
+  events: { nombre: string; fecha: string; venue: string; slug: string; imagen_url?: string | null } | null
   event_tickets: Ticket[]
 }
 interface FullscreenQR {
@@ -30,13 +30,13 @@ interface FullscreenQR {
 }
 
 function statusInfo(status: string, t: ReturnType<typeof useLanguage>['t']) {
-  const map: Record<string, { label: string; color: string }> = {
-    pendiente_comprobante: { label: t('account.statusPendingProof'), color: 'text-white/40' },
-    en_revision: { label: t('account.statusEnRevision'), color: 'text-yellow-400' },
-    confirmado: { label: t('account.statusConfirmado'), color: 'text-green-400' },
-    rechazado: { label: t('account.statusRechazado'), color: 'text-red-400' },
+  const map: Record<string, { label: string; color: string; bg: string }> = {
+    pendiente_comprobante: { label: t('account.statusPendingProof'), color: 'text-white/50', bg: 'bg-white/8' },
+    en_revision: { label: t('account.statusEnRevision'), color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+    confirmado: { label: t('account.statusConfirmado'), color: 'text-green-400', bg: 'bg-green-400/10' },
+    rechazado: { label: t('account.statusRechazado'), color: 'text-red-400', bg: 'bg-red-400/10' },
   }
-  return map[status] ?? { label: status, color: 'text-white/40' }
+  return map[status] ?? { label: status, color: 'text-white/50', bg: 'bg-white/8' }
 }
 
 export default function MiCuentaPage() {
@@ -45,6 +45,8 @@ export default function MiCuentaPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [fullscreenQR, setFullscreenQR] = useState<FullscreenQR | null>(null)
 
@@ -55,7 +57,7 @@ export default function MiCuentaPage() {
 
       const { data: profile, error: profileErr } = await supabaseBrowser
         .from('attendee_profiles')
-        .select('onboarding_completed_at')
+        .select('onboarding_completed_at, nombre')
         .eq('id', session.user.id)
         .maybeSingle()
       if (!profileErr && !profile?.onboarding_completed_at) {
@@ -63,6 +65,9 @@ export default function MiCuentaPage() {
         return
       }
 
+      const meta = session.user.user_metadata ?? {}
+      setName(profile?.nombre || meta.full_name || meta.name || session.user.email?.split('@')[0] || '')
+      setAvatarUrl(meta.avatar_url || meta.picture || null)
       setEmail(session.user.email ?? '')
       const res = await fetch('/api/eventos/user/tickets', {
         headers: { 'Authorization': `Bearer ${session.access_token}` },
@@ -113,18 +118,33 @@ export default function MiCuentaPage() {
       )}
 
       {/* Header */}
-      <div className="border-b border-white/8 px-5 py-5 flex items-center justify-between">
-        <div>
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase">Sivar Music</p>
-          <h1 className="text-white text-lg font-bold">{t('account.title')}</h1>
-          <p className="text-white/35 text-xs">{email}</p>
-        </div>
-        <div className="flex items-center gap-4">
+      <div className="border-b border-white/8">
+        <div className="px-5 pt-5 pb-3 flex items-center justify-between max-w-lg mx-auto">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-full overflow-hidden bg-white/8 flex-none flex items-center justify-center">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/40">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              )}
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-white text-base font-bold truncate">{t('account.greeting', { name: name.split(' ')[0] })}</h1>
+              <p className="text-white/35 text-xs truncate">{email}</p>
+            </div>
+          </div>
           <LanguageSwitcher />
-          <Link href="/eventos" className="text-white/30 hover:text-white text-xs uppercase tracking-wider transition">
+        </div>
+        <div className="px-5 pb-4 flex items-center gap-5 max-w-lg mx-auto">
+          <Link href="/eventos" className="text-white/40 hover:text-white text-xs font-semibold uppercase tracking-wider transition">
             {t('account.nav.events')}
           </Link>
-          <button onClick={handleLogout} className="text-white/30 hover:text-white text-xs uppercase tracking-wider transition">
+          <Link href="/eventos/mi-cuenta/ajustes" className="text-white/40 hover:text-white text-xs font-semibold uppercase tracking-wider transition">
+            {t('account.nav.settings')}
+          </Link>
+          <button onClick={handleLogout} className="text-white/40 hover:text-white text-xs font-semibold uppercase tracking-wider transition">
             {t('account.nav.logout')}
           </button>
         </div>
@@ -132,15 +152,20 @@ export default function MiCuentaPage() {
 
       <div className="px-5 py-6 max-w-lg mx-auto space-y-8">
         {orders.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-white/30 text-sm">{t('account.empty')}</p>
-            <Link href="/eventos" className="text-[#F472B6] text-sm mt-4 block">{t('account.seeEvents')}</Link>
+          <div className="text-center py-16 flex flex-col items-center">
+            <div className="w-16 h-16 rounded-full bg-white/6 flex items-center justify-center mb-5 text-3xl">🎫</div>
+            <h2 className="text-white font-bold text-lg">{t('account.emptyTitle')}</h2>
+            <p className="text-white/40 text-sm mt-2 max-w-xs">{t('account.emptyBody')}</p>
+            <Link href="/eventos"
+              className="mt-6 bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl px-8 py-3.5 transition-all">
+              {t('account.exploreEvents')}
+            </Link>
           </div>
         ) : (
           <>
-            {pending.length > 0 && <Section title={t('account.pending')} orders={pending} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} />}
-            {upcoming.length > 0 && <Section title={t('account.upcoming')} orders={upcoming} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} showQR />}
-            {past.length > 0 && <Section title={t('account.past')} orders={past} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} dim />}
+            {pending.length > 0 && <Section icon="⏳" title={t('account.pending')} orders={pending} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} />}
+            {upcoming.length > 0 && <Section icon="🎟️" title={t('account.upcoming')} orders={upcoming} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} showQR />}
+            {past.length > 0 && <Section icon="✓" title={t('account.past')} orders={past} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} dim />}
           </>
         )}
       </div>
@@ -148,15 +173,17 @@ export default function MiCuentaPage() {
   )
 }
 
-function Section({ title, orders, expanded, onExpand, onOpenQR, showQR, dim }: {
-  title: string; orders: Order[]; expanded: string | null
+function Section({ icon, title, orders, expanded, onExpand, onOpenQR, showQR, dim }: {
+  icon: string; title: string; orders: Order[]; expanded: string | null
   onExpand: (id: string | null) => void
   onOpenQR: (qr: FullscreenQR) => void
   showQR?: boolean; dim?: boolean
 }) {
   return (
     <div>
-      <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">{title}</p>
+      <p className="flex items-center gap-1.5 text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">
+        <span className="text-xs">{icon}</span>{title}
+      </p>
       <div className="space-y-3">
         {orders.map(order => (
           <OrderCard
@@ -185,16 +212,23 @@ function OrderCard({ order, isExpanded, onExpand, onOpenQR, showQR, dim }: {
 
   return (
     <div className={`rounded-2xl border ${dim ? 'border-white/6 bg-white/2 opacity-70' : 'border-white/10 bg-white/4'}`}>
-      <button onClick={onExpand} className="w-full px-4 py-4 text-left flex items-start justify-between gap-3">
-        <div>
-          <p className="text-white font-semibold text-sm">{order.events?.nombre ?? 'Evento'}</p>
+      <button onClick={onExpand} className="w-full px-4 py-4 text-left flex items-center gap-3">
+        <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/6 flex-none flex items-center justify-center">
+          {order.events?.imagen_url ? (
+            <img src={order.events.imagen_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-white/20 text-xl">🎵</span>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-white font-semibold text-sm truncate">{order.events?.nombre ?? 'Evento'}</p>
           {fecha && (
-            <p className="text-white/40 text-xs mt-0.5">
+            <p className="text-white/40 text-xs mt-0.5 truncate">
               {fecha.toLocaleDateString(dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })}
               {' · '}{order.events?.venue}
             </p>
           )}
-          <p className={`text-xs mt-1 font-semibold ${status.color}`}>{status.label}</p>
+          <span className={`inline-block text-[10px] font-bold uppercase tracking-wider mt-1.5 px-2 py-0.5 rounded-full ${status.bg} ${status.color}`}>{status.label}</span>
         </div>
         <div className="text-right flex-none">
           <p className="text-[#F472B6] font-bold text-sm">{order.order_code}</p>
