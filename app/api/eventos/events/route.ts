@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   const { data: artistEvents } = await supabase
     .from('artist_events')
     .select('id, nombre, fecha, venue, imagen_url, artist_profiles(nombre_artistico, slug)')
-    .eq('visible', true)
+    .eq('status', 'aprobado')
     .order('fecha', { ascending: true })
 
   const infoEvents = (artistEvents ?? []).map(ev => {

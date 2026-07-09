@@ -14,6 +14,8 @@ interface GalleryItem { id: string; image_url: string }
 interface ArtistEvent {
   id: string; nombre: string; fecha: string; venue: string; direccion: string | null
   descripcion: string | null; imagen_url: string | null; link_externo: string | null
+  lat: number | null; lng: number | null; precio: number | null; max_entradas: number | null
+  status: 'pendiente' | 'aprobado' | 'rechazado'
 }
 
 type Tab = 'perfil' | 'galeria' | 'eventos'
@@ -99,7 +101,7 @@ export default function ArtistaPanelPage() {
 
         {tab === 'perfil' && <ProfileTab profile={profile} setProfile={setProfile} token={token} t={t} />}
         {tab === 'galeria' && <GalleryTab artistId={profile.id} gallery={gallery} setGallery={setGallery} token={token} t={t} />}
-        {tab === 'eventos' && <EventsTab artistId={profile.id} events={events} setEvents={setEvents} token={token} t={t} />}
+        {tab === 'eventos' && <EventsTab events={events} setEvents={setEvents} token={token} t={t} />}
       </div>
     </div>
   )
@@ -224,14 +226,24 @@ function GalleryTab({ artistId, gallery, setGallery, token, t }: {
   )
 }
 
-function EventsTab({ artistId, events, setEvents, token, t }: {
-  artistId: string; events: ArtistEvent[]; setEvents: (e: ArtistEvent[]) => void; token: string; t: (k: any) => string
+const STATUS_LABELS: Record<ArtistEvent['status'], { label: string; color: string }> = {
+  pendiente: { label: 'Pendiente de aprobación', color: 'text-yellow-400' },
+  aprobado: { label: 'Publicado', color: 'text-green-400' },
+  rechazado: { label: 'Rechazado', color: 'text-red-400' },
+}
+
+function EventsTab({ token, events, setEvents, t }: {
+  events: ArtistEvent[]; setEvents: (e: ArtistEvent[]) => void; token: string; t: (k: any) => string
 }) {
-  const empty = { nombre: '', fecha: '', venue: '', direccion: '', descripcion: '', imagen_url: '', link_externo: '' }
+  const empty = {
+    nombre: '', fecha: '', venue: '', direccion: '', descripcion: '', imagen_url: '',
+    lat: '', lng: '', precio: '', max_entradas: '', link_externo: '',
+  }
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(empty)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return
@@ -243,14 +255,27 @@ function EventsTab({ artistId, events, setEvents, token, t }: {
   }
 
   async function handleCreate(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true)
-    const { data } = await supabaseBrowser.from('artist_events').insert({
-      artist_id: artistId,
-      nombre: form.nombre, fecha: form.fecha, venue: form.venue, direccion: form.direccion || null,
-      descripcion: form.descripcion || null, imagen_url: form.imagen_url || null, link_externo: form.link_externo || null,
-    }).select('*').single()
-    if (data) setEvents([...events, data].sort((a, b) => a.fecha.localeCompare(b.fecha)))
-    setForm(empty); setShowForm(false); setSaving(false)
+    e.preventDefault(); setSaving(true); setError('')
+    try {
+      const res = await fetch('/api/eventos/artistas/eventos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          nombre: form.nombre, fecha: form.fecha, venue: form.venue, direccion: form.direccion || null,
+          descripcion: form.descripcion || null, imagen_url: form.imagen_url || null,
+          lat: form.lat ? parseFloat(form.lat) : null, lng: form.lng ? parseFloat(form.lng) : null,
+          precio: form.precio ? parseFloat(form.precio) : null,
+          max_entradas: form.max_entradas ? parseInt(form.max_entradas) : null,
+          link_externo: form.link_externo || null,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al crear evento')
+      setEvents([...events, data.event].sort((a, b) => a.fecha.localeCompare(b.fecha)))
+      setForm(empty); setShowForm(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado')
+    } finally { setSaving(false) }
   }
 
   async function handleDelete(id: string) {
@@ -263,17 +288,21 @@ function EventsTab({ artistId, events, setEvents, token, t }: {
       {events.length === 0 && !showForm && <p className="text-white/30 text-sm text-center py-4">{t('artistas.panel.eventsEmpty')}</p>}
 
       <div className="space-y-3">
-        {events.map(ev => (
-          <div key={ev.id} className="bg-white/4 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-white font-semibold text-sm truncate">{ev.nombre}</p>
-              <p className="text-white/40 text-xs mt-0.5">{new Date(ev.fecha).toLocaleDateString()} · {ev.venue}</p>
+        {events.map(ev => {
+          const status = STATUS_LABELS[ev.status]
+          return (
+            <div key={ev.id} className="bg-white/4 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-white font-semibold text-sm truncate">{ev.nombre}</p>
+                <p className="text-white/40 text-xs mt-0.5">{new Date(ev.fecha).toLocaleDateString()} · {ev.venue}</p>
+                <p className={`text-xs mt-1 font-semibold ${status.color}`}>{status.label}</p>
+              </div>
+              <button onClick={() => handleDelete(ev.id)} className="flex-none text-red-400/70 hover:text-red-400 text-xs font-bold uppercase transition">
+                {t('artistas.panel.delete')}
+              </button>
             </div>
-            <button onClick={() => handleDelete(ev.id)} className="flex-none text-red-400/70 hover:text-red-400 text-xs font-bold uppercase transition">
-              {t('artistas.panel.delete')}
-            </button>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {!showForm ? (
@@ -284,12 +313,24 @@ function EventsTab({ artistId, events, setEvents, token, t }: {
       ) : (
         <form onSubmit={handleCreate} className="space-y-3 border-t border-white/8 pt-4">
           <div>
+            <label className={LABEL}>{t('artistas.panel.eventImage')}</label>
+            {form.imagen_url && <img src={form.imagen_url} alt="" className="w-full h-32 object-cover rounded-xl mb-2" />}
+            <label className="block w-full text-center bg-white/6 hover:bg-white/10 border border-dashed border-white/15 rounded-2xl py-3 text-white/60 text-sm font-semibold cursor-pointer transition">
+              {uploading ? t('pago.uploading') : t('artistas.panel.eventImage')}
+              <input type="file" accept="image/*" onChange={handleImage} disabled={uploading} className="hidden" />
+            </label>
+          </div>
+          <div>
             <label className={LABEL}>{t('artistas.panel.eventName')}</label>
             <input type="text" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} required className={INPUT} />
           </div>
           <div>
+            <label className={LABEL}>{t('artistas.panel.eventDescription')}</label>
+            <textarea value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} rows={3} className={INPUT + ' resize-none'} />
+          </div>
+          <div>
             <label className={LABEL}>{t('artistas.panel.eventDate')}</label>
-            <input type="datetime-local" value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} required className={INPUT} />
+            <input type="datetime-local" value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} required className={INPUT + ' [color-scheme:dark]'} />
           </div>
           <div>
             <label className={LABEL}>{t('artistas.panel.eventVenue')}</label>
@@ -299,22 +340,32 @@ function EventsTab({ artistId, events, setEvents, token, t }: {
             <label className={LABEL}>{t('artistas.panel.eventAddress')}</label>
             <input type="text" value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} className={INPUT} />
           </div>
-          <div>
-            <label className={LABEL}>{t('artistas.panel.eventDescription')}</label>
-            <textarea value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} rows={3} className={INPUT + ' resize-none'} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={LABEL}>{t('artistas.panel.eventLat')}</label>
+              <input type="number" step="any" value={form.lat} placeholder="13.6929" onChange={e => setForm(f => ({ ...f, lat: e.target.value }))} className={INPUT} />
+            </div>
+            <div>
+              <label className={LABEL}>{t('artistas.panel.eventLng')}</label>
+              <input type="number" step="any" value={form.lng} placeholder="-89.2182" onChange={e => setForm(f => ({ ...f, lng: e.target.value }))} className={INPUT} />
+            </div>
           </div>
           <div>
-            <label className={LABEL}>{t('artistas.panel.eventImage')}</label>
-            {form.imagen_url && <img src={form.imagen_url} alt="" className="w-full h-32 object-cover rounded-xl mb-2" />}
-            <label className="block w-full text-center bg-white/6 hover:bg-white/10 border border-dashed border-white/15 rounded-2xl py-3 text-white/60 text-sm font-semibold cursor-pointer transition">
-              {uploading ? t('pago.uploading') : t('artistas.panel.eventImage')}
-              <input type="file" accept="image/*" onChange={handleImage} disabled={uploading} className="hidden" />
-            </label>
+            <label className={LABEL}>{t('artistas.panel.eventPrice')}</label>
+            <input type="number" step="0.01" min="0" value={form.precio} placeholder="10.00" onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} className={INPUT} />
+          </div>
+          <div>
+            <label className={LABEL}>{t('artistas.panel.eventMaxTickets')}</label>
+            <input type="number" min="1" value={form.max_entradas} onChange={e => setForm(f => ({ ...f, max_entradas: e.target.value }))} className={INPUT} />
           </div>
           <div>
             <label className={LABEL}>{t('artistas.panel.eventLink')}</label>
             <input type="url" value={form.link_externo} onChange={e => setForm(f => ({ ...f, link_externo: e.target.value }))} className={INPUT} />
           </div>
+
+          <p className="text-white/30 text-xs">{t('artistas.panel.eventPendingNote')}</p>
+
+          {error && <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-center">{error}</p>}
 
           <div className="flex gap-2">
             <button type="button" onClick={() => { setShowForm(false); setForm(empty) }}

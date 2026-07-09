@@ -199,11 +199,6 @@ export default function EventosPage() {
                           <span className="text-white/70 text-xs font-semibold bg-black/40 px-3 py-1 rounded-full">{t('home.pastEvent')}</span>
                         </div>
                       )}
-                      {event.kind === 'info' && (
-                        <span className="absolute top-2 right-2 text-[10px] font-bold uppercase tracking-wider bg-black/60 text-white/80 px-2 py-1 rounded-full">
-                          {t('home.infoEvent')}
-                        </span>
-                      )}
                     </div>
                     <div className="p-3 sm:p-4">
                       <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1">
