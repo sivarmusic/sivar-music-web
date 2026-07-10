@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
+import LanguageSwitcher from '../../components/LanguageSwitcher'
+import UserMenu from '../../components/UserMenu'
 
 const INPUT = 'w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition'
 
@@ -72,13 +74,23 @@ export default function AjustesPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0008] text-white">
-      <div className="border-b border-white/8 px-5 py-5">
-        <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase">Sivar Music</p>
-        <h1 className="text-white text-lg font-bold">{t('settings.title')}</h1>
-      </div>
+      <header className="sticky top-0 z-20 bg-[#0a0008]/95 backdrop-blur-md border-b border-white/8">
+        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
+          <Link href="/eventos" className="flex-none mr-1 flex items-center gap-2.5">
+            <img src="/favicon.ico" alt="Sivar Music" className="h-9 w-9 rounded-lg" />
+            <span className="text-white font-bold text-sm hidden sm:block">Sivar Music</span>
+          </Link>
+          <div className="flex-1" />
+          <LanguageSwitcher />
+          <UserMenu />
+        </div>
+      </header>
 
       <div className="px-5 py-6 max-w-lg mx-auto space-y-8">
-        <Link href="/eventos/mi-cuenta" className="text-white/35 hover:text-white text-xs transition block">{t('settings.back')}</Link>
+        <div>
+          <Link href="/eventos/mi-cuenta" className="text-white/35 hover:text-white text-xs transition block mb-2">{t('settings.back')}</Link>
+          <h1 className="text-white text-lg font-bold">{t('settings.title')}</h1>
+        </div>
 
         {/* Perfil */}
         <form onSubmit={handleSaveProfile} className="space-y-3">
