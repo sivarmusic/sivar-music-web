@@ -176,7 +176,7 @@ export default function PinkFestAdmin() {
             onClick={() => window.open('/pinkfest/verificar', '_blank')}
             className="text-[#F472B6]/70 hover:text-[#F472B6] text-xs uppercase tracking-wider transition"
           >
-            Escanear
+            Verificar
           </button>
           <button
             onClick={logout}

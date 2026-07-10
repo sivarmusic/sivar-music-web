@@ -44,6 +44,7 @@ export default function VerificarTokenPage() {
     try {
       const res = await fetch(`/api/pinkfest/verify/${token}`, { method: 'PATCH' })
       if (res.ok) {
+        if (navigator.vibrate) navigator.vibrate([60, 40, 60])
         setJustCheckedIn(true)
         setPageState('already_used')
       } else if (res.status === 401) {
@@ -147,7 +148,7 @@ export default function VerificarTokenPage() {
         onClick={() => router.push('/pinkfest/verificar')}
         className="mt-6 text-white/35 hover:text-white text-sm transition"
       >
-        ← Escanear otro QR
+        ← Verificar otra entrada
       </button>
     </div>
   )
@@ -178,7 +179,7 @@ function ResultScreen({
         onClick={onScan}
         className="border border-white/15 text-white/60 hover:text-white rounded-2xl px-6 py-3 text-sm transition"
       >
-        ← Escanear otro QR
+        ← Verificar otra entrada
       </button>
     </div>
   )
