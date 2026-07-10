@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import UserMenu from '../components/UserMenu'
 
 const QRCode = dynamic(() => import('qrcode').then(mod => ({
   default: ({ value, size }: { value: string; size: number }) => {
@@ -46,7 +47,6 @@ export default function MiCuentaPage() {
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [fullscreenQR, setFullscreenQR] = useState<FullscreenQR | null>(null)
 
@@ -67,7 +67,6 @@ export default function MiCuentaPage() {
 
       const meta = session.user.user_metadata ?? {}
       setName(profile?.nombre || meta.full_name || meta.name || session.user.email?.split('@')[0] || '')
-      setAvatarUrl(meta.avatar_url || meta.picture || null)
       setEmail(session.user.email ?? '')
       const res = await fetch('/api/eventos/user/tickets', {
         headers: { 'Authorization': `Bearer ${session.access_token}` },
@@ -77,11 +76,6 @@ export default function MiCuentaPage() {
       setLoading(false)
     })
   }, [router])
-
-  async function handleLogout() {
-    await supabaseBrowser.auth.signOut()
-    router.push('/eventos/mi-cuenta/login')
-  }
 
   if (loading) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">{t('account.loading')}</p></div>
 
@@ -117,40 +111,25 @@ export default function MiCuentaPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="border-b border-white/8">
-        <div className="px-5 pt-5 pb-3 flex items-center justify-between max-w-lg mx-auto">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-11 h-11 rounded-full overflow-hidden bg-white/8 flex-none flex items-center justify-center">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
-              ) : (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/40">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
-              )}
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-white text-base font-bold truncate">{t('account.greeting', { name: name.split(' ')[0] })}</h1>
-              <p className="text-white/35 text-xs truncate">{email}</p>
-            </div>
-          </div>
+      {/* Header — misma estructura y posiciones que /eventos */}
+      <header className="sticky top-0 z-20 bg-[#0a0008]/95 backdrop-blur-md border-b border-white/8">
+        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
+          <Link href="/eventos" className="flex-none mr-1 flex items-center gap-2.5">
+            <img src="/favicon.ico" alt="Sivar Music" className="h-9 w-9 rounded-lg" />
+            <span className="text-white font-bold text-sm hidden sm:block">Sivar Music</span>
+          </Link>
+          <div className="flex-1" />
           <LanguageSwitcher />
+          <UserMenu />
         </div>
-        <div className="px-5 pb-4 flex items-center gap-5 max-w-lg mx-auto">
-          <Link href="/eventos" className="text-white/40 hover:text-white text-xs font-semibold uppercase tracking-wider transition">
-            {t('account.nav.events')}
-          </Link>
-          <Link href="/eventos/mi-cuenta/ajustes" className="text-white/40 hover:text-white text-xs font-semibold uppercase tracking-wider transition">
-            {t('account.nav.settings')}
-          </Link>
-          <button onClick={handleLogout} className="text-white/40 hover:text-white text-xs font-semibold uppercase tracking-wider transition">
-            {t('account.nav.logout')}
-          </button>
-        </div>
-      </div>
+      </header>
 
       <div className="px-5 py-6 max-w-lg mx-auto space-y-8">
+        <div>
+          <h1 className="text-white text-lg font-bold">{t('account.greeting', { name: name.split(' ')[0] })}</h1>
+          <p className="text-white/35 text-xs mt-0.5">{email}</p>
+        </div>
+
         {orders.length === 0 ? (
           <div className="text-center py-16 flex flex-col items-center">
             <div className="w-16 h-16 rounded-full bg-white/6 flex items-center justify-center mb-5 text-3xl">🎫</div>
