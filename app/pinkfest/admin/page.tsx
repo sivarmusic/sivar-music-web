@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import AdminHeader from '@/app/eventos/admin/components/AdminHeader'
 import StatusBadge from './components/StatusBadge'
 import OrderModal from './components/OrderModal'
 import QRModal from './components/QRModal'
@@ -106,11 +107,6 @@ export default function PinkFestAdmin() {
     if (isAdmin) fetchAnalytics()
   }, [isAdmin, fetchAnalytics])
 
-  async function logout() {
-    await fetch('/api/pinkfest/auth/logout', { method: 'POST' })
-    router.push('/pinkfest/admin/login')
-  }
-
   async function updateStatus(id: string, status: 'confirmado' | 'rechazado', rechazo_motivo?: string) {
     setActionLoading(id)
     try {
@@ -181,12 +177,12 @@ export default function PinkFestAdmin() {
 
   return (
     <div className="min-h-screen bg-[#0a0008] text-white">
+      <AdminHeader />
 
-      {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-white/8 bg-[#0a0008]/95 backdrop-blur-md px-4 py-4 flex items-center justify-between">
+      <div className="px-4 pt-4 max-w-lg mx-auto flex items-center justify-between">
         <div>
           <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase">Pink Fest</p>
-          <h1 className="text-white text-base font-bold leading-tight">Órdenes</h1>
+          <h1 className="text-white text-lg font-bold leading-tight">Órdenes</h1>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -196,32 +192,18 @@ export default function PinkFestAdmin() {
           >
             ↻
           </button>
-          <button
-            onClick={() => window.open('/pinkfest/verificar', '_blank')}
-            className="text-[#F472B6]/70 hover:text-[#F472B6] text-xs uppercase tracking-wider transition"
-          >
-            Verificar
-          </button>
-          <Link
-            href="/eventos/admin/contador"
-            className="text-[#5fb3b3] hover:text-[#7ac4c4] text-xs uppercase tracking-wider transition"
-          >
-            Contador
-          </Link>
           {isAdmin && (
-            <Link
-              href="/pinkfest/admin/reporte"
-              className="text-white/40 hover:text-white text-xs uppercase tracking-wider transition"
-            >
-              Reporte
-            </Link>
+            <>
+              <Link href="/pinkfest/admin/reporte"
+                className="text-white/40 hover:text-white text-xs uppercase tracking-wider transition">
+                Reporte
+              </Link>
+              <Link href="/pinkfest/admin/editar"
+                className="text-white/40 hover:text-white text-xs uppercase tracking-wider transition">
+                Editar
+              </Link>
+            </>
           )}
-          <button
-            onClick={logout}
-            className="text-white/40 hover:text-white text-xs uppercase tracking-wider transition"
-          >
-            Salir
-          </button>
         </div>
       </div>
 

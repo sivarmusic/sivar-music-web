@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useRequireAdmin } from '@/app/eventos/admin/components/useRequireAdmin'
+import AdminHeader from '@/app/eventos/admin/components/AdminHeader'
 
 interface Ticket { id: string; ticket_number: number; check_in_at: string | null }
 interface Order {
@@ -83,10 +84,11 @@ export default function ReportePinkFestPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0008] text-white">
-      <div className="sticky top-0 z-10 border-b border-white/8 bg-[#0a0008]/95 backdrop-blur-md px-4 py-4 flex items-center justify-between">
+      <AdminHeader />
+      <div className="px-4 pt-4 max-w-2xl mx-auto flex items-center justify-between">
         <div>
           <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase">Pink Fest</p>
-          <h1 className="text-white text-base font-bold leading-tight">Reporte</h1>
+          <h1 className="text-white text-lg font-bold leading-tight">Reporte</h1>
         </div>
         <Link href="/pinkfest/admin" className="text-white/40 hover:text-white text-xs uppercase tracking-wider transition">
           ← Órdenes
