@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import QrCameraScanner from '@/app/components/QrCameraScanner'
+import { resolveTicketVerifyUrl } from '@/app/components/resolveTicketVerifyUrl'
 
 interface ManualTicket { ticket_number: number; qr_token: string; check_in_at: string | null }
 
@@ -14,13 +15,7 @@ export default function VerificarPage() {
   const [manualOrder, setManualOrder] = useState<{ order_code: string; nombre: string; tickets: ManualTicket[] } | null>(null)
 
   function handleDecode(decoded: string) {
-    try {
-      const url = new URL(decoded)
-      const token = url.pathname.split('/').filter(Boolean).pop()
-      router.push(`/pinkfest/verificar/${token}`)
-    } catch {
-      router.push(`/pinkfest/verificar/${decoded}`)
-    }
+    router.push(resolveTicketVerifyUrl(decoded, '/pinkfest/verificar'))
   }
 
   async function handleManualSubmit(e: React.FormEvent) {

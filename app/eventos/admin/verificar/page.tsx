@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import QrCameraScanner from '@/app/components/QrCameraScanner'
+import { resolveTicketVerifyUrl } from '@/app/components/resolveTicketVerifyUrl'
 import AdminHeader from '../components/AdminHeader'
 
 export default function VerificarPage() {
@@ -9,14 +10,14 @@ export default function VerificarPage() {
   const [manualToken, setManualToken] = useState('')
 
   function handleDecode(decoded: string) {
-    router.push(`/eventos/admin/verificar/${decoded}`)
+    router.push(resolveTicketVerifyUrl(decoded, '/eventos/admin/verificar'))
   }
 
   function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault()
     const token = manualToken.trim()
     if (!token) return
-    router.push(`/eventos/admin/verificar/${token}`)
+    router.push(resolveTicketVerifyUrl(token, '/eventos/admin/verificar'))
   }
 
   return (

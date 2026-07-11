@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 const ADMIN_TABS = [
   { href: '/eventos/admin', label: 'Eventos' },
@@ -19,6 +19,7 @@ const VERIFICADOR_TABS = [
 
 export default function AdminHeader() {
   const pathname = usePathname()
+  const router = useRouter()
   const [role, setRole] = useState<'admin' | 'verificador' | null>(null)
 
   useEffect(() => {
@@ -28,6 +29,11 @@ export default function AdminHeader() {
   }, [])
 
   const tabs = role === 'verificador' ? VERIFICADOR_TABS : ADMIN_TABS
+
+  async function logout() {
+    await fetch('/api/pinkfest/auth/logout', { method: 'POST' })
+    router.push('/eventos/admin/login')
+  }
 
   return (
     <header className="sticky top-0 z-20 bg-[#0a0008]/95 backdrop-blur-md border-b border-white/8">
@@ -55,6 +61,12 @@ export default function AdminHeader() {
               </Link>
             )
           })}
+          <button
+            onClick={logout}
+            className="text-xs font-semibold px-3 py-1.5 rounded-xl whitespace-nowrap text-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition"
+          >
+            Salir
+          </button>
         </nav>
       </div>
     </header>
