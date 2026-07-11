@@ -41,17 +41,15 @@ export default function ContadorPage() {
 
   useEffect(() => { if (eventKey) fetchCount(eventKey) }, [eventKey, fetchCount])
 
-  async function adjust(delta: number) {
-    if (!eventKey || busy) return
-    setBusy(true)
+  function adjust(delta: number) {
+    if (!eventKey) return
+    // Optimista y sin bloquear el botón — así se puede tocar rápido para contar
+    // gente sin esperar el viaje de ida y vuelta al servidor en cada tap.
     setCount(c => Math.max(0, (c ?? 0) + delta))
-    const res = await fetch('/api/eventos/admin/headcount', {
+    fetch('/api/eventos/admin/headcount', {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ event_key: eventKey, delta }),
-    })
-    const data = await res.json()
-    if (typeof data.count === 'number') setCount(data.count)
-    setBusy(false)
+    }).catch(() => {})
   }
 
   async function resetCount() {
@@ -148,14 +146,14 @@ export default function ContadorPage() {
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => adjust(-1)}
-            disabled={busy || loading || (count ?? 0) <= 0}
+            disabled={loading || (count ?? 0) <= 0}
             className="bg-[#e0a83c] hover:bg-[#d19a2f] active:scale-[0.98] disabled:opacity-40 text-white text-6xl font-bold rounded-3xl py-10 transition-all"
           >
             −
           </button>
           <button
             onClick={() => adjust(1)}
-            disabled={busy || loading}
+            disabled={loading}
             className="bg-[#5fb3b3] hover:bg-[#4fa3a3] active:scale-[0.98] disabled:opacity-40 text-white text-6xl font-bold rounded-3xl py-10 transition-all"
           >
             +
