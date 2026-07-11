@@ -176,6 +176,37 @@ export async function sendTicketConfirmed({
   })
 }
 
+export async function sendAbandonedCartReminder({
+  to, nombre, orderCode, eventName, pagoUrl,
+}: {
+  to: string; nombre: string; orderCode: string; eventName: string; pagoUrl: string
+}) {
+  return resend.emails.send({
+    from,
+    to,
+    subject: `Todavía te falta completar tu compra — ${eventName}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px">
+        <h2 style="color:#F472B6;margin:0 0 8px">Sivar Music</h2>
+        <h3 style="margin:0 0 24px;color:#111">¡Hola ${nombre.split(' ')[0]}! Tenés una compra pendiente</h3>
+        <p style="color:#374151">Iniciaste la compra de tu entrada para <strong>${eventName}</strong> pero todavía no subiste el comprobante de pago, así que no pudimos confirmarla.</p>
+        <div style="background:#fdf2f8;border:1px solid #fbcfe8;border-radius:12px;padding:20px;margin:20px 0;text-align:center">
+          <p style="margin:0 0 4px;font-size:12px;color:#9f1239;font-weight:bold;letter-spacing:2px;text-transform:uppercase">Tu código de orden</p>
+          <p style="margin:0;font-size:32px;font-weight:bold;color:#be185d;letter-spacing:4px">${orderCode}</p>
+        </div>
+        <div style="margin:24px 0">
+          <a href="${pagoUrl}" style="background:#F472B6;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">
+            Completar mi compra →
+          </a>
+        </div>
+        <p style="color:#6b7280;font-size:13px">Si ya no querés esta entrada, podés ignorar este mensaje.</p>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+        <p style="color:#9ca3af;font-size:12px;text-align:center">Sivar Music Group · A beneficio de la cultura</p>
+      </div>
+    `,
+  })
+}
+
 export async function sendWelcome({
   to, nombre,
 }: {

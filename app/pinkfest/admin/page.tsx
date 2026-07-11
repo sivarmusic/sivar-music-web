@@ -208,6 +208,14 @@ export default function PinkFestAdmin() {
           >
             Contador
           </Link>
+          {isAdmin && (
+            <Link
+              href="/pinkfest/admin/reporte"
+              className="text-white/40 hover:text-white text-xs uppercase tracking-wider transition"
+            >
+              Reporte
+            </Link>
+          )}
           <button
             onClick={logout}
             className="text-white/40 hover:text-white text-xs uppercase tracking-wider transition"

@@ -35,6 +35,8 @@ export default function EventosAdminPage() {
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null)
   const [resendingId, setResendingId] = useState<string | null>(null)
   const [resentId, setResentId] = useState<string | null>(null)
+  const [sendingReminders, setSendingReminders] = useState(false)
+  const [remindersResult, setRemindersResult] = useState<number | null>(null)
 
   const fetchData = useCallback(async () => {
     const sessionRes = await fetch('/api/pinkfest/auth/session')
@@ -101,6 +103,15 @@ export default function EventosAdminPage() {
     setDeletingEventId(null)
   }
 
+  async function sendReminders() {
+    setSendingReminders(true)
+    setRemindersResult(null)
+    const res = await fetch('/api/cron/remind-pending')
+    const data = await res.json()
+    setRemindersResult(res.ok ? data.sent ?? 0 : null)
+    setSendingReminders(false)
+  }
+
   const filtered = selectedEvent === 'all' ? orders : orders.filter(o => o.events?.id === selectedEvent)
 
   const counts = {
@@ -147,7 +158,11 @@ export default function EventosAdminPage() {
                 </div>
                 <p className="text-white/35 text-xs mt-1">sáb. 12 jul · $10 · Beerhaus</p>
               </div>
-              <div className="flex items-center gap-2 flex-none">
+              <div className="flex items-center gap-2 flex-none flex-wrap justify-end">
+                <Link href="/pinkfest/admin/reporte"
+                  className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
+                  Reporte
+                </Link>
                 <Link href="/pinkfest/admin"
                   className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
                   Gestionar
@@ -239,6 +254,20 @@ export default function EventosAdminPage() {
             </div>
           ))}
         </div>
+
+        {isAdmin && (
+          <div className="flex items-center gap-3 flex-wrap">
+            <button onClick={sendReminders} disabled={sendingReminders}
+              className="bg-white/6 hover:bg-[#F472B6]/15 hover:text-[#F472B6] border border-white/10 hover:border-[#F472B6]/30 text-white/50 text-xs font-semibold rounded-xl px-4 py-2.5 transition disabled:opacity-40">
+              {sendingReminders ? 'Enviando...' : '✉ Recordar compras pendientes'}
+            </button>
+            {remindersResult !== null && (
+              <p className="text-white/35 text-xs">
+                {remindersResult === 0 ? 'No había recordatorios pendientes por enviar.' : `${remindersResult} recordatorio${remindersResult > 1 ? 's' : ''} enviado${remindersResult > 1 ? 's' : ''}.`}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Órdenes */}
         <div>
