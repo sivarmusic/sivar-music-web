@@ -7,12 +7,14 @@ const ADMIN_TABS = [
   { href: '/eventos/admin', label: 'Eventos' },
   { href: '/eventos/admin/cortesias', label: 'Cortesías' },
   { href: '/eventos/admin/verificar', label: 'Verificar' },
+  { href: '/eventos/admin/contador', label: 'Contador' },
   { href: '/eventos/admin/artistas', label: 'Artistas' },
 ]
 
 const VERIFICADOR_TABS = [
   { href: '/eventos/admin', label: 'Solicitudes' },
   { href: '/eventos/admin/verificar', label: 'Verificar' },
+  { href: '/eventos/admin/contador', label: 'Contador' },
 ]
 
 export default function AdminHeader() {

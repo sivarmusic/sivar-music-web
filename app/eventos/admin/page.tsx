@@ -302,8 +302,8 @@ export default function EventosAdminPage() {
                           </div>
                         )}
 
-                        {/* Reenviar mail — admin */}
-                        {isAdmin && order.status === 'confirmado' && (
+                        {/* Reenviar mail */}
+                        {order.status === 'confirmado' && (
                           <div className="space-y-1.5">
                             <button
                               onClick={() => resendEmail(order.id)}
@@ -346,6 +346,20 @@ export default function EventosAdminPage() {
               })}
             </div>
           )}
+        </div>
+
+        {/* Accesos grandes — para no perderse en el momento */}
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <Link href="/eventos/admin/verificar"
+            className="flex flex-col items-center justify-center gap-2 bg-[#F472B6] hover:bg-[#ec4899] active:scale-[0.98] text-white rounded-3xl py-10 transition-all text-center px-3">
+            <span className="text-4xl">📷</span>
+            <span className="font-bold text-sm uppercase tracking-wide">Verificar entrada</span>
+          </Link>
+          <Link href="/eventos/admin/contador"
+            className="flex flex-col items-center justify-center gap-2 bg-[#5fb3b3] hover:bg-[#4fa3a3] active:scale-[0.98] text-white rounded-3xl py-10 transition-all text-center px-3">
+            <span className="text-4xl">🔢</span>
+            <span className="font-bold text-sm uppercase tracking-wide">Contar personas</span>
+          </Link>
         </div>
       </div>
     </div>

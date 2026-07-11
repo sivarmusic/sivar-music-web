@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import StatusBadge from './components/StatusBadge'
 import OrderModal from './components/OrderModal'
 import QRModal from './components/QRModal'
@@ -201,6 +202,12 @@ export default function PinkFestAdmin() {
           >
             Verificar
           </button>
+          <Link
+            href="/eventos/admin/contador"
+            className="text-[#5fb3b3] hover:text-[#7ac4c4] text-xs uppercase tracking-wider transition"
+          >
+            Contador
+          </Link>
           <button
             onClick={logout}
             className="text-white/40 hover:text-white text-xs uppercase tracking-wider transition"
@@ -438,20 +445,18 @@ export default function PinkFestAdmin() {
                           ))}
                       </div>
                     )}
-                    {isAdmin && (
-                      <div className="space-y-1.5">
-                        <button
-                          onClick={() => resendEmail(order.id)}
-                          disabled={resendingId === order.id}
-                          className="w-full text-xs border border-white/10 hover:border-[#F472B6]/30 text-white/40 hover:text-[#F472B6] hover:bg-[#F472B6]/8 rounded-xl py-2.5 transition disabled:opacity-40"
-                        >
-                          {resendingId === order.id ? 'Enviando...' : '✉ Reenviar mail de confirmación'}
-                        </button>
-                        {resentId === order.id && (
-                          <p className="text-green-400 text-xs text-center">Mail enviado a {order.email}</p>
-                        )}
-                      </div>
-                    )}
+                    <div className="space-y-1.5">
+                      <button
+                        onClick={() => resendEmail(order.id)}
+                        disabled={resendingId === order.id}
+                        className="w-full text-xs border border-white/10 hover:border-[#F472B6]/30 text-white/40 hover:text-[#F472B6] hover:bg-[#F472B6]/8 rounded-xl py-2.5 transition disabled:opacity-40"
+                      >
+                        {resendingId === order.id ? 'Enviando...' : '✉ Reenviar mail de confirmación'}
+                      </button>
+                      {resentId === order.id && (
+                        <p className="text-green-400 text-xs text-center">Mail enviado a {order.email}</p>
+                      )}
+                    </div>
                   </>
                 )}
 
@@ -523,6 +528,20 @@ export default function PinkFestAdmin() {
               </div>
             ))
           )}
+        </div>
+
+        {/* Accesos grandes — para no perderse en el momento */}
+        <div className="grid grid-cols-2 gap-3 pt-2 pb-6">
+          <Link href="/pinkfest/verificar"
+            className="flex flex-col items-center justify-center gap-2 bg-[#F472B6] hover:bg-[#ec4899] active:scale-[0.98] text-white rounded-3xl py-10 transition-all text-center px-3">
+            <span className="text-4xl">📷</span>
+            <span className="font-bold text-sm uppercase tracking-wide">Verificar entrada</span>
+          </Link>
+          <Link href="/eventos/admin/contador"
+            className="flex flex-col items-center justify-center gap-2 bg-[#5fb3b3] hover:bg-[#4fa3a3] active:scale-[0.98] text-white rounded-3xl py-10 transition-all text-center px-3">
+            <span className="text-4xl">🔢</span>
+            <span className="font-bold text-sm uppercase tracking-wide">Contar personas</span>
+          </Link>
         </div>
       </div>
 
