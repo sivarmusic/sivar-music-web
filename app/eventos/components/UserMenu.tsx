@@ -4,10 +4,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
+import { ADMIN_EMAIL } from '@/lib/constants'
 
 interface Profile {
   name: string
   avatarUrl: string | null
+  isAdmin: boolean
 }
 
 export default function UserMenu() {
@@ -15,6 +17,7 @@ export default function UserMenu() {
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined)
   const [open, setOpen] = useState(false)
+  const [enteringAdmin, setEnteringAdmin] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -25,6 +28,7 @@ export default function UserMenu() {
       setProfile({
         name: meta.full_name || meta.name || user.email?.split('@')[0] || '',
         avatarUrl: meta.avatar_url || meta.picture || null,
+        isAdmin: user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase(),
       })
     }
 
@@ -45,6 +49,22 @@ export default function UserMenu() {
     setOpen(false)
     await supabaseBrowser.auth.signOut()
     router.push('/eventos')
+  }
+
+  async function handleAdminPanel() {
+    setEnteringAdmin(true)
+    try {
+      const { data } = await supabaseBrowser.auth.getSession()
+      const token = data.session?.access_token
+      if (!token) return
+      const res = await fetch('/api/eventos/admin/auto-login', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) { setOpen(false); router.push('/eventos/admin') }
+    } finally {
+      setEnteringAdmin(false)
+    }
   }
 
   if (profile === undefined) return <div className="w-9 h-9 rounded-full bg-white/5 animate-pulse flex-none" />
@@ -84,13 +104,22 @@ export default function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-44 bg-[#150a12] border border-white/10 rounded-2xl shadow-xl overflow-hidden z-30 py-1">
+        <div className="absolute right-0 top-full mt-1 w-48 bg-[#150a12] border border-white/10 rounded-2xl shadow-xl overflow-hidden z-30 py-1">
           <Link href="/eventos/mi-cuenta" className="block px-4 py-2.5 text-white/70 hover:text-white hover:bg-white/6 text-sm transition" onClick={() => setOpen(false)}>
             {t('menu.myTickets')}
           </Link>
           <Link href="/eventos/mi-cuenta/ajustes" className="block px-4 py-2.5 text-white/70 hover:text-white hover:bg-white/6 text-sm transition" onClick={() => setOpen(false)}>
             {t('menu.settings')}
           </Link>
+          {profile.isAdmin && (
+            <>
+              <div className="border-t border-white/8 my-1" />
+              <button onClick={handleAdminPanel} disabled={enteringAdmin}
+                className="w-full text-left px-4 py-2.5 text-[#F472B6] hover:text-white hover:bg-[#F472B6]/10 disabled:opacity-50 text-sm font-semibold transition">
+                {enteringAdmin ? t('menu.enteringAdmin') : t('menu.adminPanel')}
+              </button>
+            </>
+          )}
           <div className="border-t border-white/8 my-1" />
           <button onClick={handleLogout} className="w-full text-left px-4 py-2.5 text-white/70 hover:text-white hover:bg-white/6 text-sm transition">
             {t('menu.logout')}

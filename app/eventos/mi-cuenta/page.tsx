@@ -126,6 +126,7 @@ export default function MiCuentaPage() {
 
       <div className="px-5 py-6 max-w-lg mx-auto space-y-8">
         <div>
+          <Link href="/eventos" className="text-white/35 hover:text-white text-xs transition block mb-2">{t('account.backToEvents')}</Link>
           <h1 className="text-white text-lg font-bold">{t('account.greeting', { name: name.split(' ')[0] })}</h1>
           <p className="text-white/35 text-xs mt-0.5">{email}</p>
         </div>

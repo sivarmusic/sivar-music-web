@@ -11,6 +11,8 @@ const es = {
   'menu.myTickets': 'Mis tickets',
   'menu.settings': 'Configuración',
   'menu.logout': 'Cerrar sesión',
+  'menu.adminPanel': 'Panel de administrador',
+  'menu.enteringAdmin': 'Entrando...',
 
   'settings.title': 'Configuración',
   'settings.profile': 'Perfil',
@@ -121,6 +123,7 @@ const es = {
   'account.nav.settings': 'Configuración',
   'account.nav.logout': 'Salir',
   'account.greeting': 'Hola, {name}',
+  'account.backToEvents': '← Volver a eventos',
   'account.empty': 'No tenés órdenes aún.',
   'account.emptyTitle': 'Todavía no tenés entradas',
   'account.emptyBody': 'Explorá los próximos eventos de Sivar Music y conseguí la tuya.',
@@ -304,6 +307,8 @@ const en: Record<Key, string> = {
   'menu.myTickets': 'My tickets',
   'menu.settings': 'Settings',
   'menu.logout': 'Log out',
+  'menu.adminPanel': 'Admin panel',
+  'menu.enteringAdmin': 'Entering...',
 
   'settings.title': 'Settings',
   'settings.profile': 'Profile',
@@ -414,6 +419,7 @@ const en: Record<Key, string> = {
   'account.nav.settings': 'Settings',
   'account.nav.logout': 'Log out',
   'account.greeting': 'Hi, {name}',
+  'account.backToEvents': '← Back to events',
   'account.empty': "You don't have any orders yet.",
   'account.emptyTitle': "You don't have any tickets yet",
   'account.emptyBody': 'Explore upcoming Sivar Music events and get yours.',

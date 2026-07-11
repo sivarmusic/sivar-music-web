@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { ADMIN_EMAIL } from './constants'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -42,7 +43,6 @@ export async function sendOrderConfirmation({
   })
 }
 
-const ADMIN_EMAIL = 'admin@sivarmusic.com'
 
 export async function sendAdminNewOrderRequest({
   orderCode, eventName, nombre, telefono, email, cantidad, total,
