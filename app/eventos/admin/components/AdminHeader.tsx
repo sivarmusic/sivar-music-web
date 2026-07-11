@@ -1,16 +1,31 @@
 'use client'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-const TABS = [
+const ADMIN_TABS = [
   { href: '/eventos/admin', label: 'Eventos' },
   { href: '/eventos/admin/cortesias', label: 'Cortesías' },
   { href: '/eventos/admin/verificar', label: 'Verificar' },
   { href: '/eventos/admin/artistas', label: 'Artistas' },
 ]
 
+const VERIFICADOR_TABS = [
+  { href: '/eventos/admin', label: 'Solicitudes' },
+  { href: '/eventos/admin/verificar', label: 'Verificar' },
+]
+
 export default function AdminHeader() {
   const pathname = usePathname()
+  const [role, setRole] = useState<'admin' | 'verificador' | null>(null)
+
+  useEffect(() => {
+    fetch('/api/pinkfest/auth/session')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setRole(data?.role ?? null))
+  }, [])
+
+  const tabs = role === 'verificador' ? VERIFICADOR_TABS : ADMIN_TABS
 
   return (
     <header className="sticky top-0 z-20 bg-[#0a0008]/95 backdrop-blur-md border-b border-white/8">
@@ -24,7 +39,7 @@ export default function AdminHeader() {
         </Link>
         <div className="flex-1" />
         <nav className="flex items-center gap-1 overflow-x-auto">
-          {TABS.map(tab => {
+          {tabs.map(tab => {
             const active = tab.href === '/eventos/admin' ? pathname === tab.href : pathname?.startsWith(tab.href)
             return (
               <Link

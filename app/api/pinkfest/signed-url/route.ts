@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { verifyAdminSession } from '@/lib/pinkfest-auth'
+import { verifyStaffSession } from '@/lib/pinkfest-auth'
 
 export async function GET(req: NextRequest) {
-  const user = await verifyAdminSession()
+  const user = await verifyStaffSession()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const path = req.nextUrl.searchParams.get('path')

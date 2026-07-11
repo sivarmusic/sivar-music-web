@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import AdminHeader from '../components/AdminHeader'
+import { useRequireAdmin } from '../components/useRequireAdmin'
 
 const QRCode = dynamic(() => import('qrcode').then(mod => ({
   default: ({ value, size }: { value: string; size: number }) => {
@@ -35,6 +36,7 @@ const INPUT = 'w-full bg-white/6 border border-white/10 text-white placeholder-w
 const LABEL = 'block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-2'
 
 export default function CortesiasPage() {
+  useRequireAdmin()
   const router = useRouter()
   const [events, setEvents] = useState<EventOption[]>([])
   const [orders, setOrders] = useState<CortesiaOrder[]>([])

@@ -35,7 +35,7 @@ function AdminLoginForm() {
           <h1 className="text-white text-2xl font-bold">Panel de administrador</h1>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Correo" required autoComplete="email"
+          <input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="Correo o usuario" required autoComplete="username"
             className="w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition" />
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Contraseña" required autoComplete="current-password"
             className="w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition" />

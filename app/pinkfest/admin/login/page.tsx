@@ -47,12 +47,12 @@ function LoginForm() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
-            type="email"
+            type="text"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            placeholder="Correo"
+            placeholder="Correo o usuario"
             required
-            autoComplete="email"
+            autoComplete="username"
             className="w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition"
           />
           <input

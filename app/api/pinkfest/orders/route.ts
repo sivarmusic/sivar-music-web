@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { verifyAdminSession } from '@/lib/pinkfest-auth'
+import { verifyStaffSession } from '@/lib/pinkfest-auth'
 
 export async function POST(req: NextRequest) {
   const { nombre, telefono, email, cantidad } = await req.json()
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  const user = await verifyAdminSession()
+  const user = await verifyStaffSession()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { data: orders, error } = await supabase

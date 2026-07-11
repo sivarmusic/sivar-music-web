@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminHeader from '../components/AdminHeader'
+import { useRequireAdmin } from '../components/useRequireAdmin'
 
 interface FormState {
   nombre: string; slug: string; descripcion: string
@@ -15,6 +16,7 @@ function slugify(s: string) {
 }
 
 export default function NuevoEventoPage() {
+  useRequireAdmin()
   const router = useRouter()
   const [form, setForm] = useState<FormState>({
     nombre: '', slug: '', descripcion: '', fecha: '', venue: '', direccion: '',

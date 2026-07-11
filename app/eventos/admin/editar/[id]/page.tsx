@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import AdminHeader from '../../components/AdminHeader'
+import { useRequireAdmin } from '../../components/useRequireAdmin'
 
 interface FormState {
   nombre: string; slug: string; descripcion: string
@@ -36,6 +37,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
 }
 
 export default function EditarEventoPage() {
+  useRequireAdmin()
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
 

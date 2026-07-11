@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AdminHeader from '../../../components/AdminHeader'
+import { useRequireAdmin } from '../../../components/useRequireAdmin'
 
 interface Ticket { id: string; ticket_number: number; check_in_at: string | null }
 interface Order {
@@ -22,6 +23,7 @@ interface Attendee {
 }
 
 export default function ReporteEventoPage() {
+  useRequireAdmin()
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [event, setEvent] = useState<EventInfo | null>(null)

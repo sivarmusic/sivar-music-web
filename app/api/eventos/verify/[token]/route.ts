@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { verifyAdminSession } from '@/lib/pinkfest-auth'
+import { verifyStaffSession } from '@/lib/pinkfest-auth'
 
 export async function GET(
   _req: NextRequest,
@@ -45,7 +45,7 @@ export async function PATCH(
   _req: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
-  const user = await verifyAdminSession()
+  const user = await verifyStaffSession()
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { token } = await params

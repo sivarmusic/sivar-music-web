@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AdminHeader from '../components/AdminHeader'
+import { useRequireAdmin } from '../components/useRequireAdmin'
 
 interface Application {
   id: string; nombre_artistico: string; nombre_contacto: string; email: string; telefono: string | null
@@ -39,6 +40,7 @@ function getArtist(rel: ArtistEvent['artist_profiles']) {
 }
 
 export default function AdminArtistasPage() {
+  useRequireAdmin()
   const router = useRouter()
   const [applications, setApplications] = useState<Application[]>([])
   const [events, setEvents] = useState<ArtistEvent[]>([])

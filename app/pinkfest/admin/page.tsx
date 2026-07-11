@@ -66,6 +66,8 @@ export default function PinkFestAdmin() {
   const [resentId, setResentId] = useState<string | null>(null)
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
   const [showAnalytics, setShowAnalytics] = useState(false)
+  const [role, setRole] = useState<'admin' | 'verificador' | null>(null)
+  const isAdmin = role === 'admin'
 
   const fetchOrders = useCallback(async () => {
     const res = await fetch('/api/pinkfest/orders')
@@ -86,10 +88,22 @@ export default function PinkFestAdmin() {
     }
   }, [])
 
+  const fetchRole = useCallback(async () => {
+    const res = await fetch('/api/pinkfest/auth/session')
+    if (res.ok) {
+      const data = await res.json()
+      setRole(data.role ?? null)
+    }
+  }, [])
+
   useEffect(() => {
     fetchOrders()
-    fetchAnalytics()
-  }, [fetchOrders, fetchAnalytics])
+    fetchRole()
+  }, [fetchOrders, fetchRole])
+
+  useEffect(() => {
+    if (isAdmin) fetchAnalytics()
+  }, [isAdmin, fetchAnalytics])
 
   async function logout() {
     await fetch('/api/pinkfest/auth/logout', { method: 'POST' })
@@ -225,7 +239,8 @@ export default function PinkFestAdmin() {
           </div>
         )}
 
-        {/* Analítica de conversión */}
+        {/* Analítica de conversión — admin */}
+        {isAdmin && (
         <div className="bg-white/4 border border-white/8 rounded-2xl overflow-hidden">
           <button
             onClick={() => setShowAnalytics(v => !v)}
@@ -309,6 +324,7 @@ export default function PinkFestAdmin() {
             </div>
           )}
         </div>
+        )}
 
         {/* Búsqueda */}
         <input
@@ -336,13 +352,15 @@ export default function PinkFestAdmin() {
           ))}
         </div>
 
-        {/* Exportar */}
-        <button
-          onClick={exportCSV}
-          className="w-full border border-white/12 hover:border-white/25 text-white/50 hover:text-white text-xs font-semibold uppercase tracking-wider rounded-2xl py-2.5 transition"
-        >
-          Exportar CSV ({filtered.length} fila{filtered.length !== 1 ? 's' : ''})
-        </button>
+        {/* Exportar — admin */}
+        {isAdmin && (
+          <button
+            onClick={exportCSV}
+            className="w-full border border-white/12 hover:border-white/25 text-white/50 hover:text-white text-xs font-semibold uppercase tracking-wider rounded-2xl py-2.5 transition"
+          >
+            Exportar CSV ({filtered.length} fila{filtered.length !== 1 ? 's' : ''})
+          </button>
+        )}
 
         {/* Lista de órdenes */}
         <div className="space-y-3 pb-10">
@@ -420,29 +438,33 @@ export default function PinkFestAdmin() {
                           ))}
                       </div>
                     )}
-                    <div className="space-y-1.5">
-                      <button
-                        onClick={() => resendEmail(order.id)}
-                        disabled={resendingId === order.id}
-                        className="w-full text-xs border border-white/10 hover:border-[#F472B6]/30 text-white/40 hover:text-[#F472B6] hover:bg-[#F472B6]/8 rounded-xl py-2.5 transition disabled:opacity-40"
-                      >
-                        {resendingId === order.id ? 'Enviando...' : '✉ Reenviar mail de confirmación'}
-                      </button>
-                      {resentId === order.id && (
-                        <p className="text-green-400 text-xs text-center">Mail enviado a {order.email}</p>
-                      )}
-                    </div>
+                    {isAdmin && (
+                      <div className="space-y-1.5">
+                        <button
+                          onClick={() => resendEmail(order.id)}
+                          disabled={resendingId === order.id}
+                          className="w-full text-xs border border-white/10 hover:border-[#F472B6]/30 text-white/40 hover:text-[#F472B6] hover:bg-[#F472B6]/8 rounded-xl py-2.5 transition disabled:opacity-40"
+                        >
+                          {resendingId === order.id ? 'Enviando...' : '✉ Reenviar mail de confirmación'}
+                        </button>
+                        {resentId === order.id && (
+                          <p className="text-green-400 text-xs text-center">Mail enviado a {order.email}</p>
+                        )}
+                      </div>
+                    )}
                   </>
                 )}
 
-                {/* Botón eliminar */}
-                <button
-                  onClick={() => deleteOrder(order.id)}
-                  disabled={deletingId === order.id}
-                  className="w-full text-xs border border-red-500/20 text-red-400/60 hover:text-red-400 hover:border-red-500/40 rounded-xl py-2 transition disabled:opacity-40"
-                >
-                  {deletingId === order.id ? 'Eliminando...' : 'Eliminar orden'}
-                </button>
+                {/* Botón eliminar — admin */}
+                {isAdmin && (
+                  <button
+                    onClick={() => deleteOrder(order.id)}
+                    disabled={deletingId === order.id}
+                    className="w-full text-xs border border-red-500/20 text-red-400/60 hover:text-red-400 hover:border-red-500/40 rounded-xl py-2 transition disabled:opacity-40"
+                  >
+                    {deletingId === order.id ? 'Eliminando...' : 'Eliminar orden'}
+                  </button>
+                )}
 
                 {/* Motivo de rechazo */}
                 {order.status === 'rechazado' && order.rechazo_motivo && (
