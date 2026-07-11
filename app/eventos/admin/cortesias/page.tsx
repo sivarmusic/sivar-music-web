@@ -19,7 +19,10 @@ interface CortesiaOrder {
   order_type: string; created_at: string
   events: { id: string; nombre: string } | null
   event_tickets: Ticket[]
+  source: 'eventos' | 'pinkfest'
 }
+
+const PINKFEST_OPTION: EventOption = { id: 'pinkfest', nombre: 'Pink Fest' }
 
 const CATEGORIAS = [
   { value: 'staff', label: 'Staff' },
@@ -36,7 +39,7 @@ export default function CortesiasPage() {
   const [events, setEvents] = useState<EventOption[]>([])
   const [orders, setOrders] = useState<CortesiaOrder[]>([])
   const [loading, setLoading] = useState(true)
-  const [filterEvent, setFilterEvent] = useState('all')
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null)
 
   const [eventId, setEventId] = useState('')
   const [categoria, setCategoria] = useState('staff')
@@ -50,14 +53,26 @@ export default function CortesiasPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const fetchData = useCallback(async () => {
-    const [evRes, ordRes] = await Promise.all([
+    const [evRes, ordRes, pfRes] = await Promise.all([
       fetch('/api/eventos/events?admin=1'),
       fetch('/api/eventos/orders'),
+      fetch('/api/pinkfest/orders'),
     ])
-    if (evRes.status === 401 || ordRes.status === 401) { router.push('/eventos/admin/login'); return }
-    const [evData, ordData] = await Promise.all([evRes.json(), ordRes.json()])
-    setEvents(evData.events ?? [])
-    setOrders((ordData.orders ?? []).filter((o: CortesiaOrder) => o.order_type === 'cortesia'))
+    if (evRes.status === 401 || ordRes.status === 401 || pfRes.status === 401) { router.push('/eventos/admin/login'); return }
+    const [evData, ordData, pfData] = await Promise.all([evRes.json(), ordRes.json(), pfRes.json()])
+    setEvents([PINKFEST_OPTION, ...(evData.events ?? [])])
+
+    const eventosCortesias = (ordData.orders ?? [])
+      .filter((o: CortesiaOrder) => o.order_type === 'cortesia')
+      .map((o: CortesiaOrder) => ({ ...o, source: 'eventos' as const }))
+
+    const pinkfestCortesias = (pfData.orders ?? [])
+      .filter((o: { order_type?: string }) => o.order_type === 'cortesia')
+      .map((o: Omit<CortesiaOrder, 'events' | 'source' | 'event_tickets'> & { pinkfest_tickets: Ticket[] }) => ({
+        ...o, events: PINKFEST_OPTION, event_tickets: o.pinkfest_tickets, source: 'pinkfest' as const,
+      }))
+
+    setOrders([...eventosCortesias, ...pinkfestCortesias])
     setLoading(false)
   }, [router])
 
@@ -81,7 +96,10 @@ export default function CortesiasPage() {
       setNombre(''); setTelefono(''); setEmail(''); setCantidad('1')
       await fetchData()
       const event = events.find(e => e.id === eventId)
-      setLastIssued({ ...data.order, events: event ?? null, event_tickets: data.tickets })
+      setLastIssued({
+        ...data.order, events: event ?? null, event_tickets: data.tickets,
+        source: eventId === 'pinkfest' ? 'pinkfest' : 'eventos',
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo generar la cortesía')
     } finally {
@@ -89,15 +107,22 @@ export default function CortesiasPage() {
     }
   }
 
-  async function deleteOrder(orderId: string) {
+  async function deleteOrder(orderId: string, source: 'eventos' | 'pinkfest') {
     if (!window.confirm('¿Eliminar esta cortesía? Esta acción no se puede deshacer.')) return
     setDeletingId(orderId)
-    await fetch(`/api/eventos/orders/${orderId}`, { method: 'DELETE' })
+    const base = source === 'pinkfest' ? '/api/pinkfest/orders' : '/api/eventos/orders'
+    await fetch(`${base}/${orderId}`, { method: 'DELETE' })
     await fetchData()
     setDeletingId(null)
   }
 
-  const filteredOrders = filterEvent === 'all' ? orders : orders.filter(o => o.events?.id === filterEvent)
+  const groupedByEvent = orders.reduce<Record<string, { nombre: string; orders: CortesiaOrder[] }>>((acc, order) => {
+    const key = order.events?.id ?? 'otro'
+    if (!acc[key]) acc[key] = { nombre: order.events?.nombre ?? 'Otro', orders: [] }
+    acc[key].orders.push(order)
+    return acc
+  }, {})
+  const eventGroups = Object.entries(groupedByEvent)
 
   if (loading) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">Cargando...</p></div>
 
@@ -191,44 +216,61 @@ export default function CortesiasPage() {
           </div>
         )}
 
-        {/* Listado de cortesías emitidas */}
+        {/* Cortesías emitidas, agrupadas por evento */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider">Cortesías emitidas</p>
-            {events.length > 1 && (
-              <select value={filterEvent} onChange={e => setFilterEvent(e.target.value)}
-                className="bg-white/6 border border-white/10 text-white/60 text-xs rounded-xl px-2 py-1 focus:outline-none">
-                <option value="all">Todos los eventos</option>
-                {events.map(ev => <option key={ev.id} value={ev.id}>{ev.nombre}</option>)}
-              </select>
-            )}
-          </div>
+          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">Cortesías emitidas</p>
 
-          {filteredOrders.length === 0 ? (
+          {eventGroups.length === 0 ? (
             <p className="text-white/25 text-sm text-center py-8">No hay cortesías generadas todavía.</p>
           ) : (
             <div className="space-y-2">
-              {filteredOrders.map(order => {
-                const cat = CATEGORIAS.find(c => c.value === order.cortesia_categoria)
-                const checkedIn = order.event_tickets.filter(t => t.check_in_at).length
+              {eventGroups.map(([eventId, group]) => {
+                const totalEntradas = group.orders.reduce((s, o) => s + o.cantidad, 0)
+                const isExpanded = expandedEventId === eventId
+
                 return (
-                  <div key={order.id} className="rounded-2xl border border-white/10 bg-white/4 px-4 py-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white font-semibold text-sm truncate">{order.nombre}</span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-400/10 text-purple-300">{cat?.label ?? order.cortesia_categoria}</span>
-                      </div>
-                      <p className="text-white/35 text-xs mt-0.5">
-                        {order.events?.nombre ?? ''} · {order.order_code} · {order.cantidad} entrada{order.cantidad > 1 ? 's' : ''} · {checkedIn} ingresó{checkedIn === 1 ? '' : 'aron'}
-                      </p>
-                    </div>
+                  <div key={eventId} className="rounded-2xl border border-white/10 bg-white/4 overflow-hidden">
                     <button
-                      onClick={() => deleteOrder(order.id)}
-                      disabled={deletingId === order.id}
-                      className="text-xs px-2 py-1.5 rounded-xl font-semibold bg-red-500/10 text-red-400/50 hover:bg-red-500/20 hover:text-red-400 transition disabled:opacity-40 flex-none"
+                      onClick={() => setExpandedEventId(isExpanded ? null : eventId)}
+                      className="w-full px-4 py-3 flex items-center justify-between gap-3 text-left"
                     >
-                      {deletingId === order.id ? '...' : 'Eliminar'}
+                      <div className="min-w-0">
+                        <p className="text-white font-semibold text-sm truncate">{group.nombre}</p>
+                        <p className="text-white/35 text-xs mt-0.5">
+                          {group.orders.length} cortesía{group.orders.length > 1 ? 's' : ''} · {totalEntradas} entrada{totalEntradas > 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <span className="text-white/20 text-xs flex-none">{isExpanded ? '▲' : '▼'}</span>
                     </button>
+
+                    {isExpanded && (
+                      <div className="border-t border-white/8 px-4 py-3 space-y-2">
+                        {group.orders.map(order => {
+                          const cat = CATEGORIAS.find(c => c.value === order.cortesia_categoria)
+                          const checkedIn = order.event_tickets.filter(t => t.check_in_at).length
+                          return (
+                            <div key={order.id} className="rounded-xl border border-white/10 bg-white/4 px-3 py-2.5 flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-white font-semibold text-sm truncate">{order.nombre}</span>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-400/10 text-purple-300">{cat?.label ?? order.cortesia_categoria}</span>
+                                </div>
+                                <p className="text-white/35 text-xs mt-0.5">
+                                  {order.order_code} · {order.cantidad} entrada{order.cantidad > 1 ? 's' : ''} · {checkedIn} ingresó{checkedIn === 1 ? '' : 'aron'}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => deleteOrder(order.id, order.source)}
+                                disabled={deletingId === order.id}
+                                className="text-xs px-2 py-1.5 rounded-xl font-semibold bg-red-500/10 text-red-400/50 hover:bg-red-500/20 hover:text-red-400 transition disabled:opacity-40 flex-none"
+                              >
+                                {deletingId === order.id ? '...' : 'Eliminar'}
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )
               })}

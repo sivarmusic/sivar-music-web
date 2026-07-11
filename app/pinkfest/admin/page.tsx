@@ -32,6 +32,12 @@ interface Order {
   rechazo_motivo: string | null
   created_at: string
   pinkfest_tickets: Ticket[]
+  order_type: string
+  cortesia_categoria: string | null
+}
+
+const CATEGORIA_LABELS: Record<string, string> = {
+  staff: 'Staff', organizacion: 'Organización', vip: 'VIP', musicos: 'Músicos (banda)',
 }
 
 type FilterStatus = 'todas' | 'pendiente_comprobante' | 'en_revision' | 'confirmado' | 'rechazado'
@@ -142,10 +148,13 @@ export default function PinkFestAdmin() {
     return matchStatus && matchSearch
   })
 
-  // Contadores
-  const totalConfirmadas = orders.filter(o => o.status === 'confirmado').length
+  // Contadores — las cortesías no cuentan como vendidas para la liquidación con el venue
+  const ventasConfirmadas = orders.filter(o => o.status === 'confirmado' && o.order_type !== 'cortesia')
+  const cortesiasConfirmadas = orders.filter(o => o.status === 'confirmado' && o.order_type === 'cortesia')
+  const totalConfirmadas = ventasConfirmadas.length
   const totalEnRevision  = orders.filter(o => o.status === 'en_revision').length
-  const totalEntradas    = orders.filter(o => o.status === 'confirmado').reduce((s, o) => s + o.cantidad, 0)
+  const totalEntradas    = ventasConfirmadas.reduce((s, o) => s + o.cantidad, 0)
+  const totalCortesias   = cortesiasConfirmadas.reduce((s, o) => s + o.cantidad, 0)
 
   if (loading) {
     return (
@@ -206,9 +215,15 @@ export default function PinkFestAdmin() {
         </div>
 
         <div className="bg-[#F472B6]/10 border border-[#F472B6]/20 rounded-2xl px-4 py-3 flex items-center justify-between">
-          <span className="text-white/60 text-sm">Entradas confirmadas</span>
+          <span className="text-white/60 text-sm">Entradas vendidas (para el venue)</span>
           <span className="text-[#F472B6] font-bold text-xl">{totalEntradas}</span>
         </div>
+        {totalCortesias > 0 && (
+          <div className="bg-purple-400/10 border border-purple-400/20 rounded-2xl px-4 py-3 flex items-center justify-between">
+            <span className="text-white/60 text-sm">Entradas de cortesía</span>
+            <span className="text-purple-300 font-bold text-xl">{totalCortesias}</span>
+          </div>
+        )}
 
         {/* Analítica de conversión */}
         <div className="bg-white/4 border border-white/8 rounded-2xl overflow-hidden">
@@ -345,6 +360,11 @@ export default function PinkFestAdmin() {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="text-[#F472B6] font-bold text-sm">{order.order_code}</span>
                       <StatusBadge status={order.status} />
+                      {order.order_type === 'cortesia' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-400/10 text-purple-300">
+                          Cortesía{order.cortesia_categoria ? ` — ${CATEGORIA_LABELS[order.cortesia_categoria] ?? order.cortesia_categoria}` : ''}
+                        </span>
+                      )}
                     </div>
                     <p className="text-white font-semibold text-sm truncate">{order.nombre}</p>
                     <p className="text-white/45 text-xs mt-0.5">{order.telefono}</p>
@@ -352,7 +372,9 @@ export default function PinkFestAdmin() {
                   </div>
                   <div className="text-right flex-none">
                     <p className="text-white font-bold text-lg leading-none">{order.cantidad}×</p>
-                    <p className="text-white/35 text-xs mt-1">${order.cantidad * 10}</p>
+                    {order.order_type !== 'cortesia' && (
+                      <p className="text-white/35 text-xs mt-1">${order.cantidad * 10}</p>
+                    )}
                   </div>
                 </div>
 
