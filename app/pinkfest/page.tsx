@@ -12,9 +12,20 @@ interface PendingOrder {
   expiresAt: number
 }
 
+interface Settings {
+  venue: string
+  descripcion: string
+  imagen_url: string
+}
+
 export default function PinkFestPage() {
   const router = useRouter()
   const [pending, setPending] = useState<PendingOrder | null>(null)
+  const [settings, setSettings] = useState<Settings | null>(null)
+
+  useEffect(() => {
+    fetch('/api/pinkfest/settings').then(r => r.json()).then(setSettings).catch(() => {})
+  }, [])
 
   useEffect(() => {
     fetch('/api/pinkfest/track', { method: 'POST' }).catch(() => {})
@@ -36,7 +47,7 @@ export default function PinkFestPage() {
     <PinkFestShell>
       <div className="w-full max-w-sm mb-8">
         <Image
-          src="/pinkfest/poster.jpg"
+          src={settings?.imagen_url ?? '/pinkfest/poster.jpg'}
           alt="Pink Fest — A beneficio de Fundación Hogar Felino"
           width={480}
           height={600}
@@ -82,9 +93,7 @@ export default function PinkFestPage() {
           100% de las ganancias
         </p>
         <p className="text-white/70 text-sm leading-relaxed">
-          Todas las ganancias del evento se donan al{' '}
-          <span className="text-white font-semibold">Refugio Hogar Felino</span>,
-          un espacio dedicado al rescate y cuidado de gatos en situación de calle.
+          {settings?.descripcion ?? 'Todas las ganancias del evento se donan al Refugio Hogar Felino, un espacio dedicado al rescate y cuidado de gatos en situación de calle.'}
         </p>
       </div>
 

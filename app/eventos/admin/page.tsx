@@ -37,6 +37,7 @@ export default function EventosAdminPage() {
   const [resentId, setResentId] = useState<string | null>(null)
   const [sendingReminders, setSendingReminders] = useState(false)
   const [remindersResult, setRemindersResult] = useState<number | null>(null)
+  const [pinkfestVenue, setPinkfestVenue] = useState('Beerhaus')
 
   const fetchData = useCallback(async () => {
     const sessionRes = await fetch('/api/pinkfest/auth/session')
@@ -57,6 +58,9 @@ export default function EventosAdminPage() {
   }, [router])
 
   useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => {
+    fetch('/api/pinkfest/settings').then(r => r.json()).then(data => setPinkfestVenue(data.venue)).catch(() => {})
+  }, [])
 
   async function setStatus(orderId: string, status: 'confirmado' | 'rechazado') {
     setActionId(orderId)
@@ -156,12 +160,16 @@ export default function EventosAdminPage() {
                   <span className="text-[10px] text-[#F472B6] font-bold bg-[#F472B6]/10 px-2 py-0.5 rounded-full">Independiente</span>
                   <span className="text-xs px-2.5 py-1 rounded-xl font-semibold bg-green-400/15 text-green-400">Visible</span>
                 </div>
-                <p className="text-white/35 text-xs mt-1">sáb. 12 jul · $10 · Beerhaus</p>
+                <p className="text-white/35 text-xs mt-1">sáb. 12 jul · $10 · {pinkfestVenue}</p>
               </div>
               <div className="flex items-center gap-2 flex-none flex-wrap justify-end">
                 <Link href="/pinkfest/admin/reporte"
                   className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
                   Reporte
+                </Link>
+                <Link href="/pinkfest/admin/editar"
+                  className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
+                  Editar
                 </Link>
                 <Link href="/pinkfest/admin"
                   className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
