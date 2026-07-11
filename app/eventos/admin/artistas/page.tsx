@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import AdminHeader from '../components/AdminHeader'
 
 interface Application {
   id: string; nombre_artistico: string; nombre_contacto: string; email: string; telefono: string | null
@@ -121,12 +122,9 @@ export default function AdminArtistasPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0008] text-white">
-      <div className="border-b border-white/8 px-5 py-5 flex items-center justify-between">
-        <div>
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase">Sivar Music</p>
-          <h1 className="text-white text-lg font-bold">Admin — Artistas</h1>
-        </div>
-        <Link href="/eventos/admin" className="text-white/40 hover:text-white text-xs transition">← Admin eventos</Link>
+      <AdminHeader />
+      <div className="px-5 pt-5 max-w-2xl mx-auto">
+        <h1 className="text-white text-lg font-bold">Artistas</h1>
       </div>
 
       <div className="px-5 py-6 max-w-2xl mx-auto space-y-8">

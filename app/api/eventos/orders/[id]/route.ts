@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/pinkfest-auth'
 import { sendTicketConfirmed } from '@/lib/email'
-import crypto from 'crypto'
+import { buildTicketRows } from '@/lib/eventTickets'
 
 export async function PATCH(
   req: NextRequest,
@@ -34,13 +34,7 @@ export async function PATCH(
       .eq('order_id', id)
 
     if (!count) {
-      const tickets = Array.from({ length: data.cantidad }, (_, i) => ({
-        order_id: id,
-        order_code: data.order_code,
-        ticket_number: i + 1,
-        qr_token: crypto.randomUUID(),
-      }))
-      await supabase.from('event_tickets').insert(tickets)
+      await supabase.from('event_tickets').insert(buildTicketRows(id, data.order_code, data.cantidad))
     }
 
     // Enviar email de confirmación al comprador

@@ -23,6 +23,7 @@ interface Ticket {
 }
 interface Order {
   id: string; order_code: string; cantidad: number; status: string; created_at: string
+  order_type: string; cortesia_categoria: string | null
   events: { nombre: string; fecha: string; venue: string; slug: string; imagen_url?: string | null } | null
   event_tickets: Ticket[]
 }
@@ -189,6 +190,11 @@ function OrderCard({ order, isExpanded, onExpand, onOpenQR, showQR, dim }: {
   const { t, dateLocale } = useLanguage()
   const status = statusInfo(order.status, t)
   const fecha = order.events ? new Date(order.events.fecha) : null
+  const categoryLabel = order.cortesia_categoria === 'staff' ? t('account.categoryStaff')
+    : order.cortesia_categoria === 'organizacion' ? t('account.categoryOrganizacion')
+    : order.cortesia_categoria === 'vip' ? t('account.categoryVip')
+    : order.cortesia_categoria === 'musicos' ? t('account.categoryMusicos')
+    : order.cortesia_categoria
 
   return (
     <div className={`rounded-2xl border ${dim ? 'border-white/6 bg-white/2 opacity-70' : 'border-white/10 bg-white/4'}`}>
@@ -209,6 +215,11 @@ function OrderCard({ order, isExpanded, onExpand, onOpenQR, showQR, dim }: {
             </p>
           )}
           <span className={`inline-block text-[10px] font-bold uppercase tracking-wider mt-1.5 px-2 py-0.5 rounded-full ${status.bg} ${status.color}`}>{status.label}</span>
+          {order.order_type === 'cortesia' && (
+            <span className="inline-block text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1.5 px-2 py-0.5 rounded-full bg-purple-400/10 text-purple-300">
+              {t('account.courtesy')}{categoryLabel ? ` — ${categoryLabel}` : ''}
+            </span>
+          )}
         </div>
         <div className="text-right flex-none">
           <p className="text-[#F472B6] font-bold text-sm">{order.order_code}</p>

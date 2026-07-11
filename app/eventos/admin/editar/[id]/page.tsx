@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import AdminHeader from '../../components/AdminHeader'
 
 interface FormState {
   nombre: string; slug: string; descripcion: string
@@ -132,11 +133,9 @@ export default function EditarEventoPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0008] text-white">
-      <div className="border-b border-white/8 px-5 py-5 flex items-center justify-between">
-        <div>
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase">Admin</p>
-          <h1 className="text-white text-lg font-bold">Editar evento</h1>
-        </div>
+      <AdminHeader />
+      <div className="px-5 pt-5 max-w-lg mx-auto flex items-center justify-between">
+        <h1 className="text-white text-lg font-bold">Editar evento</h1>
         <a href="/eventos/admin" className="text-white/35 hover:text-white text-xs transition">← Volver</a>
       </div>
 

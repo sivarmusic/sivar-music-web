@@ -143,6 +143,11 @@ const es = {
   'account.tapToEnlarge': 'Toca para ampliar',
   'account.showAtEntrance': 'Mostrá este código en la entrada',
   'account.close': 'Cerrar ✕',
+  'account.courtesy': 'Cortesía',
+  'account.categoryStaff': 'Staff',
+  'account.categoryOrganizacion': 'Organización',
+  'account.categoryVip': 'VIP',
+  'account.categoryMusicos': 'Músicos (banda)',
 
   'login.tabSignIn': 'Iniciar sesión',
   'login.tabCreate': 'Crear cuenta',
@@ -439,6 +444,11 @@ const en: Record<Key, string> = {
   'account.tapToEnlarge': 'Tap to enlarge',
   'account.showAtEntrance': 'Show this code at the entrance',
   'account.close': 'Close ✕',
+  'account.courtesy': 'Courtesy',
+  'account.categoryStaff': 'Staff',
+  'account.categoryOrganizacion': 'Organization',
+  'account.categoryVip': 'VIP',
+  'account.categoryMusicos': 'Musicians (band)',
 
   'login.tabSignIn': 'Sign in',
   'login.tabCreate': 'Create account',

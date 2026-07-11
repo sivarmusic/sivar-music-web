@@ -221,10 +221,16 @@ export default function EventosPage() {
         )}
       </div>
 
-      <div className="text-center pb-8 space-y-2">
-        <Link href="/eventos/artistas" className="block text-white/25 hover:text-[#F472B6] text-xs transition">
-          {t('home.forArtists')}
-        </Link>
+      <div className="text-center pb-8 space-y-1.5">
+        <div className="flex items-center justify-center gap-3">
+          <Link href="/eventos/artistas" className="text-white/20 hover:text-white/50 text-[11px] transition">
+            Sivar Events for Artists
+          </Link>
+          <span className="text-white/10 text-[11px]">·</span>
+          <Link href="/eventos/privacidad" className="text-white/20 hover:text-white/50 text-[11px] transition">
+            Políticas de privacidad
+          </Link>
+        </div>
         <p className="text-white/15 text-[10px]">Sivar Music Group</p>
       </div>
     </div>

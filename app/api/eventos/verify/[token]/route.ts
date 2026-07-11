@@ -10,7 +10,7 @@ export async function GET(
 
   const { data: ticket, error } = await supabase
     .from('event_tickets')
-    .select('id, ticket_number, check_in_at, event_orders(order_code, nombre, cantidad, status, events(nombre))')
+    .select('id, ticket_number, check_in_at, event_orders(order_code, nombre, cantidad, status, order_type, cortesia_categoria, events(nombre))')
     .eq('qr_token', token)
     .maybeSingle()
 
@@ -19,6 +19,7 @@ export async function GET(
 
   const order = ticket.event_orders as unknown as {
     order_code: string; nombre: string; cantidad: number; status: string
+    order_type: string; cortesia_categoria: string | null
     events: { nombre: string } | null
   }
 
@@ -34,6 +35,8 @@ export async function GET(
       evento: order.events?.nombre ?? '',
       ticket_number: ticket.ticket_number,
       check_in_at: ticket.check_in_at,
+      order_type: order.order_type,
+      cortesia_categoria: order.cortesia_categoria,
     },
   })
 }

@@ -2,15 +2,17 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import AdminHeader from './components/AdminHeader'
 
 interface Ticket { id: string; ticket_number: number; qr_token: string; check_in_at: string | null }
 interface Order {
   id: string; order_code: string; nombre: string; telefono: string; email: string
   cantidad: number; status: string; created_at: string; comprobante_path: string | null
+  order_type: string
   events: { id: string; nombre: string; slug: string } | null
   event_tickets: Ticket[]
 }
-interface Event { id: string; nombre: string; slug: string; fecha: string; precio: number; visible: boolean }
+interface Event { id: string; nombre: string; slug: string; fecha: string; precio: number; visible: boolean; imagen_url?: string | null; venue?: string }
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   pendiente_comprobante: { label: 'Sin comprobante', color: 'text-white/50', bg: 'bg-white/8' },
@@ -103,87 +105,86 @@ export default function EventosAdminPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0008] text-white">
-      {/* Header */}
-      <div className="border-b border-white/8 px-5 py-5 flex items-center justify-between">
-        <div>
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase">Sivar Music</p>
-          <h1 className="text-white text-lg font-bold">Admin — Eventos</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/eventos/admin/artistas" className="text-white/40 hover:text-white text-xs uppercase tracking-wider transition">
-            Artistas
-          </Link>
+      <AdminHeader />
+
+      <div className="px-5 py-6 max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-white text-lg font-bold">Eventos</h1>
           <Link href="/eventos/admin/nuevo"
             className="bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl transition">
             + Nuevo
           </Link>
         </div>
-      </div>
-
-      <div className="px-5 py-6 max-w-2xl mx-auto space-y-6">
         {/* Eventos */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider">Eventos</p>
-            <Link href="/eventos/admin/nuevo" className="text-[#F472B6] text-xs font-semibold hover:text-white transition">+ Nuevo evento</Link>
-          </div>
-          <div className="space-y-2">
-              {/* Pink Fest — tarjeta fija */}
-              <div className="rounded-2xl border border-[#F472B6]/20 bg-[#F472B6]/5 px-4 py-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-white font-semibold text-sm">Pink Fest</p>
-                    <span className="text-[10px] text-[#F472B6] font-bold bg-[#F472B6]/10 px-2 py-0.5 rounded-full">Independiente</span>
-                  </div>
-                  <p className="text-white/35 text-xs mt-0.5">sáb. 12 jul · $10 · Beerhaus</p>
-                </div>
-                <div className="flex items-center gap-2 flex-none">
-                  <span className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-green-400/15 text-green-400">Visible</span>
-                  <Link href="/pinkfest/admin"
-                    className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
-                    Gestionar
-                  </Link>
-                  <a href="/pinkfest" target="_blank" rel="noopener noreferrer"
-                    className="text-white/25 hover:text-white text-xs transition">↗</a>
-                </div>
+        <div className="space-y-3">
+          {/* Pink Fest — tarjeta fija */}
+          <div className="rounded-2xl border border-[#F472B6]/20 bg-[#F472B6]/5 p-4 flex items-center gap-4">
+            <div className="h-14 w-14 flex-none rounded-xl bg-[#F472B6]/15 flex items-center justify-center text-2xl">🎀</div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-white font-semibold text-sm">Pink Fest</p>
+                <span className="text-[10px] text-[#F472B6] font-bold bg-[#F472B6]/10 px-2 py-0.5 rounded-full">Independiente</span>
+                <span className="text-xs px-2.5 py-1 rounded-xl font-semibold bg-green-400/15 text-green-400">Visible</span>
               </div>
-
-              {events.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center">
-                  <p className="text-white/25 text-sm">No hay otros eventos creados.</p>
-                  <Link href="/eventos/admin/nuevo" className="text-[#F472B6] text-xs mt-2 block hover:text-white transition">Crear evento →</Link>
-                </div>
-              ) : events.map(event => (
-                <div key={event.id} className="rounded-2xl border border-white/10 bg-white/4 px-4 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-white font-semibold text-sm truncate">{event.nombre}</p>
-                    <p className="text-white/35 text-xs mt-0.5">
-                      {new Date(event.fecha).toLocaleDateString('es-SV', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      {' · '}<span className="font-mono">${event.precio}</span>
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-none">
-                    <button onClick={() => toggleVisible(event.id, event.visible)}
-                      className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition ${event.visible ? 'bg-green-400/15 text-green-400 hover:bg-red-400/15 hover:text-red-400' : 'bg-white/8 text-white/40 hover:bg-green-400/15 hover:text-green-400'}`}>
-                      {event.visible ? 'Visible' : 'Oculto'}
-                    </button>
-                    <Link href={`/eventos/admin/editar/${event.id}`}
-                      className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
-                      Editar
-                    </Link>
-                    <a href={`/eventos/${event.slug}`} target="_blank" rel="noopener noreferrer"
-                      className="text-white/25 hover:text-white text-xs transition">↗</a>
-                    <button
-                      onClick={() => deleteEvent(event.id, event.nombre)}
-                      disabled={deletingEventId === event.id}
-                      className="text-xs px-2 py-1.5 rounded-xl font-semibold bg-red-500/10 text-red-400/50 hover:bg-red-500/20 hover:text-red-400 transition disabled:opacity-40"
-                    >
-                      {deletingEventId === event.id ? '...' : 'Eliminar'}
-                    </button>
-                  </div>
-                </div>
-              ))}
+              <p className="text-white/35 text-xs mt-1">sáb. 12 jul · $10 · Beerhaus</p>
+            </div>
+            <div className="flex items-center gap-2 flex-none">
+              <Link href="/pinkfest/admin"
+                className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
+                Gestionar
+              </Link>
+              <a href="/pinkfest" target="_blank" rel="noopener noreferrer"
+                className="text-white/25 hover:text-white text-xs transition">↗</a>
+            </div>
           </div>
+
+          {events.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center">
+              <p className="text-white/25 text-sm">No hay otros eventos creados.</p>
+              <Link href="/eventos/admin/nuevo" className="text-[#F472B6] text-xs mt-2 block hover:text-white transition">Crear evento →</Link>
+            </div>
+          ) : events.map(event => (
+            <div key={event.id} className="rounded-2xl border border-white/10 bg-white/4 p-4 flex items-center gap-4">
+              {event.imagen_url ? (
+                <img src={event.imagen_url} alt={event.nombre} className="h-14 w-14 flex-none rounded-xl object-cover" />
+              ) : (
+                <div className="h-14 w-14 flex-none rounded-xl bg-white/8 flex items-center justify-center text-2xl">🎫</div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-white font-semibold text-sm truncate">{event.nombre}</p>
+                  <button onClick={() => toggleVisible(event.id, event.visible)}
+                    className={`text-xs px-2.5 py-1 rounded-xl font-semibold transition ${event.visible ? 'bg-green-400/15 text-green-400 hover:bg-red-400/15 hover:text-red-400' : 'bg-white/8 text-white/40 hover:bg-green-400/15 hover:text-green-400'}`}>
+                    {event.visible ? 'Visible' : 'Oculto'}
+                  </button>
+                </div>
+                <p className="text-white/35 text-xs mt-1">
+                  {new Date(event.fecha).toLocaleDateString('es-SV', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {event.venue && ` · ${event.venue}`}
+                  {' · '}<span className="font-mono">${event.precio}</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-none flex-wrap justify-end">
+                <Link href={`/eventos/admin/eventos/${event.id}/reporte`}
+                  className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
+                  Reporte
+                </Link>
+                <Link href={`/eventos/admin/editar/${event.id}`}
+                  className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
+                  Editar
+                </Link>
+                <a href={`/eventos/${event.slug}`} target="_blank" rel="noopener noreferrer"
+                  className="text-white/25 hover:text-white text-xs transition">↗</a>
+                <button
+                  onClick={() => deleteEvent(event.id, event.nombre)}
+                  disabled={deletingEventId === event.id}
+                  className="text-xs px-2 py-1.5 rounded-xl font-semibold bg-red-500/10 text-red-400/50 hover:bg-red-500/20 hover:text-red-400 transition disabled:opacity-40"
+                >
+                  {deletingEventId === event.id ? '...' : 'Eliminar'}
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Filtro por evento */}
@@ -240,8 +241,11 @@ export default function EventosAdminPage() {
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusInfo.bg} ${statusInfo.color}`}>
                             {statusInfo.label}
                           </span>
+                          {order.order_type === 'cortesia' && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-400/10 text-purple-300">Cortesía</span>
+                          )}
                         </div>
-                        <p className="text-white/35 text-xs">{order.telefono} · {order.email}</p>
+                        <p className="text-white/35 text-xs">{[order.telefono, order.email].filter(Boolean).join(' · ')}</p>
                         {order.events && <p className="text-white/25 text-xs mt-0.5">{order.events.nombre}</p>}
                       </div>
                       <div className="text-right flex-none">
