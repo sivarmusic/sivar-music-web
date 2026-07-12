@@ -17,9 +17,6 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
-// sendWelcome is PRESENT for forward-compat with fix-confirm-email.
-// Asserting it was called would couple this change to that one, so it stays
-// inert here. fix-confirm-email adds the positive expectation.
 vi.mock('@/lib/email', () => ({
   sendWelcome: mocks.sendWelcome,
 }))
@@ -40,10 +37,14 @@ beforeEach(() => {
   mocks.upsert.mockClear()
   mocks.upsert.mockResolvedValue({ error: null })
   mocks.sendWelcome.mockReset()
+  // sendWelcome resolves to undefined by default so the route's
+  // .catch() chain doesn't blow up. Specific tests can override with
+  // mockRejectedValueOnce / mockResolvedValueOnce.
+  mocks.sendWelcome.mockResolvedValue(undefined)
 })
 
 describe('POST /api/eventos/user/register', () => {
-  it('returns 200 { success: true } and creates the user with email_confirm:true on a valid payload', async () => {
+  it('returns 200 { success: true }, auto-confirms the user, and fires sendWelcome with { to, nombre }', async () => {
     mocks.createUser.mockResolvedValueOnce({
       data: { user: { id: 'u-1' } },
       error: null,
@@ -65,6 +66,12 @@ describe('POST /api/eventos/user/register', () => {
         email_confirm: true,
       }),
     )
+
+    expect(mocks.sendWelcome).toHaveBeenCalledTimes(1)
+    expect(mocks.sendWelcome).toHaveBeenCalledWith({
+      to: 'ana@example.com',
+      nombre: 'Ana López',
+    })
   })
 
   it('upserts the attendee_profile with the new user id after a successful signup', async () => {
@@ -92,7 +99,24 @@ describe('POST /api/eventos/user/register', () => {
     )
   })
 
-  it('returns 409 with the "Ya existe una cuenta" body when the email is already registered', async () => {
+  it('still returns 200 { success: true } when sendWelcome rejects (fire-and-forget resilience)', async () => {
+    mocks.createUser.mockResolvedValueOnce({
+      data: { user: { id: 'u-77' } },
+      error: null,
+    })
+    mocks.sendWelcome.mockRejectedValueOnce(new Error('resend down'))
+
+    const res = await POST(
+      makeRequest({ email: 'ana@example.com', password: 'secret1', nombre: 'Ana' }),
+    )
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual({ success: true })
+    expect(mocks.sendWelcome).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns 409 { error: "user_exists" } when the email is already registered', async () => {
     mocks.createUser.mockResolvedValueOnce({
       data: { user: null },
       error: { message: 'User already registered' },
@@ -104,13 +128,14 @@ describe('POST /api/eventos/user/register', () => {
 
     expect(res.status).toBe(409)
     const body = await res.json()
-    expect(body.error).toMatch(/ya existe una cuenta/i)
+    expect(body).toEqual({ error: 'user_exists' })
+    expect(mocks.sendWelcome).not.toHaveBeenCalled()
   })
 
-  it('returns 500 with the error message for a generic admin error', async () => {
+  it('returns 500 { error: "server_error" } and does not leak the raw provider message for a generic admin error', async () => {
     mocks.createUser.mockResolvedValueOnce({
       data: { user: null },
-      error: { message: 'boom' },
+      error: { message: 'internal Supabase stack trace with secrets' },
     })
 
     const res = await POST(
@@ -119,7 +144,11 @@ describe('POST /api/eventos/user/register', () => {
 
     expect(res.status).toBe(500)
     const body = await res.json()
-    expect(body.error).toBe('boom')
+    expect(body).toEqual({ error: 'server_error' })
+    // No raw provider internals must leak through the response body.
+    expect(JSON.stringify(body)).not.toMatch(/Supabase stack trace/)
+    expect(JSON.stringify(body)).not.toMatch(/secrets/)
+    expect(mocks.sendWelcome).not.toHaveBeenCalled()
   })
 
   it('returns 400 "Faltan campos" when any required field is missing', async () => {
