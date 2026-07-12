@@ -55,24 +55,23 @@ function LoginForm() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault(); setError(''); setLoading(true)
     try {
-      const { data, error: signUpErr } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { nombre },
-          emailRedirectTo: `${window.location.origin}/eventos/mi-cuenta/login`,
-        },
+      const res = await fetch('/api/eventos/user/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, nombre }),
       })
-      if (signUpErr) {
-        if (signUpErr.message.toLowerCase().includes('already')) throw new Error(t('login.errorAlreadyExists'))
-        throw new Error(signUpErr.message)
-      }
-      if (data.session) {
-        // Confirmación de email deshabilitada — sesión inmediata
-        router.push(next)
+      if (res.ok) {
+        // Server route auto-confirmed the user; sign them in immediately.
+        const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
+        if (signInErr) {
+          setError(t('login.errorUnexpected'))
+        } else {
+          router.push(next)
+        }
+      } else if (res.status === 409) {
+        setError(t('login.errorAlreadyExists'))
       } else {
-        // Confirmación requerida — llevar a página de verificación
-        router.push(`/eventos/mi-cuenta/verificar?email=${encodeURIComponent(email)}`)
+        setError(t('login.errorUnexpected'))
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('login.errorUnexpected'))

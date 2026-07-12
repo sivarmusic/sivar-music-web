@@ -1,3 +1,10 @@
+/**
+ * New email/password signups are auto-confirmed server-side via
+ * /api/eventos/user/register (admin.createUser with email_confirm: true)
+ * and no longer route here. This page is retained for legacy/edge
+ * accounts created before the auto-confirm fix — direct visits still
+ * render the resend-verification flow.
+ */
 'use client'
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
