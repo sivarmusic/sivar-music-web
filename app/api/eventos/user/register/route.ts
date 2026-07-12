@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { sendWelcome } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   const { email, password, nombre, telefono } = await req.json()
@@ -19,10 +20,10 @@ export async function POST(req: NextRequest) {
   })
 
   if (error) {
-    if (error.message.includes('already')) {
-      return NextResponse.json({ error: 'Ya existe una cuenta con ese correo' }, { status: 409 })
+    if (error.message.toLowerCase().includes('already')) {
+      return NextResponse.json({ error: 'user_exists' }, { status: 409 })
     }
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 
   if (data.user) {
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
       nombre: nombre.trim(),
       telefono: telefono?.trim() || null,
     })
+    await sendWelcome({ to: email.trim(), nombre: nombre.trim() }).catch(() => {})
   }
 
   return NextResponse.json({ success: true })
