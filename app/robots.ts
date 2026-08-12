@@ -7,7 +7,13 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: "/",
         // Shared by link only — never through search results.
-        disallow: ["/sound-for-films", "/sound-for-films/"],
+        disallow: [
+          "/sound-for-films",
+          "/sound-for-films/",
+          "/voces",
+          "/voces/",
+          "/api/voces",
+        ],
       },
     ],
   };

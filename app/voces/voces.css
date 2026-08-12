@@ -1,0 +1,189 @@
+/* ============================================================
+   Voces — Design System (ported from voces-bds's app/globals.css)
+
+   The --color-* variables and .ds-* utility classes are defined at :root
+   (not scoped under .voces-scope) because AddToProject's dropdown menu
+   renders through a React portal straight into document.body, outside the
+   .voces-scope wrapper — CSS custom properties don't cross that boundary
+   otherwise. This is safe: these names are all voces-specific and don't
+   collide with anything else in the site's globals.css (verified before
+   adding this file). Only the body-level background/font application is
+   scoped to `.voces-scope` so the rest of the site's look is untouched.
+============================================================ */
+
+:root {
+  --color-bg-base: #0a0a0b;
+  --color-bg-card: rgba(255, 255, 255, 0.03);
+  --color-bg-card-hover: rgba(255, 255, 255, 0.055);
+  --color-bg-subtle: rgba(255, 255, 255, 0.04);
+  --color-accent: #e84c2b;
+  --color-accent-bg: rgba(232, 76, 43, 0.1);
+  --color-accent-border: rgba(232, 76, 43, 0.25);
+  --color-accent-bg-hover: rgba(232, 76, 43, 0.18);
+  --color-text-primary: #f0ede8;
+  --color-text-secondary: rgba(240, 237, 232, 0.5);
+  --color-text-muted: rgba(240, 237, 232, 0.3);
+  --color-border-default: rgba(255, 255, 255, 0.07);
+  --color-border-hover: rgba(255, 255, 255, 0.13);
+  --color-border-subtle: rgba(255, 255, 255, 0.1);
+}
+
+.voces-scope {
+  display: block;
+  min-height: 100vh;
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-dm-sans), Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Cards */
+.ds-card {
+  background: var(--color-bg-card);
+  border: 0.5px solid var(--color-border-default);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: background 0.22s ease, border-color 0.22s ease, transform 0.22s ease;
+}
+.ds-card:hover {
+  background: var(--color-bg-card-hover);
+  border-color: var(--color-border-hover);
+  transform: translateY(-2px);
+}
+
+/* Inputs / selects */
+.ds-input {
+  background: var(--color-bg-subtle);
+  border: 0.5px solid var(--color-border-subtle);
+  border-radius: 10px;
+  color: var(--color-text-primary);
+  padding: 12px 16px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.ds-input::placeholder {
+  color: var(--color-text-muted);
+}
+.ds-input:focus {
+  outline: none;
+  border-color: rgba(232, 76, 43, 0.4);
+}
+
+/* Filter pill base */
+.ds-pill {
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-bg-subtle);
+  border: 0.5px solid var(--color-border-subtle);
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+.ds-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-hover);
+}
+.ds-pill.active {
+  background: var(--color-accent-bg);
+  border-color: var(--color-accent-border);
+  color: var(--color-accent);
+}
+
+/* Primary CTA button */
+.ds-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent-bg);
+  border: 0.5px solid var(--color-accent-border);
+  border-radius: 8px;
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  text-decoration: none;
+}
+.ds-btn-primary:hover {
+  background: var(--color-accent-bg-hover);
+  border-color: rgba(232, 76, 43, 0.4);
+}
+
+/* Secondary button */
+.ds-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-subtle);
+  border: 0.5px solid var(--color-border-subtle);
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+  text-decoration: none;
+}
+.ds-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-hover);
+}
+
+/* Text utilities */
+.voces-scope .line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.voces-scope .line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Animations
+   (kept unprefixed — @keyframes are looked up by name globally in CSS, and
+   several ported pages reference `softPulse` directly via inline
+   `style={{ animation: "softPulse ..." }}`, not just through .dot-pulse) */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.card-enter {
+  animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+@keyframes softPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.dot-pulse {
+  animation: softPulse 2s ease-in-out infinite;
+}
