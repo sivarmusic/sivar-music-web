@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS voces_castings (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   share_id      TEXT NOT NULL UNIQUE,
   criteria      JSONB,
+  deadline      TIMESTAMPTZ,
 
   budget        NUMERIC,
   currency      TEXT,                    -- 'ARS' | 'USD'
@@ -136,6 +137,11 @@ CREATE TABLE IF NOT EXISTS voces_castings (
 CREATE INDEX IF NOT EXISTS idx_voces_castings_share_id ON voces_castings (share_id);
 CREATE INDEX IF NOT EXISTS idx_voces_castings_status   ON voces_castings (status);
 CREATE INDEX IF NOT EXISTS idx_voces_castings_client   ON voces_castings (client);
+
+-- Fix: la tabla original de BDS tenía esta columna creada a mano en el
+-- dashboard (sin script), se nos había pasado al reconstruir el esquema.
+-- ADD COLUMN IF NOT EXISTS para no romper si ya corriste este script antes.
+ALTER TABLE voces_castings ADD COLUMN IF NOT EXISTS deadline TIMESTAMPTZ;
 
 ALTER TABLE voces_castings ENABLE ROW LEVEL SECURITY;
 
