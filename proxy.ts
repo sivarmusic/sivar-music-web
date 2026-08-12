@@ -41,6 +41,35 @@ function proxyDashboard(req: NextRequest, pathname: string) {
   return NextResponse.next();
 }
 
+const VOCES_PUBLIC_PREFIXES = [
+  "/voces/login",
+  "/voces/admin",
+  "/voces/s/",
+  "/voces/r/",
+  "/voces/c/",
+  "/voces/cc/",
+  "/voces/cr/",
+  "/voces/reporte/",
+  "/voces/actualizar-reel",
+];
+
+function proxyVoces(req: NextRequest, pathname: string) {
+  if (VOCES_PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return NextResponse.next();
+  }
+
+  const hasClient = req.cookies.get("voces_client");
+  const hasAdmin = req.cookies.get("voces_admin")?.value === "1";
+  if (!hasClient && !hasAdmin) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/voces/login";
+    url.searchParams.set("next", pathname + req.nextUrl.search);
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
+}
+
 async function proxySoundForFilms(req: NextRequest, pathname: string) {
   // The access screen and the admin toggle must stay reachable while locked.
   if (
@@ -85,9 +114,13 @@ export async function proxy(req: NextRequest) {
     return proxySoundForFilms(req, pathname);
   }
 
+  if (pathname.startsWith("/voces")) {
+    return proxyVoces(req, pathname);
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/sound-for-films/:path*"],
+  matcher: ["/dashboard/:path*", "/sound-for-films/:path*", "/voces/:path*"],
 };
