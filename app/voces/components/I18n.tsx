@@ -37,7 +37,6 @@ const dict: Dict = {
   addAdding: { en: "Adding…", es: "Agregando…" },
   signIn: { en: "Sign in", es: "Iniciá sesión" },
   instagram: { en: "Instagram", es: "Instagram" },
-  vimeo: { en: "Vimeo", es: "Vimeo" },
   loginTitle: { en: "Sign in", es: "Ingresar" },
   email: { en: "Email", es: "Email" },
   phone: { en: "Phone", es: "Teléfono" },

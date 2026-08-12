@@ -69,22 +69,13 @@ export default function HeaderBar() {
         {/* Right controls */}
         <div className="flex items-center gap-2 shrink-0">
           <a
-            href="https://www.instagram.com/b_d_s_______/"
+            href="http://instagram.com/sivar.music"
             target="_blank"
             rel="noreferrer"
             className="hidden md:block text-[13px] transition-colors duration-200 hover:text-[#f0ede8] px-2 py-1"
             style={{ color: "var(--color-text-secondary)" }}
           >
             {t("instagram")}
-          </a>
-          <a
-            href="https://vimeo.com/user34290988"
-            target="_blank"
-            rel="noreferrer"
-            className="hidden md:block text-[13px] transition-colors duration-200 hover:text-[#f0ede8] px-2 py-1"
-            style={{ color: "var(--color-text-secondary)" }}
-          >
-            {t("vimeo")}
           </a>
 
           <NotificationBell />
