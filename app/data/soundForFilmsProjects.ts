@@ -29,6 +29,11 @@ type SoundForFilmsBlobManifest = {
 
 const soundForFilmsCatalog: SoundForFilmsCatalogEntry[] = [
   {
+    filename: "BINTER.mp4",
+    title: "BINTER",
+    description: "SOUND DESIGN/MIX",
+  },
+  {
     filename: "CORONA 100 AÑOS.mp4",
     title: "CORONA 100 AÑOS",
     description: "SOUND DESIGN/MIX",
