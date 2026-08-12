@@ -1,4 +1,8 @@
 import blobManifest from "./soundForFilmsBlobManifest.json";
+import {
+  createSignedVideoUrls,
+  toStorageObjectKey,
+} from "@/lib/sound-for-films-videos";
 
 export type SoundForFilmsProject = {
   slug: string;
@@ -169,17 +173,64 @@ function resolveBlobOrFallbackUrl(
   return manifestUrl ?? buildVideoUrl(LOCAL_VIDEO_BASE_URL, filename);
 }
 
-export function getSoundForFilmsProjects(): SoundForFilmsProject[] {
-  return soundForFilmsCatalog.map((entry) => ({
+let hasWarnedAboutMissingStorage = false;
+
+function warnAboutLegacyFallback(missing: number) {
+  if (hasWarnedAboutMissingStorage) return;
+  hasWarnedAboutMissingStorage = true;
+  console.warn(
+    `[sound-for-films] ${missing} video(s) could not be signed from the private ` +
+      `"sound-for-films" bucket and fell back to legacy public URLs. Those URLs ` +
+      `are permanent and unauthenticated — run ` +
+      `scripts/migrate-sound-for-films-to-supabase.mjs to close the gap.`
+  );
+}
+
+/**
+ * Resolves playable video URLs for the showcase.
+ *
+ * Videos live in a private Supabase bucket and are served through signed URLs
+ * minted per request, so a shared link stops working once it expires. Files
+ * that are not in the bucket yet fall back to the legacy public blob manifest
+ * so the page keeps rendering during the migration.
+ */
+export async function getSoundForFilmsProjects(): Promise<
+  SoundForFilmsProject[]
+> {
+  const paths = soundForFilmsCatalog.flatMap((entry) => [
+    toStorageObjectKey("full", entry.filename),
+    toStorageObjectKey("preview", entry.previewFilename ?? entry.filename),
+  ]);
+
+  const signedUrls = await createSignedVideoUrls(paths);
+  let missing = 0;
+
+  const resolve = (
+    type: "full" | "preview",
+    filename: string,
+    envBaseUrl: string
+  ) => {
+    const signed = signedUrls.get(toStorageObjectKey(type, filename));
+    if (signed) return signed;
+
+    missing += 1;
+    return resolveBlobOrFallbackUrl(filename, type, envBaseUrl);
+  };
+
+  const projects = soundForFilmsCatalog.map((entry) => ({
     slug: slugify(entry.title),
     title: entry.title,
     description: entry.description,
     partnerCredit: entry.partnerCredit ?? "",
-    previewVideoSrc: resolveBlobOrFallbackUrl(
-      entry.previewFilename ?? entry.filename,
+    previewVideoSrc: resolve(
       "preview",
+      entry.previewFilename ?? entry.filename,
       previewVideoBaseUrl
     ),
-    videoSrc: resolveBlobOrFallbackUrl(entry.filename, "full", fullVideoBaseUrl),
+    videoSrc: resolve("full", entry.filename, fullVideoBaseUrl),
   }));
+
+  if (missing > 0) warnAboutLegacyFallback(missing);
+
+  return projects;
 }
