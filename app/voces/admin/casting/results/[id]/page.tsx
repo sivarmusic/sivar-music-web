@@ -46,6 +46,7 @@ export default function AdminCastingResultsDetailPage() {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [selectingId, setSelectingId] = useState<string | null>(null);
+  const [hidingId, setHidingId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState({ firstName: "", lastName: "", phone: "", email: "", country: "", gender: "", homeStudio: "no", onlineSessions: "no" });
   const [addAudioFile, setAddAudioFile] = useState<File | null>(null);
@@ -196,6 +197,30 @@ export default function AdminCastingResultsDetailPage() {
     }
   }
 
+  async function onToggleHidden(app: any) {
+    const newHidden = !app.hidden;
+    setHidingId(app.id);
+    try {
+      const r = await fetch("/api/voces/admin/casting/application/hide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ applicationId: app.id, hidden: newHidden }),
+      });
+      const j = await r.json();
+      if (!r.ok || !j?.ok) throw new Error(j?.error || "Error");
+      setApps((prev) => prev.map((a) => (a.id === app.id ? { ...a, hidden: newHidden } : a)));
+      setToast(newHidden
+        ? `${app.firstName} ${app.lastName} ya no aparece en el link público`
+        : `${app.firstName} ${app.lastName} vuelve a aparecer en el link público`);
+      setTimeout(() => setToast(null), 3000);
+    } catch (e: any) {
+      setToast(`Error: ${e?.message || "No se pudo guardar"}`);
+      setTimeout(() => setToast(null), 4000);
+    } finally {
+      setHidingId(null);
+    }
+  }
+
   function copyEmails() {
     const notSelected = apps.filter((a) => a.email && !a.selected);
     const emails = notSelected.map((a) => a.email).join(", ");
@@ -230,6 +255,9 @@ export default function AdminCastingResultsDetailPage() {
   }
 
   if (authLoading || !isAdmin) return <main className="p-6">Cargando…</main>;
+
+  const hiddenCount = apps.filter((a) => a.hidden).length;
+  const visibleCount = apps.length - hiddenCount;
 
   return (
     <>
@@ -303,10 +331,15 @@ export default function AdminCastingResultsDetailPage() {
               </button>
               <button
                 onClick={async () => {
-                  try { await navigator.clipboard.writeText(`${location.origin}/voces/r/${id}`); setToast("Link copiado"); setTimeout(() => setToast(null), 2000); } catch {}
+                  try {
+                    await navigator.clipboard.writeText(`${location.origin}/voces/r/${id}`);
+                    setToast(`Link copiado — ${visibleCount} de ${apps.length} postulaciones visibles`);
+                    setTimeout(() => setToast(null), 3000);
+                  } catch {}
                 }}
+                title={hiddenCount ? `${hiddenCount} postulación${hiddenCount !== 1 ? "es" : ""} oculta${hiddenCount !== 1 ? "s" : ""} en el link público` : "Copia el link público de resultados"}
                 className="rounded border border-gray-300 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
-              >Compartir</button>
+              >Compartir{hiddenCount ? ` (${visibleCount}/${apps.length})` : ""}</button>
             </div>
           </div>
           {loading ? (
@@ -315,11 +348,18 @@ export default function AdminCastingResultsDetailPage() {
             <p className="mt-4 text-sm text-red-600">{error}</p>
           ) : (
             <section className="mt-6">
-              <div className="text-xs text-gray-500">{casting?.createdAt ? new Date(casting.createdAt).toLocaleString() : null}</div>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                <span>{casting?.createdAt ? new Date(casting.createdAt).toLocaleString() : null}</span>
+                {hiddenCount ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-amber-800">
+                    {hiddenCount} oculta{hiddenCount !== 1 ? "s" : ""} — el link público muestra {visibleCount} de {apps.length}
+                  </span>
+                ) : null}
+              </div>
               {apps.length ? (
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                   {apps.map((a) => (
-                    <article key={a.id} className={`relative rounded-2xl border p-4 shadow-sm transition-colors ${a.selected ? "border-emerald-400 bg-emerald-50/40 ring-1 ring-emerald-300" : "border-gray-200 bg-white"}`}>
+                    <article key={a.id} className={`relative rounded-2xl border p-4 shadow-sm transition-colors ${a.hidden ? "border-dashed border-gray-300 bg-gray-100/70" : a.selected ? "border-emerald-400 bg-emerald-50/40 ring-1 ring-emerald-300" : "border-gray-200 bg-white"}`}>
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2">
@@ -330,6 +370,16 @@ export default function AdminCastingResultsDetailPage() {
                                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
                                 </svg>
                                 Voz elegida
+                              </span>
+                            )}
+                            {a.hidden && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-gray-200 text-gray-600 px-2 py-0.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
+                                  <path d="M3.53 2.47a.75.75 0 00-1.06 1.06l18 18a.75.75 0 101.06-1.06l-18-18zM22.676 12.553a11.249 11.249 0 01-2.631 4.31l-3.099-3.099a5.25 5.25 0 00-6.71-6.71L7.759 4.577a11.217 11.217 0 014.24-.827c4.97 0 9.185 3.223 10.677 7.69.12.362.12.752 0 1.113z" />
+                                  <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0115.75 12zM12.53 15.713l-4.243-4.244a3.75 3.75 0 004.243 4.243z" />
+                                  <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 00-2.63 4.31c-.12.362-.12.752 0 1.114 1.492 4.467 5.707 7.69 10.677 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 016.75 12z" />
+                                </svg>
+                                Oculto en el link público
                               </span>
                             )}
                           </div>
@@ -459,7 +509,7 @@ export default function AdminCastingResultsDetailPage() {
                         </button>
                       </div>
 
-                      <div className="mt-3">
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         <button
                           onClick={() => onToggleSelected(a)}
                           disabled={selectingId === a.id}
@@ -490,6 +540,46 @@ export default function AdminCastingResultsDetailPage() {
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
                               </svg>
                               Marcar como elegido
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={() => onToggleHidden(a)}
+                          disabled={hidingId === a.id}
+                          title={a.hidden
+                            ? "Volver a mostrar esta postulación en el link público"
+                            : "Ocultarla del link público. Sigue visible acá y no afecta el total de postulaciones."}
+                          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                            a.hidden
+                              ? "border-amber-400 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                              : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+                          }`}
+                        >
+                          {hidingId === a.id ? (
+                            <>
+                              <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                              </svg>
+                              Guardando…
+                            </>
+                          ) : a.hidden ? (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                                <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                                <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clipRule="evenodd" />
+                              </svg>
+                              Mostrar en el link
+                            </>
+                          ) : (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 opacity-60">
+                                <path d="M3.53 2.47a.75.75 0 00-1.06 1.06l18 18a.75.75 0 101.06-1.06l-18-18zM22.676 12.553a11.249 11.249 0 01-2.631 4.31l-3.099-3.099a5.25 5.25 0 00-6.71-6.71L7.759 4.577a11.217 11.217 0 014.24-.827c4.97 0 9.185 3.223 10.677 7.69.12.362.12.752 0 1.113z" />
+                                <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0115.75 12zM12.53 15.713l-4.243-4.244a3.75 3.75 0 004.243 4.243z" />
+                                <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 00-2.63 4.31c-.12.362-.12.752 0 1.114 1.492 4.467 5.707 7.69 10.677 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 016.75 12z" />
+                              </svg>
+                              Ocultar del link
                             </>
                           )}
                         </button>

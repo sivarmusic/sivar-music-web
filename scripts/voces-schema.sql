@@ -163,8 +163,15 @@ CREATE TABLE IF NOT EXISTS voces_casting_applications (
   audio_link_original  TEXT,
   selected             BOOLEAN NOT NULL DEFAULT FALSE,
   selected_at          TIMESTAMPTZ,
+  hidden               BOOLEAN NOT NULL DEFAULT FALSE,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Fix: igual que voces_castings.deadline, esta columna vivía creada a mano
+-- en el dashboard de Supabase del original, sin script — permite ocultar
+-- una postulación puntual del link público de resultados (/voces/r/[id])
+-- sin borrarla ni afectar su estado de "selected" (elegido).
+ALTER TABLE voces_casting_applications ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE INDEX IF NOT EXISTS idx_voces_casting_apps_casting_id ON voces_casting_applications (casting_id);
 CREATE INDEX IF NOT EXISTS idx_voces_casting_apps_share_id   ON voces_casting_applications (share_id);

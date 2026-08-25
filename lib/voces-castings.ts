@@ -78,6 +78,7 @@ export type CastingApplication = {
   audioLinkOriginal?: string | null;
   selected?: boolean;
   selectedAt?: string | null;
+  hidden?: boolean;
   createdAt: string;
 };
 
@@ -118,6 +119,7 @@ function appFromRow(row: any): CastingApplication {
     audioLinkOriginal: row.audio_link_original ?? null,
     selected: row.selected ?? false,
     selectedAt: row.selected_at ?? null,
+    hidden: row.hidden ?? false,
     createdAt: row.created_at,
   };
 }
@@ -287,6 +289,16 @@ export async function setApplicationSelected(id: string, _castingId: string, sel
   const { error } = await supabase
     .from("voces_casting_applications")
     .update({ selected, selected_at: selected ? new Date().toISOString() : null })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function setApplicationHidden(id: string, hidden: boolean): Promise<void> {
+  // Ocultar del link público (/voces/r/[id]) sin borrarla — sigue visible acá
+  // en el panel admin y no afecta el conteo total de postulaciones.
+  const { error } = await supabase
+    .from("voces_casting_applications")
+    .update({ hidden })
     .eq("id", id);
   if (error) throw new Error(error.message);
 }

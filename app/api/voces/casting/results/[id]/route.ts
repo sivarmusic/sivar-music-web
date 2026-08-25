@@ -7,13 +7,17 @@ import { getCasting, getApplications } from "@/lib/voces-castings";
 // from app/api/voces/admin/casting/results/[id]/route.ts (ensureAdmin-gated,
 // used by the admin panel) — an anonymous visitor can't call that one.
 // `?public=1` (always sent by the /voces/r/[id] page) strips email/phone
-// from each application, exactly like the original.
+// from each application, exactly like the original. This route is public-
+// only by design (the admin panel hits the separate, ensureAdmin-gated
+// app/api/voces/admin/casting/results/[id]/route.ts instead), so
+// applications an admin marked "hidden" (Ocultar del link, distinct from
+// "selected") are always excluded here, regardless of the `public` param.
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: shareId } = await params;
     const casting = await getCasting({ shareId });
     if (!casting) return NextResponse.json({ ok: false, error: "Casting not found" }, { status: 404 });
-    const applications = await getApplications({ shareId });
+    const applications = (await getApplications({ shareId })).filter((a: any) => !a.hidden);
     const isPublic = req.nextUrl.searchParams.get("public") === "1";
     const safeApplications = isPublic
       ? applications.map(({ email: _e, phone: _p, ...rest }: any) => rest)
