@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { supabase } from "@/lib/supabase";
-import { getClientIdFromRequest } from "@/lib/voces-auth";
+import { getSessionClientId } from "@/lib/voces-session";
 
 // Security fix (2026-08-26): this route used to return `id`/`clientId` in the
 // PUBLIC, unauthenticated GET response, and generate `shareId` with
@@ -29,7 +29,7 @@ function toPublicPlaylist(row: any) {
 }
 
 export async function POST(req: NextRequest) {
-  const clientId = getClientIdFromRequest(req);
+  const clientId = await getSessionClientId(req);
   if (!clientId) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
   const { playlistId } = await req.json().catch(() => ({} as any));
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 
 // Ported from voces-bds's app/api/client/list/route.ts: clients ->
 // voces_clients. Not explicitly named in this batch's route list, but
@@ -11,7 +11,7 @@ import { ensureAdmin } from "@/lib/voces-auth";
 // the ported page functional, using the same admin-only gate as the
 // original's local isAdmin() check.
 export async function GET(req: NextRequest) {
-  if (!ensureAdmin(req)) {
+  if (!(await getAdmin(req))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 

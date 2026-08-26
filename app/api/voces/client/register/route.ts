@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { supabase } from "@/lib/supabase";
-import { ensureAdmin, hashPassword } from "@/lib/voces-auth";
+import { hashPassword } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { notifyNewClient } from "@/lib/voces-email";
 
 // Ported from voces-bds's app/api/client/register/route.ts: clients ->
@@ -12,7 +13,7 @@ import { notifyNewClient } from "@/lib/voces-email";
 // skipped by an earlier batch, ported here.
 export async function POST(req: NextRequest) {
   try {
-    if (!ensureAdmin(req)) {
+    if (!(await getAdmin(req))) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
     const { email, name, password } = await req.json();

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { getCasting, getApplications } from "@/lib/voces-castings";
 import { zipSync, strToU8 } from "fflate";
 
@@ -41,7 +41,7 @@ function isUploadedAudio(url: string): boolean {
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "No autorizado" }, { status: 403 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "No autorizado" }, { status: 403 });
   try {
     const { id: shareId } = await params;
     const casting = await getCasting({ shareId });

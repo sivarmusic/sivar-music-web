@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { isAdminRequest } from "@/lib/voces-session";
 import { getCasting, createApplication, applicationExists, uploadCastingFile } from "@/lib/voces-castings";
 import { toArray } from "@/lib/voces-arrays";
 import { notifyCastingLocutor } from "@/lib/voces-email";
@@ -10,7 +10,7 @@ import { notifyCastingLocutor } from "@/lib/voces-email";
 // convention as every other ported voces-bds cookie check.
 export async function POST(req: NextRequest) {
   try {
-    const isAdmin = ensureAdmin(req);
+    const isAdmin = await isAdminRequest(req);
     let body: any = null;
     const ct = req.headers.get("content-type") || "";
     let audioBuf: Buffer | null = null;

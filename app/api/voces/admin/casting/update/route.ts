@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { getCasting, updateCasting, uploadCastingFile, type CastingCriteria } from "@/lib/voces-castings";
 import { parseCastingBusinessFields } from "@/lib/voces-casting-fields";
 import { toArray } from "@/lib/voces-arrays";
 
 // Ported from voces-bds's app/api/admin/casting/update/route.ts.
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   try {
     const fd = await req.formData();
     const id = String(fd.get("id") || "").trim();

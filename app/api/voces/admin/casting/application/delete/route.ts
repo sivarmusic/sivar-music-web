@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { supabase } from "@/lib/supabase";
 import { deleteApplication } from "@/lib/voces-castings";
 
@@ -22,7 +22,7 @@ function storagePathFromPublicUrl(url: string): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   try {
     const ct = req.headers.get("content-type") || "";
     let id = "";

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { safeAudioExt, safeKind } from "@/lib/voces-upload-guards";
 
 // Ported from voces-bds's app/api/registro/upload-url/route.ts.
 // Confirmed no Google Drive dependency here — this is a direct Supabase
@@ -10,8 +11,10 @@ const BUCKET = "voces-talent-files";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const ext = (searchParams.get("ext") || "mp3").replace(/[^a-zA-Z0-9]/g, "");
-    const kind = (searchParams.get("kind") || "demo").replace(/[^a-zA-Z0-9_-]/g, "");
+    const ext = safeAudioExt(searchParams.get("ext"));
+    if (!ext) return NextResponse.json({ ok: false, error: "Extensión no permitida" }, { status: 400 });
+    const kind = safeKind(searchParams.get("kind"));
+    if (!kind) return NextResponse.json({ ok: false, error: "Carpeta no permitida" }, { status: 400 });
 
     const path = `${kind}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path);

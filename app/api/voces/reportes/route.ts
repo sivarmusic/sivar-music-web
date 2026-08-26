@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { buildReport } from "@/lib/voces-reportes/aggregate";
 import { verifyShareToken } from "@/lib/voces-reportes/shareToken";
 import { redactForShare } from "@/lib/voces-reportes/redact";
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   // nadie pueda ampliar el período que se compartió.
   const shared = verifyShareToken(url.searchParams.get("token"));
 
-  if (!shared && !ensureAdmin(req)) {
+  if (!shared && !(await getAdmin(req))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 

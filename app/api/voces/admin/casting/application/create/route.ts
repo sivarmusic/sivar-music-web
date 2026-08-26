@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { getCasting, createApplication, applicationExists } from "@/lib/voces-castings";
 
 // Ported from voces-bds's app/api/admin/casting/application/create/route.ts.
@@ -7,7 +7,7 @@ import { getCasting, createApplication, applicationExists } from "@/lib/voces-ca
 //    endpoints app/voces/components/proyecto/MoverACastingModal.tsx depends
 //    on — must match its `locutor.create` path exactly).
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "No autorizado" }, { status: 403 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "No autorizado" }, { status: 403 });
   try {
     const body = await req.json();
     const shareId = String(body.shareId || "").trim();

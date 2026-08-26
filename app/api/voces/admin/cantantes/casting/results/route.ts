@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { listCantantesCastings, getCantanteApplications } from "@/lib/voces-castings-cantantes";
 
 // Ported from voces-bds's app/api/admin/cantantes/casting/results/route.ts.
 export async function GET(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   try {
     const castings = await listCantantesCastings();
     const results = await Promise.all(

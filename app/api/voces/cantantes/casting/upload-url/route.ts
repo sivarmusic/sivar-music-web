@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { safeAudioExt, safeShareId } from "@/lib/voces-upload-guards";
 
 // Ported from voces-bds's app/api/cantantes/casting/upload-url/route.ts.
 // Public (no auth): applicants upload their audio directly to Supabase
@@ -12,8 +13,17 @@ const BUCKET = "voces-casting-files";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const ext = (searchParams.get("ext") || "mp3").replace(/[^a-zA-Z0-9]/g, "");
-    const shareId = (searchParams.get("shareId") || "unknown").replace(/[^a-zA-Z0-9_-]/g, "");
+    const ext = safeAudioExt(searchParams.get("ext"));
+    if (!ext) return NextResponse.json({ ok: false, error: "Extensión no permitida" }, { status: 400 });
+    const shareId = safeShareId(searchParams.get("shareId"));
+    if (!shareId) return NextResponse.json({ ok: false, error: "shareId inválido" }, { status: 400 });
+
+    const { data: casting } = await supabase
+      .from("voces_castings_cantantes")
+      .select("id")
+      .eq("share_id", shareId)
+      .maybeSingle();
+    if (!casting) return NextResponse.json({ ok: false, error: "Casting inexistente" }, { status: 404 });
 
     const path = `cantante-audios/${Date.now()}-${shareId}.${ext}`;
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { signShareToken } from "@/lib/voces-reportes/shareToken";
 
 // Ported from voces-bds's app/api/reportes/share/route.ts.
@@ -11,7 +11,7 @@ import { signShareToken } from "@/lib/voces-reportes/shareToken";
 // Genera el link público (firmado) de un reporte. Solo admins pueden crearlo;
 // después cualquiera con el link puede ver el reporte de ese rango.
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) {
+  if (!(await getAdmin(req))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 

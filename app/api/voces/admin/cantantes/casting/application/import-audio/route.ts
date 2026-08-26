@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { updateCantanteApplicationAudioUrl, uploadCantanteCastingFile } from "@/lib/voces-castings-cantantes";
 
 // Ported from voces-bds's app/api/admin/cantantes/casting/application/import-audio/route.ts.
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   try {
     const { applicationId, audioUrl: externalUrl } = await req.json().catch(() => ({}));
     if (!applicationId || !externalUrl) {

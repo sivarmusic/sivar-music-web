@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { getCasting, deleteCasting } from "@/lib/voces-castings";
 import { snapshotCastingToTrash } from "@/lib/voces-casting-trash";
 
@@ -9,7 +9,7 @@ import { snapshotCastingToTrash } from "@/lib/voces-casting-trash";
 // has data to act on — the original never actually wrote to its trash table
 // for casting deletes (see scripts/voces-schema.sql's comment on voces_trash).
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   try {
     const ct = req.headers.get("content-type") || "";
     let id = "";

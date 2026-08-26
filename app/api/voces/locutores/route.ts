@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { getClientIdFromRequest, ensureAdmin } from "@/lib/voces-auth";
+import { getSession } from "@/lib/voces-session";
 
 // Ported from voces-bds's app/api/locutores/route.ts: `talents`/`talent_media`
 // -> `voces_talents`/`voces_talent_media`, and the raw bds_client/bds_admin
 // cookie sniffing -> the shared voces-auth.ts helpers.
 export async function GET(req: NextRequest) {
   try {
-    const isLoggedIn = !!getClientIdFromRequest(req) || ensureAdmin(req);
+    const session = await getSession(req);
+    const isLoggedIn = !!session;
 
     const { data, error } = await supabase
       .from("voces_talents")

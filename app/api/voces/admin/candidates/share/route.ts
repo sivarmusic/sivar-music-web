@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { ensureAdmin, getClientIdFromRequest } from "@/lib/voces-auth";
+import { getAdmin, getSessionClientId } from "@/lib/voces-session";
 
 // Ported from voces-bds's app/api/admin/candidates/share/route.ts (byte-identical
 // to ../route.ts in the original). This is the one actually called —
@@ -9,9 +9,9 @@ import { ensureAdmin, getClientIdFromRequest } from "@/lib/voces-auth";
 // button — for the LOCUTOR casting candidates flow. See ../route.ts's comment
 // for why client_id resolves to the requesting admin's own client row.
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   try {
-    const clientId = getClientIdFromRequest(req);
+    const clientId = await getSessionClientId(req);
     if (!clientId) return NextResponse.json({ ok: false, error: "No se pudo identificar al admin" }, { status: 401 });
 
     const { name, items } = await req.json().catch(() => ({}));

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { getClientIdFromRequest } from "@/lib/voces-auth";
+import { getSessionClientId } from "@/lib/voces-session";
 
 // Ported from voces-bds's app/api/playlist/by-id/route.ts: `playlists` -> `voces_playlists`.
 function toPlaylist(row: any) {
@@ -8,7 +8,7 @@ function toPlaylist(row: any) {
 }
 
 export async function GET(req: NextRequest) {
-  const clientId = getClientIdFromRequest(req);
+  const clientId = await getSessionClientId(req);
   if (!clientId) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");

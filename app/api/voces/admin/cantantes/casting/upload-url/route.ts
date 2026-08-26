@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { supabase } from "@/lib/supabase";
+import { safeAudioExt, AUDIO_EXTS } from "@/lib/voces-upload-guards";
 
 // Ported from voces-bds's app/api/cantantes/casting/upload-url/route.ts (GET,
 // used by the results/[id] admin page for manual audio replace/add) merged
@@ -14,10 +15,11 @@ import { supabase } from "@/lib/supabase";
 const BUCKET = "voces-casting-files";
 
 export async function GET(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   try {
     const { searchParams } = new URL(req.url);
-    const ext = (searchParams.get("ext") || "mp3").replace(/[^a-zA-Z0-9]/g, "");
+    const ext = safeAudioExt(searchParams.get("ext"));
+    if (!ext) return NextResponse.json({ ok: false, error: "Extensión no permitida" }, { status: 400 });
     const shareId = (searchParams.get("shareId") || "unknown").replace(/[^a-zA-Z0-9_-]/g, "");
 
     const path = `cantante-audios/${Date.now()}-${shareId}.${ext}`;
@@ -38,13 +40,17 @@ export async function GET(req: NextRequest) {
 const VALID_FOLDERS = new Set(["cantante-videos", "cantante-scripts", "cantante-refs", "cantante-audios"]);
 
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   try {
     const { filename, folder, mimeType } = await req.json();
     if (!VALID_FOLDERS.has(folder)) return NextResponse.json({ ok: false, error: "Invalid folder" }, { status: 400 });
     void mimeType; // accepted for parity with the original payload shape; unused by createSignedUploadUrl
 
     const safeName = `${Date.now()}-${String(filename || "file").replace(/[^a-zA-Z0-9._-]+/g, "_")}`;
+    const extractedExt = (safeName.split(".").pop() || "").toLowerCase();
+    if (!(AUDIO_EXTS as readonly string[]).includes(extractedExt)) {
+      return NextResponse.json({ ok: false, error: "Invalid extension" }, { status: 400 });
+    }
     const storagePath = `${folder}/${safeName}`;
 
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(storagePath);

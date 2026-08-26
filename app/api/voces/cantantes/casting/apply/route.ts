@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { isAdminRequest } from "@/lib/voces-session";
 import {
   getCantanteCasting,
   createCantanteApplication,
@@ -14,7 +14,7 @@ import { notifyCastingCantante } from "@/lib/voces-email";
 // the same cookie ensureAdmin() checks elsewhere in this repo.
 export async function POST(req: NextRequest) {
   try {
-    const isAdmin = ensureAdmin(req);
+    const isAdmin = await isAdminRequest(req);
     let body: any = null;
     const ct = req.headers.get("content-type") || "";
     let audioBuf: Buffer | null = null;
