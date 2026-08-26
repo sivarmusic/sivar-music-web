@@ -15,14 +15,12 @@
 // Adaptado de voces-bds's lib/session.ts (su propio hardening, commit
 // 99d15ef, hecho después de que este proyecto clonara voces-bds).
 //
-// TRANSICIÓN (corte gradual, a pedido del usuario): getSession/getAdmin
-// todavía aceptan el cookie legacy `voces_client` como identidad si no hay
-// una `voces_session` válida — así nadie con una sesión vieja abierta queda
-// deslogueado de golpe. El cookie `voces_admin` (el que permitía
-// autodeclararse admin) YA NO SE USA EN NINGÚN CASO, ni siquiera durante la
-// transición: el rol siempre se relee de is_admin en la base. Una vez que
-// se confirme que cada usuario real de Sivar entró al menos una vez con la
-// sesión nueva, el fallback legacy se borra en un PR aparte (ver plan).
+// CORTE CERRADO (2026-08-26): este módulo tuvo un fallback temporal al cookie
+// legacy `voces_client` durante la transición (aceptaba esa cookie sin firma
+// como identidad, nunca como rol). Ya se confirmó que todos los usuarios
+// reales de Sivar entraron al menos una vez con la sesión nueva, así que ese
+// fallback se retiró acá — `voces_session` es la única fuente de identidad
+// desde este commit. Alguien con solo la cookie vieja ya no entra.
 
 import crypto from "crypto";
 import { supabase } from "@/lib/supabase";
@@ -33,10 +31,6 @@ export { VOCES_SESSION_COOKIE };
 const DEFAULT_TTL_DAYS = 1;
 const REMEMBER_TTL_DAYS = 30;
 const MAX_TOKEN_LEN = 512;
-
-// Cookie legacy, solo lectura, solo como fallback de identidad durante la
-// transición. Nunca se escribe desde este módulo.
-const LEGACY_CLIENT_COOKIE = "voces_client";
 
 export type SessionPayload = { cid: string; exp: number };
 
@@ -141,25 +135,17 @@ function toIdentity(row: { id: string; email: string; name: string | null; is_ad
 
 // Identidad de la sesión (cualquier usuario válido), sin exigir rol.
 export async function getSession(req: Request): Promise<VocesIdentity | null> {
-  const cookieHeader = req.headers.get("cookie");
-
-  const raw = readCookie(cookieHeader, VOCES_SESSION_COOKIE);
+  const raw = readCookie(req.headers.get("cookie"), VOCES_SESSION_COOKIE);
   const payload = verifySessionToken(raw);
-  if (payload) {
-    const row = await loadClientRow(payload.cid);
-    return row ? toIdentity(row) : null;
-  }
+  if (!payload) return null;
 
-  // Fallback legacy, solo durante la transición — ver comentario de arriba.
-  const legacyId = readCookie(cookieHeader, LEGACY_CLIENT_COOKIE);
-  if (!legacyId) return null;
-  const row = await loadClientRow(legacyId);
+  const row = await loadClientRow(payload.cid);
   return row ? toIdentity(row) : null;
 }
 
 // Igual que getSession, pero exige is_admin=true en la fila. El rol se relee
-// de la base SIEMPRE — incluso en el fallback legacy — así que la cookie
-// voces_admin ya no se lee en ningún lado, en este módulo ni en ningún otro.
+// de la base SIEMPRE — la cookie voces_admin no se lee en ningún lado, en
+// este módulo ni en ningún otro.
 export async function getAdmin(req: Request): Promise<VocesIdentity | null> {
   const identity = await getSession(req);
   return identity?.isAdmin ? identity : null;

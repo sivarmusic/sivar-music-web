@@ -59,17 +59,15 @@ function proxyVoces(req: NextRequest, pathname: string) {
   }
 
   // Esto es un redirect de UX, NO un control de seguridad: solo mira que
-  // exista alguna cookie, sin verificar firma — no puede hacer más, corre en
+  // exista la cookie, sin verificar firma — no puede hacer más, corre en
   // Edge, donde no hay acceso a la base. La autorización real la hace cada
   // endpoint y cada página con getSession()/getAdmin() (lib/voces-session.ts),
   // que sí verifican firma y consultan la fila.
   //
-  // Durante la transición al corte gradual (ver plan de migración) se acepta
-  // tanto la cookie nueva (voces_session) como la vieja (voces_client), para
-  // no redirigir a nadie que ya tenga una sesión vieja abierta. Cuando se
-  // confirme que todos los usuarios reales entraron con la sesión nueva, el
-  // chequeo de voces_client acá se borra (PR aparte).
-  const hasSession = req.cookies.get("voces_session") || req.cookies.get("voces_client");
+  // Corte cerrado (2026-08-26): ya no se acepta la cookie legacy voces_client
+  // acá — se confirmó que todos los usuarios reales entraron al menos una vez
+  // con la sesión nueva. voces_session es la única cookie que importa.
+  const hasSession = req.cookies.get("voces_session");
   if (!hasSession) {
     const url = req.nextUrl.clone();
     url.pathname = "/voces/login";
