@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { getCasting, getApplications } from "@/lib/voces-castings";
 
 // Ported from voces-bds's app/api/admin/casting/results/[id]/route.ts.
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   try {
     const { id: shareId } = await params;
     const casting = await getCasting({ shareId });

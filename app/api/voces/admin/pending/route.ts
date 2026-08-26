@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { makeLocutorSlug } from "@/lib/voces-slug";
 
 // Ported from voces-bds's app/api/admin/pending/route.ts: talents -> voces_talents.
 export async function GET(req: NextRequest) {
-  if (!ensureAdmin(req)) {
+  if (!(await getAdmin(req))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
   try {

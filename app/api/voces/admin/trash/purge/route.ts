@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 
 // Ported from voces-bds's app/api/admin/trash/purge/route.ts:
 //  - readStore()/writeStore() -> voces_trash table.
@@ -21,7 +21,7 @@ function storagePathFromPublicUrl(url: string): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const ct = req.headers.get("content-type") || "";
   let id = "";

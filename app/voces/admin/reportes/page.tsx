@@ -1,24 +1,26 @@
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { VOCES_ADMIN_COOKIE } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import ReporteClient from "@/app/voces/components/admin/reportes/ReporteClient";
 
 // Ported from voces-bds's app/admin/reportes/page.tsx.
 //
 // Unlike every other page under app/voces/admin/*, this one is NOT gated by
 // the client-side useAuth() + router.replace("/voces/login") pattern —
-// deliberately, matching the original: it reads the admin cookie directly
-// server-side via next/headers' cookies() and redirect()s before any client
-// JS runs, so an unauthenticated request never even receives the report
-// shell (the original's comment: "El middleware deja pasar /admin, así que
-// la protección real vive acá y en la API" — same is true here, this repo's
+// deliberately, matching the original: it reads the admin session directly
+// server-side and redirect()s before any client JS runs, so an
+// unauthenticated request never even receives the report shell (the
+// original's comment: "El middleware deja pasar /admin, así que la
+// protección real vive acá y en la API" — same is true here, this repo's
 // voces admin pages aren't gated by middleware either).
-//  - Cookie: bds_admin -> voces_admin (VOCES_ADMIN_COOKIE from lib/voces-auth,
-//    same cookie/value convention as ensureAdmin() used by every
-//    app/api/voces/admin/* route).
+//  - Auth: reads voces_session via next/headers' headers(), wrapped in a
+//    Request so it can be passed to getAdmin() (lib/voces-session.ts), which
+//    verifies the HMAC signature and rereads is_admin from the DB — same
+//    check as every app/api/voces/admin/* route, replacing the old
+//    voces_admin cookie read.
 //  - Redirect target: /login?next=/admin/reportes -> /voces/login?next=/voces/admin/reportes.
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -35,10 +37,12 @@ export default async function ReportesPage({
 }: {
   searchParams: Promise<{ desde?: string; hasta?: string }>;
 }) {
-  // Guard: solo admins (cookie voces_admin=1). Igual que el original, la
-  // protección real vive acá y en la API (/api/voces/reportes), no en middleware.
-  const cookieStore = await cookies();
-  if (cookieStore.get(VOCES_ADMIN_COOKIE)?.value !== "1") {
+  // Guard: solo admins. Igual que el original, la protección real vive acá
+  // y en la API (/api/voces/reportes), no en middleware. Verifica firma de
+  // sesión + is_admin en la fila, no la presencia de una cookie.
+  const h = await headers();
+  const admin = await getAdmin(new Request("http://local/", { headers: h }));
+  if (!admin) {
     redirect("/voces/login?next=/voces/admin/reportes");
   }
 

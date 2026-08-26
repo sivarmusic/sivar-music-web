@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 
 // Ported from voces-bds's app/api/client/delete/route.ts: clients ->
 // voces_clients. Same discrepancy as /api/voces/client/list — not
 // explicitly named in this batch's route list, but required by the ported
 // app/voces/admin/clients/page.tsx (its "delete client" button).
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) {
+  if (!(await getAdmin(req))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await req.json();

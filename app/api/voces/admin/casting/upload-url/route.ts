@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { supabase } from "@/lib/supabase";
+import { safeAudioExt } from "@/lib/voces-upload-guards";
 
 // Ported from voces-bds's app/api/casting/upload-url/route.ts (GET,
 // ext+shareId query params -> signed upload URL), used by the results/[id]
@@ -14,10 +15,11 @@ import { supabase } from "@/lib/supabase";
 const BUCKET = "voces-casting-files";
 
 export async function GET(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   try {
     const { searchParams } = new URL(req.url);
-    const ext = (searchParams.get("ext") || "mp3").replace(/[^a-zA-Z0-9]/g, "");
+    const ext = safeAudioExt(searchParams.get("ext"));
+    if (!ext) return NextResponse.json({ ok: false, error: "Extensión no permitida" }, { status: 400 });
     const shareId = (searchParams.get("shareId") || "unknown").replace(/[^a-zA-Z0-9_-]/g, "");
 
     const path = `audios/${Date.now()}-${shareId}.${ext}`;

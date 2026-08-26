@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { getCantanteCasting, createCantanteApplication, cantanteApplicationExists } from "@/lib/voces-castings-cantantes";
 
 // Ported from voces-bds's app/api/admin/cantantes/casting/application/create/route.ts.
 // One of the four endpoints app/voces/components/proyecto/MoverACastingModal.tsx
 // depends on — must match its `cantante.create` path exactly.
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "No autorizado" }, { status: 403 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "No autorizado" }, { status: 403 });
   try {
     const body = await req.json();
     const shareId = String(body.shareId || "").trim();

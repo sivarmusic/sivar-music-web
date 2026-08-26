@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { setApplicationHidden } from "@/lib/voces-castings";
 
 // Ported from voces-bds's app/api/admin/casting/application/hide/route.ts.
@@ -7,7 +7,7 @@ import { setApplicationHidden } from "@/lib/voces-castings";
 // public results link (/voces/r/[id]) without deleting it or affecting the
 // "selected" (elegido) status.
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "No autorizado" }, { status: 403 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "No autorizado" }, { status: 403 });
   try {
     const { applicationId, hidden } = await req.json();
     if (!applicationId || typeof hidden !== "boolean") {

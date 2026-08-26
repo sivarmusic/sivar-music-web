@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { getClientIdFromRequest } from "@/lib/voces-auth";
+import { getSessionClientId } from "@/lib/voces-session";
 
 // Ported from voces-bds's app/api/playlist/mine/route.ts: `playlists` -> `voces_playlists`.
 function uid() {
@@ -12,7 +12,7 @@ function toPlaylist(row: any) {
 }
 
 export async function GET(req: NextRequest) {
-  const clientId = getClientIdFromRequest(req);
+  const clientId = await getSessionClientId(req);
   if (!clientId) return NextResponse.json({ ok: true, playlist: null });
 
   const { data: existing } = await supabase

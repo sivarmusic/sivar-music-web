@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { ensureAdmin, getClientIdFromRequest } from "@/lib/voces-auth";
+import { getAdmin, getSessionClientId } from "@/lib/voces-session";
 
 // Ported from voces-bds's app/api/admin/candidates/route.ts: readStore()/
 // writeStore() playlists array -> voces_playlists table.
@@ -19,9 +19,9 @@ import { ensureAdmin, getClientIdFromRequest } from "@/lib/voces-auth";
 // was just an arbitrary string), so the shared playlist is owned by the
 // requesting admin's own client row instead of a literal "admin" placeholder.
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   try {
-    const clientId = getClientIdFromRequest(req);
+    const clientId = await getSessionClientId(req);
     if (!clientId) return NextResponse.json({ ok: false, error: "No se pudo identificar al admin" }, { status: 401 });
 
     const { name, items } = await req.json().catch(() => ({}));

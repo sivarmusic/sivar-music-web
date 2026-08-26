@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 
 // Ported from voces-bds's app/api/admin/locutores/route.ts:
 //  - talents/talent_media/reel_update_requests -> voces_ prefixed tables.
@@ -10,7 +10,7 @@ import { ensureAdmin } from "@/lib/voces-auth";
 //    every talent here already lives natively in Supabase, so PATCH is a
 //    plain visibility update with no secondary sync step.
 export async function GET(req: NextRequest) {
-  if (!ensureAdmin(req)) {
+  if (!(await getAdmin(req))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  if (!ensureAdmin(req)) {
+  if (!(await getAdmin(req))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 

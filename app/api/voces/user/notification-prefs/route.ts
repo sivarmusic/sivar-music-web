@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { getClientIdFromRequest } from "@/lib/voces-auth";
+import { getSessionClientId } from "@/lib/voces-session";
 
 // Ported from voces-bds's app/api/user/notification-prefs/route.ts:
 // `user_notification_prefs` -> `voces_user_notification_prefs`.
@@ -15,7 +15,7 @@ const DEFAULTS = {
 };
 
 export async function GET(req: NextRequest) {
-  const clientId = getClientIdFromRequest(req);
+  const clientId = await getSessionClientId(req);
   if (!clientId) return NextResponse.json({ ok: false, error: "No autenticado" }, { status: 401 });
   const { data } = await supabase
     .from("voces_user_notification_prefs")
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const clientId = getClientIdFromRequest(req);
+  const clientId = await getSessionClientId(req);
   if (!clientId) return NextResponse.json({ ok: false, error: "No autenticado" }, { status: 401 });
   const body = await req.json();
   const prefs = {

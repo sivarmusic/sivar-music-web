@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureAdmin } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 import { deleteCantanteCasting } from "@/lib/voces-castings-cantantes";
 import { snapshotCastingToTrash } from "@/lib/voces-casting-trash";
 
@@ -7,7 +7,7 @@ import { snapshotCastingToTrash } from "@/lib/voces-casting-trash";
 // with the same voces_trash snapshot addition as the locutor casting delete
 // route (see app/api/voces/admin/casting/delete/route.ts's comment).
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!(await getAdmin(req))) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   try {
     const { id } = await req.json().catch(() => ({}));
     if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });

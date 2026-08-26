@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
-import { VOCES_CLIENT_COOKIE, VOCES_ADMIN_COOKIE } from "@/lib/voces-auth";
+import { buildClearCookie } from "@/lib/voces-session";
 
-// Ported from voces-bds's app/api/client/logout/route.ts, clearing both
-// voces_client and voces_admin (the original only cleared bds_client, but
-// this repo's login route sets both, so both must be cleared on logout).
+// Signed-session migration: limpia las tres cookies (la nueva + las dos del
+// modelo viejo) para que el logout funcione sin importar con cuál haya
+// entrado la persona.
 export async function POST() {
   const res = NextResponse.json({ ok: true });
-  res.headers.set("Set-Cookie", `${VOCES_CLIENT_COOKIE}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
-  res.headers.append("Set-Cookie", `${VOCES_ADMIN_COOKIE}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
+  res.headers.set("Set-Cookie", buildClearCookie("voces_session"));
+  res.headers.append("Set-Cookie", buildClearCookie("voces_client"));
+  res.headers.append("Set-Cookie", buildClearCookie("voces_admin"));
   return res;
 }

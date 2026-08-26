@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { supabase } from "@/lib/supabase";
-import { ensureAdmin, hashPassword } from "@/lib/voces-auth";
+import { hashPassword } from "@/lib/voces-auth";
+import { getAdmin } from "@/lib/voces-session";
 
 // Ported from voces-bds's app/api/admin/register/route.ts: clients ->
 // voces_clients, bcrypt.hash inlined there -> hashPassword() (lib/voces-auth.ts).
 // Dropped lib/store.ts's uid("adm") id generator (store.json is gone) in
 // favor of a plain randomUUID with the same "adm_" prefix convention.
 export async function POST(req: NextRequest) {
-  if (!ensureAdmin(req)) {
+  if (!(await getAdmin(req))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
   const { email, name, password } = await req.json();

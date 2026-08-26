@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { getClientIdFromRequest, ensureAdmin } from "@/lib/voces-auth";
+import { getSession } from "@/lib/voces-session";
 import { effectiveVoiceType } from "@/lib/voces-voice";
 
 // Ported from voces-bds's app/api/cantantes/route.ts: `cantantes`/`cantante_media`
 // -> `voces_cantantes`/`voces_cantante_media`.
 export async function GET(req: NextRequest) {
   try {
-    const isLoggedIn = !!getClientIdFromRequest(req) || ensureAdmin(req);
+    const session = await getSession(req);
+    const isLoggedIn = !!session;
 
     const { data, error } = await supabase
       .from("voces_cantantes")
