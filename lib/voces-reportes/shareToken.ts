@@ -7,10 +7,16 @@
 //
 // Ported from voces-bds's lib/reportes/shareToken.ts, keeping the
 // REPORT_SHARE_SECRET env var name as-is (not BDS-branded, no rename needed).
-// One change: the secret fallback chain dropped ADMIN_PASSWORD — that env var
-// doesn't exist in this repo (voces admin auth here is bcrypt-hashed rows in
-// voces_clients, not a single shared password, see lib/voces-auth.ts) — and
-// keeps SUPABASE_SERVICE_ROLE_KEY, which this repo already has (lib/supabase.ts).
+//
+// Security fix (2026-08-26): this used to fall back to
+// SUPABASE_SERVICE_ROLE_KEY when REPORT_SHARE_SECRET was unset. That's the
+// exact anti-pattern voces-bds's own hardening pass removed: chaining
+// fallbacks ties report-link validity to a secret used for something else
+// (here, full Supabase access), makes rotation unpredictable, and makes it
+// impossible to invalidate report links without also rotating the DB
+// credential. REPORT_SHARE_SECRET is now dedicated and required, matching
+// voces-bds's lib/session.ts / lib/reportes/shareToken.ts pattern (≥32 chars,
+// fails closed if missing or too short).
 
 import crypto from "crypto";
 
@@ -24,12 +30,14 @@ export type SharePayload = {
   exp: number; // epoch ms
 };
 
-// Secreto de firma. Usa REPORT_SHARE_SECRET si está definido; si no cae a
-// SUPABASE_SERVICE_ROLE_KEY (ya presente en todos los entornos) para no
-// bloquear el deploy. Ojo: cambiar el secreto invalida los links ya compartidos.
+// Secreto de firma. Dedicado y obligatorio — sin fallback a otra credencial.
+// Cambiar el valor invalida TODOS los links de reporte ya emitidos; es
+// intencional y es la única forma de revocarlos.
 function secret(): string {
-  const s = process.env.REPORT_SHARE_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!s) throw new Error("Falta REPORT_SHARE_SECRET (o SUPABASE_SERVICE_ROLE_KEY) para firmar links de reporte");
+  const s = process.env.REPORT_SHARE_SECRET;
+  if (!s || s.length < 32) {
+    throw new Error("Falta REPORT_SHARE_SECRET (mínimo 32 caracteres) para firmar links de reporte");
+  }
   return s;
 }
 
