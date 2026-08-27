@@ -100,7 +100,7 @@ export async function notifyCastingCantante(data: { nombre: string; email: strin
       { label: "Cantante", value: data.nombre },
       { label: "Email", value: data.email || "—" },
     ])}
-    <a href="https://sivarmusic.com/voces/admin/cantantes/casting" style="display:inline-block;margin-top:20px;padding:10px 20px;background:rgb(232,76,43);color:#fff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:500">Ver postulaciones</a>
+    <a href="https://sivarmusic.com/voces/admin/castings/cantantes" style="display:inline-block;margin-top:20px;padding:10px 20px;background:rgb(232,76,43);color:#fff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:500">Ver postulaciones</a>
   `)
   );
 }
@@ -119,7 +119,7 @@ export async function notifyCastingLocutor(data: { nombre: string; email: string
       { label: "Locutor", value: data.nombre },
       { label: "Email", value: data.email || "—" },
     ])}
-    <a href="https://sivarmusic.com/voces/admin/casting" style="display:inline-block;margin-top:20px;padding:10px 20px;background:rgb(232,76,43);color:#fff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:500">Ver postulaciones</a>
+    <a href="https://sivarmusic.com/voces/admin/castings/locutores" style="display:inline-block;margin-top:20px;padding:10px 20px;background:rgb(232,76,43);color:#fff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:500">Ver postulaciones</a>
   `)
   );
 }
@@ -137,7 +137,7 @@ export async function notifyNewClient(data: { nombre: string; email: string }) {
       { label: "Nombre", value: data.nombre || "—" },
       { label: "Email", value: data.email },
     ])}
-    <a href="https://sivarmusic.com/voces/admin/clients" style="display:inline-block;margin-top:20px;padding:10px 20px;background:rgb(232,76,43);color:#fff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:500">Ver clientes</a>
+    <a href="https://sivarmusic.com/voces/admin/clientes" style="display:inline-block;margin-top:20px;padding:10px 20px;background:rgb(232,76,43);color:#fff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:500">Ver clientes</a>
   `)
   );
 }

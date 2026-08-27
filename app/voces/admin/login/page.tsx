@@ -7,5 +7,5 @@ import { redirect } from "next/navigation";
 // login flow (if the client is an admin, /api/voces/client/login already
 // sets both voces_client and voces_admin cookies — no separate admin login).
 export default function AdminLoginPage() {
-  redirect("/voces/login?next=/voces/admin/clients");
+  redirect("/voces/login?next=/voces/admin/clientes");
 }
