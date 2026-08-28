@@ -7,6 +7,8 @@ import { countryToFlag } from "@/lib/voces-country";
 import { makeLocutorSlug } from "@/lib/voces-slug";
 import { asText, toArray } from "@/lib/voces-arrays";
 import { normalizeForSearch } from "@/lib/voces-text";
+import PageContainer from "@/app/voces/components/admin/PageContainer";
+import PageHeader from "@/app/voces/components/admin/PageHeader";
 
 // Etapa 2 del rediseño del admin: el panel "Perfiles de locutores" que vivía
 // dentro de app/voces/admin/clients/page.tsx pasa a su propia página. Lógica
@@ -228,28 +230,22 @@ export default function AdminLocutoresPage() {
   }
 
   if (authLoading || !isAdmin) return (
-    <main style={{ background: "var(--color-bg-base)", minHeight: "100vh" }}>
-      <p className="p-6 text-[13px]" style={{ color: "var(--color-text-muted)" }}>{t("adminOnly")}</p>
-    </main>
+    <PageContainer>
+      <p className="text-[13px]" style={{ color: "var(--color-text-muted)" }}>{t("adminOnly")}</p>
+    </PageContainer>
   );
 
-  const sectionClass = "rounded-[16px] p-6";
-  const sectionStyle = { background: "var(--color-bg-card)", border: "0.5px solid var(--color-border-default)" };
   const thClass = "py-2 pr-4 text-[11px] font-[600] uppercase tracking-wider";
   const thStyle = { color: "var(--color-text-muted)" };
 
   return (
-    <main style={{ background: "var(--color-bg-base)", minHeight: "100vh" }} className="px-4 py-8">
-      <div className={`max-w-6xl mx-auto ${sectionClass}`} style={sectionStyle}>
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-5">
-          <div>
-            <h2 className="text-[15px] font-[500]" style={{ color: "var(--color-text-primary)" }}>Perfiles de locutores</h2>
-            <p className="text-[12px] mt-0.5" style={{ color: "var(--color-text-muted)" }}>Activá o desactivá qué perfiles se muestran en la página pública.</p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[12px]" style={{ color: "var(--color-text-muted)" }}>
-              {visibleLocutoresCount}/{locutores.length} visibles
-            </span>
+    <PageContainer>
+      <PageHeader
+        title="Locutores"
+        count={locutores.length}
+        countLabel={`${locutores.length === 1 ? "perfil" : "perfiles"} · ${visibleLocutoresCount} visibles`}
+        actions={
+          <>
             <a href="/voces/admin/locutores/solicitudes" className="ds-btn-secondary text-[11px] py-1 px-3 inline-flex items-center gap-1.5">
               Solicitudes de actualización
               {pendingReelCount > 0 && (
@@ -264,9 +260,12 @@ export default function AdminLocutoresPage() {
             <button onClick={refreshLocutores} disabled={locutoresLoading} className="ds-btn-secondary text-[11px] py-1 px-3 disabled:opacity-50">
               Actualizar
             </button>
-          </div>
-        </div>
+          </>
+        }
+      />
+      <p className="text-[12px] -mt-4 mb-5" style={{ color: "var(--color-text-muted)" }}>Activá o desactivá qué perfiles se muestran en la página pública.</p>
 
+      <div className="ds-card p-6">
         {pendingLocutores.length > 0 && (
           <div className="mb-4 rounded-[10px] px-4 py-3 flex items-center justify-between gap-3 flex-wrap"
             style={{ background: "rgba(232,76,43,0.06)", border: "0.5px solid rgba(232,76,43,0.18)" }}>
@@ -430,6 +429,6 @@ export default function AdminLocutoresPage() {
           </>
         )}
       </div>
-    </main>
+    </PageContainer>
   );
 }

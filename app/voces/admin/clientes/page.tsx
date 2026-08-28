@@ -3,12 +3,19 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/app/voces/components/I18n";
 import { useAuth } from "@/app/voces/components/AuthContext";
+import PageContainer from "@/app/voces/components/admin/PageContainer";
+import PageHeader from "@/app/voces/components/admin/PageHeader";
+import RowActionsMenu from "@/app/voces/components/admin/RowActionsMenu";
+import RoleBadge from "@/app/voces/components/admin/RoleBadge";
 
-// Etapa 2 del rediseño del admin: split de app/voces/admin/clients/page.tsx
-// en dos páginas independientes. Esta se queda con la creación de clientes y
-// la tabla de clientes — el panel "Perfiles de locutores" que vivía acá
-// también se movió a su propia página, app/voces/admin/locutores/page.tsx.
-// Contenido y lógica sin cambios, solo la ubicación.
+// Etapa 3 del rediseño del admin: contenedor único de ancho fijo, header
+// consistente, tabla con filas de ~52px y hairlines, columna de rol como
+// badge (antes: "Sí"/"No" en todas las filas), acciones de fila a un menú de
+// tres puntos con la acción destructiva separada y en rojo (antes: 3
+// botones por fila). Lógica, fetch calls y endpoints sin cambios.
+//
+// El formulario "Crear cliente" sigue embebido en la página por ahora — su
+// salida a modal es la etapa 4, no esta.
 
 export default function AdminClientesPage() {
   const { isAdmin, loading: authLoading } = useAuth();
@@ -56,6 +63,14 @@ export default function AdminClientesPage() {
     if (j?.ok) alert("Password updated");
   }
 
+  async function toggleAdmin(id: string, nextIsAdmin: boolean) {
+    try {
+      const res = await fetch("/api/voces/client/set-admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, isAdmin: nextIsAdmin }) });
+      const j = await res.json();
+      if (res.ok && j?.ok) setClients((prev) => prev.map((x) => x.id === id ? { ...x, isAdmin: nextIsAdmin } : x));
+    } catch {}
+  }
+
   const createClient = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
@@ -66,24 +81,24 @@ export default function AdminClientesPage() {
   };
 
   if (authLoading || !isAdmin) return (
-    <main style={{ background: "var(--color-bg-base)", minHeight: "100vh" }}>
-      <p className="p-6 text-[13px]" style={{ color: "var(--color-text-muted)" }}>{t("adminOnly")}</p>
-    </main>
+    <PageContainer>
+      <p className="text-[13px]" style={{ color: "var(--color-text-muted)" }}>{t("adminOnly")}</p>
+    </PageContainer>
   );
 
-  const sectionClass = "rounded-[16px] p-6";
-  const sectionStyle = { background: "var(--color-bg-card)", border: "0.5px solid var(--color-border-default)" };
-  const thClass = "py-2 pr-4 text-[11px] font-[600] uppercase tracking-wider";
+  const thClass = "py-3 px-4 text-[11px] font-[600] uppercase tracking-wider text-left";
   const thStyle = { color: "var(--color-text-muted)" };
+  const tdClass = "px-4";
 
   return (
-    <main style={{ background: "var(--color-bg-base)", minHeight: "100vh" }} className="px-4 py-8">
+    <PageContainer>
+      <PageHeader title="Clientes" count={clients.length} countLabel={clients.length === 1 ? "cliente" : "clientes"} />
 
-      {/* Create client */}
-      <div className={`max-w-xl mx-auto ${sectionClass}`} style={sectionStyle}>
-        <h1 className="text-[18px] font-[500] mb-5" style={{ fontFamily: "var(--font-dm-serif, serif)", fontWeight: 400, color: "var(--color-text-primary)" }}>
+      {/* Create client — se queda embebido acá hasta la etapa 4 (modal) */}
+      <div className="ds-card p-5 max-w-md mb-6">
+        <h2 className="text-[14px] font-[500] mb-4" style={{ color: "var(--color-text-primary)" }}>
           {t("adminCreateClient")}
-        </h1>
+        </h2>
         {msg && (
           <p className="text-[13px] mb-4 px-3 py-2.5 rounded-[8px]"
             style={msg === "Cliente creado"
@@ -115,10 +130,9 @@ export default function AdminClientesPage() {
       </div>
 
       {/* Clients table */}
-      <div className={`max-w-4xl mx-auto mt-6 ${sectionClass}`} style={sectionStyle}>
-        <h2 className="text-[15px] font-[500] mb-5" style={{ color: "var(--color-text-primary)" }}>{t("clientsTitle")}</h2>
+      <div className="ds-card overflow-hidden">
         {clientsLoading ? (
-          <div className="flex items-center gap-2 text-[13px]" style={{ color: "var(--color-text-muted)" }}>
+          <div className="flex items-center gap-2 text-[13px] p-5" style={{ color: "var(--color-text-muted)" }}>
             <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
@@ -129,51 +143,31 @@ export default function AdminClientesPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr>
+                <tr style={{ borderBottom: "0.5px solid var(--color-border-default)" }}>
                   <th className={thClass} style={thStyle}>{t("email")}</th>
                   <th className={thClass} style={thStyle}>{t("name")}</th>
                   <th className={thClass} style={thStyle}>{t("created")}</th>
-                  <th className={thClass} style={thStyle}>Admin</th>
-                  <th className={thClass} style={thStyle}>{t("actions")}</th>
+                  <th className={thClass} style={thStyle}>Rol</th>
+                  <th className={thClass} style={{ ...thStyle, textAlign: "right" }}>{t("actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {clients.map((c) => (
-                  <tr key={c.id} style={{ borderTop: "0.5px solid var(--color-border-default)" }}>
-                    <td className="py-3 pr-4" style={{ color: "var(--color-text-primary)" }}>{c.email}</td>
-                    <td className="py-3 pr-4" style={{ color: "var(--color-text-secondary)" }}>{c.name || ""}</td>
-                    <td className="py-3 pr-4 whitespace-nowrap" style={{ color: "var(--color-text-muted)" }}>{c.createdAt?.slice(0, 10) || ""}</td>
-                    <td className="py-3 pr-4">
-                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-[500]"
-                        style={c.isAdmin
-                          ? { background: "rgba(74,222,128,0.08)", border: "0.5px solid rgba(74,222,128,0.20)", color: "#4ade80" }
-                          : { background: "var(--color-bg-subtle)", border: "0.5px solid var(--color-border-default)", color: "var(--color-text-muted)" }
-                        }>
-                        {c.isAdmin ? "Sí" : "No"}
-                      </span>
+                  <tr key={c.id} className="h-[52px]" style={{ borderTop: "0.5px solid var(--color-border-default)" }}>
+                    <td className={tdClass} style={{ color: "var(--color-text-primary)" }}>{c.email}</td>
+                    <td className={tdClass} style={{ color: "var(--color-text-secondary)" }}>{c.name || ""}</td>
+                    <td className={`${tdClass} whitespace-nowrap`} style={{ color: "var(--color-text-muted)" }}>{c.createdAt?.slice(0, 10) || ""}</td>
+                    <td className={tdClass}>
+                      <RoleBadge isAdmin={!!c.isAdmin} />
                     </td>
-                    <td className="py-3">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={async () => {
-                            try {
-                              const res = await fetch("/api/voces/client/set-admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: c.id, isAdmin: !c.isAdmin }) });
-                              const j = await res.json();
-                              if (res.ok && j?.ok) setClients((prev) => prev.map((x) => x.id === c.id ? { ...x, isAdmin: !c.isAdmin } : x));
-                            } catch {}
-                          }}
-                          className="ds-btn-secondary text-[11px] py-0.5 px-2.5"
-                        >
-                          {c.isAdmin ? "Quitar admin" : "Hacer admin"}
-                        </button>
-                        <button onClick={() => resetPassword(c.id)} className="ds-btn-secondary text-[11px] py-0.5 px-2.5">
-                          {t("resetPass")}
-                        </button>
-                        <button onClick={() => del(c.id)} className="ds-btn-secondary text-[11px] py-0.5 px-2.5"
-                          style={{ color: "var(--color-accent)", borderColor: "rgba(232,76,43,0.25)" }}>
-                          {t("delete")}
-                        </button>
-                      </div>
+                    <td className={`${tdClass} text-right`}>
+                      <RowActionsMenu
+                        actions={[
+                          { label: c.isAdmin ? "Quitar admin" : "Hacer admin", onClick: () => toggleAdmin(c.id, !c.isAdmin) },
+                          { label: t("resetPass"), onClick: () => resetPassword(c.id) },
+                          { label: t("delete"), onClick: () => del(c.id), destructive: true },
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -187,6 +181,6 @@ export default function AdminClientesPage() {
           </div>
         )}
       </div>
-    </main>
+    </PageContainer>
   );
 }
