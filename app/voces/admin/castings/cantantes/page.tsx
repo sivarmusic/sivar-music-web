@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/voces/components/AuthContext";
 import CastingBusinessFields from "@/app/voces/components/admin/CastingBusinessFields";
 import CastingsModeSwitch from "@/app/voces/components/admin/CastingsModeSwitch";
+import Modal from "@/app/voces/components/admin/Modal";
 
 // Ported from voces-bds's app/admin/cantantes/casting/page.tsx.
 //  - Auth: /api/auth/me -> useAuth().
@@ -43,6 +44,7 @@ export default function AdminCantantesCastingPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
   const [editAttachments, setEditAttachments] = useState<AttachmentDraft[]>([]);
@@ -273,6 +275,7 @@ export default function AdminCantantesCastingPage() {
       setVideoDirectUrl(""); setScriptDirectUrl(""); setRefDirectUrl("");
       setFStyles([]); setFCountry(""); setFGender(""); setFVocalRange("");
       setAttachments([]);
+      setShowCreateModal(false);
       await refresh();
     } catch (e: any) { setMsg(e?.message || "Error"); }
     finally { setCreating(false); }
@@ -293,12 +296,16 @@ export default function AdminCantantesCastingPage() {
           <h1 className="text-[24px] font-[500]" style={{ color: "var(--color-text-primary)" }}>Castings — Cantantes</h1>
           <p className="text-[12px] mt-0.5" style={{ color: "var(--color-text-muted)" }}>Módulo separado del casting de locutores</p>
         </div>
-        <a href="/voces/admin/castings/cantantes/results" className="ds-btn-secondary text-[12px] py-1.5 px-3">Resultados</a>
+        <div className="flex items-center gap-2">
+          <a href="/voces/admin/castings/cantantes/results" className="ds-btn-secondary text-[12px] py-1.5 px-3">Resultados</a>
+          <button type="button" onClick={() => { setMsg(null); setShowCreateModal(true); }} className="ds-btn-primary text-[12px] py-1.5 px-3">
+            + Nuevo casting
+          </button>
+        </div>
       </div>
 
-      {/* Formulario crear */}
-      <div className="max-w-4xl mx-auto rounded-[14px] p-6 mb-8" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid var(--color-border-default)" }}>
-        <h2 className="text-[15px] font-[500] mb-4" style={{ color: "var(--color-text-primary)" }}>Nuevo casting</h2>
+      {/* Formulario crear — etapa 4: sale del flujo de la página, ahora es un modal */}
+      <Modal open={showCreateModal} onClose={() => setShowCreateModal(false)} title="Nuevo casting" maxWidth="720px">
         {msg && <p className="mb-3 text-[13px]" style={{ color: msg === "Casting creado" ? "#4ade80" : "var(--color-accent)" }}>{msg}</p>}
         <form onSubmit={onCreate} className="space-y-3">
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título (opcional)" className="ds-input" />
@@ -483,7 +490,7 @@ export default function AdminCantantesCastingPage() {
           />
           <button type="submit" disabled={creating} className="ds-btn-primary px-5 py-2">{creating ? "Creando…" : "Crear"}</button>
         </form>
-      </div>
+      </Modal>
 
       {/* Lista de castings */}
       <div className="max-w-5xl mx-auto">

@@ -7,6 +7,7 @@ import PageContainer from "@/app/voces/components/admin/PageContainer";
 import PageHeader from "@/app/voces/components/admin/PageHeader";
 import RowActionsMenu from "@/app/voces/components/admin/RowActionsMenu";
 import RoleBadge from "@/app/voces/components/admin/RoleBadge";
+import Modal from "@/app/voces/components/admin/Modal";
 
 // Etapa 3 del rediseño del admin: contenedor único de ancho fijo, header
 // consistente, tabla con filas de ~52px y hairlines, columna de rol como
@@ -14,8 +15,9 @@ import RoleBadge from "@/app/voces/components/admin/RoleBadge";
 // tres puntos con la acción destructiva separada y en rojo (antes: 3
 // botones por fila). Lógica, fetch calls y endpoints sin cambios.
 //
-// El formulario "Crear cliente" sigue embebido en la página por ahora — su
-// salida a modal es la etapa 4, no esta.
+// Etapa 4: "Crear cliente" sale del flujo de la página y pasa a un modal,
+// disparado por "+ Nuevo cliente" en el header — antes ocupaba el lugar de
+// arriba de la tabla, todos los días, para algo que se usa cada tanto.
 
 export default function AdminClientesPage() {
   const { isAdmin, loading: authLoading } = useAuth();
@@ -29,6 +31,7 @@ export default function AdminClientesPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [clientsLoading, setClientsLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) router.replace("/voces/login");
@@ -76,8 +79,13 @@ export default function AdminClientesPage() {
     setMsg(null);
     const res = await fetch("/api/voces/client/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, name, password }) });
     const j = await res.json();
-    setMsg(j?.ok ? "Cliente creado" : (j?.error || "Error"));
-    if (j?.ok) refreshClients();
+    if (j?.ok) {
+      refreshClients();
+      setShowCreateModal(false);
+      setEmail(""); setName(""); setPassword("");
+    } else {
+      setMsg(j?.error || "Error");
+    }
   };
 
   if (authLoading || !isAdmin) return (
@@ -92,19 +100,25 @@ export default function AdminClientesPage() {
 
   return (
     <PageContainer>
-      <PageHeader title="Clientes" count={clients.length} countLabel={clients.length === 1 ? "cliente" : "clientes"} />
+      <PageHeader
+        title="Clientes"
+        count={clients.length}
+        countLabel={clients.length === 1 ? "cliente" : "clientes"}
+        actions={
+          <button
+            type="button"
+            onClick={() => { setMsg(null); setShowCreateModal(true); }}
+            className="ds-btn-primary text-[13px] py-2 px-4"
+          >
+            + Nuevo cliente
+          </button>
+        }
+      />
 
-      {/* Create client — se queda embebido acá hasta la etapa 4 (modal) */}
-      <div className="ds-card p-5 max-w-md mb-6">
-        <h2 className="text-[14px] font-[500] mb-4" style={{ color: "var(--color-text-primary)" }}>
-          {t("adminCreateClient")}
-        </h2>
+      <Modal open={showCreateModal} onClose={() => setShowCreateModal(false)} title={t("adminCreateClient")}>
         {msg && (
           <p className="text-[13px] mb-4 px-3 py-2.5 rounded-[8px]"
-            style={msg === "Cliente creado"
-              ? { color: "#4ade80", background: "rgba(74,222,128,0.06)", border: "0.5px solid rgba(74,222,128,0.20)" }
-              : { color: "var(--color-accent)", background: "rgba(232,76,43,0.08)", border: "0.5px solid rgba(232,76,43,0.20)" }
-            }>
+            style={{ color: "var(--color-accent)", background: "rgba(232,76,43,0.08)", border: "0.5px solid rgba(232,76,43,0.20)" }}>
             {msg}
           </p>
         )}
@@ -127,7 +141,7 @@ export default function AdminClientesPage() {
           </div>
           <button type="submit" className="ds-btn-primary text-[13px] py-2 px-5">{t("create")}</button>
         </form>
-      </div>
+      </Modal>
 
       {/* Clients table */}
       <div className="ds-card overflow-hidden">
