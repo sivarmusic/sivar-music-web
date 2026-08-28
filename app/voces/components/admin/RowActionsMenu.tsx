@@ -3,7 +3,12 @@
 // Menú de tres puntos para acciones de fila en tablas de admin. Reemplaza
 // filas con varios botones compitiendo por espacio (ver Clientes: hasta 3
 // acciones por fila, antes de la etapa 3). La acción destructiva, si hay
-// una, va separada por un divisor y en rojo — nunca mezclada con el resto.
+// una, va separada por un divisor y en --color-danger — un rojo distinto
+// del accent de marca, para que "Eliminar" no se confunda con una acción
+// principal (etapa 5).
+//
+// Teclado (etapa 5): Flechas arriba/abajo mueven el foco entre ítems,
+// Escape cierra y devuelve el foco al botón que abrió el menú.
 
 import { useEffect, useRef, useState } from "react";
 
@@ -17,14 +22,33 @@ export type RowAction = {
 export default function RowActionsMenu({ actions }: { actions: RowAction[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const normal = actions.filter((a) => !a.destructive);
+  const destructive = actions.filter((a) => a.destructive);
+  const ordered = [...normal, ...destructive];
 
   useEffect(() => {
     if (!open) return;
+    itemRefs.current[0]?.focus();
+
     function onDocClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+        return;
+      }
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const current = itemRefs.current.findIndex((el) => el === document.activeElement);
+        const dir = e.key === "ArrowDown" ? 1 : -1;
+        const next = (current + dir + ordered.length) % ordered.length;
+        itemRefs.current[next]?.focus();
+      }
     }
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onKey);
@@ -32,14 +56,12 @@ export default function RowActionsMenu({ actions }: { actions: RowAction[] }) {
       document.removeEventListener("mousedown", onDocClick);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
-
-  const normal = actions.filter((a) => !a.destructive);
-  const destructive = actions.filter((a) => a.destructive);
+  }, [open, ordered.length]);
 
   return (
     <div className="relative inline-block" ref={ref}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
@@ -68,6 +90,7 @@ export default function RowActionsMenu({ actions }: { actions: RowAction[] }) {
           {normal.map((a, i) => (
             <button
               key={i}
+              ref={(el) => { itemRefs.current[ordered.indexOf(a)] = el; }}
               role="menuitem"
               type="button"
               disabled={a.disabled}
@@ -91,6 +114,7 @@ export default function RowActionsMenu({ actions }: { actions: RowAction[] }) {
           {destructive.map((a, i) => (
             <button
               key={i}
+              ref={(el) => { itemRefs.current[ordered.indexOf(a)] = el; }}
               role="menuitem"
               type="button"
               disabled={a.disabled}
@@ -99,8 +123,8 @@ export default function RowActionsMenu({ actions }: { actions: RowAction[] }) {
                 a.onClick();
               }}
               className="w-full text-left px-3.5 py-2 text-[13px] transition-colors duration-150 disabled:opacity-50"
-              style={{ color: "var(--color-accent)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-accent-bg)")}
+              style={{ color: "var(--color-danger)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-danger-bg)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               {a.label}

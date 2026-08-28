@@ -108,7 +108,7 @@ export default function AdminClientesPage() {
           <button
             type="button"
             onClick={() => { setMsg(null); setShowCreateModal(true); }}
-            className="ds-btn-primary text-[13px] py-2 px-4"
+            className="ds-btn-primary-solid text-[13px] py-2 px-4"
           >
             + Nuevo cliente
           </button>
@@ -139,7 +139,7 @@ export default function AdminClientesPage() {
               {showPass ? "Hide" : "Show"}
             </button>
           </div>
-          <button type="submit" className="ds-btn-primary text-[13px] py-2 px-5">{t("create")}</button>
+          <button type="submit" className="ds-btn-primary-solid text-[13px] py-2 px-5">{t("create")}</button>
         </form>
       </Modal>
 

@@ -7,8 +7,21 @@
 // Sin librerías nuevas — overlay + panel centrado, cierre por click afuera,
 // Escape, o el botón de cerrar. Scrollea internamente si el contenido es más
 // alto que la pantalla (los formularios de casting son largos).
+//
+// Foco y teclado (etapa 5): al abrir, el foco entra al panel; Tab/Shift+Tab
+// quedan atrapados adentro (no se puede tabular "detrás" al contenido de la
+// página); al cerrar, el foco vuelve a lo que estaba enfocado antes de abrir
+// (normalmente el botón que disparó el modal).
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+
+function getFocusable(container: HTMLElement): HTMLElement[] {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  );
+}
 
 export default function Modal({
   open,
@@ -23,16 +36,44 @@ export default function Modal({
   children: React.ReactNode;
   maxWidth?: string;
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!open) return;
+
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    const panel = panelRef.current;
+    // Foco inicial: el primer elemento enfocable del panel (el botón de
+    // cerrar), no un input — así Enter no dispara el submit del form apenas
+    // se abre.
+    if (panel) getFocusable(panel)[0]?.focus();
+
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key === "Tab" && panel) {
+        const focusable = getFocusable(panel);
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     }
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      previouslyFocused.current?.focus();
     };
   }, [open, onClose]);
 
@@ -47,6 +88,7 @@ export default function Modal({
         aria-hidden="true"
       />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}

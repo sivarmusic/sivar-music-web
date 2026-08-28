@@ -346,11 +346,11 @@ export default function AdminCastingPage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between mb-6">
           <div>
             <CastingsModeSwitch mode="locutores" />
-            <h1 className="text-[24px] font-[500]" style={{ color: "var(--color-text-primary)" }}>Castings</h1>
+            <h1 className="text-[24px] leading-none" style={{ fontFamily: "var(--font-dm-serif, serif)", fontWeight: 400, color: "var(--color-text-primary)" }}>Castings</h1>
           </div>
           <div className="flex items-center gap-2">
             <a href="/voces/admin/castings/locutores/results" className="ds-btn-secondary text-[12px] py-1.5 px-3">Resultados de castings</a>
-            <button type="button" onClick={() => { setMsg(null); setShowCreateModal(true); }} className="ds-btn-primary text-[12px] py-1.5 px-3">
+            <button type="button" onClick={() => { setMsg(null); setShowCreateModal(true); }} className="ds-btn-primary-solid text-[12px] py-1.5 px-3">
               + Nuevo casting
             </button>
           </div>
@@ -475,7 +475,7 @@ export default function AdminCastingPage() {
               client={client} onClient={setClient}
               mediaType={mediaType} onMediaType={setMediaType}
             />
-            <button type="submit" disabled={creating} className="ds-btn-primary px-5 py-2">{creating ? "Creando…" : "Crear"}</button>
+            <button type="submit" disabled={creating} className="ds-btn-primary-solid px-5 py-2">{creating ? "Creando…" : "Crear"}</button>
           </form>
         </Modal>
 
@@ -511,7 +511,7 @@ export default function AdminCastingPage() {
                   <button
                     onClick={(e) => { e.stopPropagation(); setConfirmId((prev) => (prev === c.id ? null : c.id)); }}
                     className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-                    style={{ color: confirmId === c.id ? "var(--color-accent)" : "var(--color-text-muted)" }}
+                    style={{ color: confirmId === c.id ? "var(--color-danger)" : "var(--color-text-muted)" }}
                     title="Eliminar casting"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -526,7 +526,7 @@ export default function AdminCastingPage() {
                         <button className="ds-btn-secondary text-[11px] py-1 px-2.5" onClick={() => setConfirmId(null)}>Cancelar</button>
                         <button
                           className="text-[11px] py-1 px-2.5 rounded-[6px] transition-colors"
-                          style={{ background: "rgba(232,76,43,0.12)", border: "0.5px solid rgba(232,76,43,0.30)", color: deletingId === c.id ? "rgba(232,76,43,0.4)" : "var(--color-accent)" }}
+                          style={{ background: "var(--color-danger-bg)", border: "0.5px solid var(--color-danger-border)", color: deletingId === c.id ? "var(--color-text-muted)" : "var(--color-danger)" }}
                           onClick={() => onDelete(c.id)}
                           disabled={deletingId === c.id}
                         >{deletingId === c.id ? "Eliminando…" : "Eliminar"}</button>
@@ -661,7 +661,7 @@ export default function AdminCastingPage() {
 
               <div className="flex items-center justify-end gap-2 pt-1">
                 <button type="button" onClick={() => setEditOpen(false)} className="ds-btn-secondary text-[12px] py-1.5 px-3">Cancelar</button>
-                <button type="submit" disabled={editSaving} className="ds-btn-primary text-[12px] py-1.5 px-3">{editSaving ? "Guardando…" : "Guardar cambios"}</button>
+                <button type="submit" disabled={editSaving} className="ds-btn-primary-solid text-[12px] py-1.5 px-3">{editSaving ? "Guardando…" : "Guardar cambios"}</button>
               </div>
             </form>
           </div>

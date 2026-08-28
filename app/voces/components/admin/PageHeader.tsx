@@ -2,8 +2,11 @@
 // el conteo, acciones a la derecha. Reemplaza los distintos h1/h2 sueltos
 // que cada página traía con su propio tamaño/peso/fuente.
 //
-// La fuente del título queda en sans por ahora a propósito — la decisión de
-// serif-solo-para-títulos es de la etapa 5 (tipografía), no de esta.
+// Etapa 5: serif SOLO para el título de página (acá), sans para todo lo
+// demás en la UI — incluidos los títulos de modal (Modal.tsx), que no son
+// título de página. Antes "Crear cliente" estaba en serif por accidente
+// (era un form heading, no un h1 de página); ahora que ese texto vive en el
+// <h2> del modal, en sans, el criterio queda aplicado sin tocar nada ahí.
 
 export default function PageHeader({
   title,
@@ -19,7 +22,10 @@ export default function PageHeader({
   return (
     <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
       <div>
-        <h1 className="text-[22px] font-[500]" style={{ color: "var(--color-text-primary)" }}>
+        <h1
+          className="text-[24px] leading-none"
+          style={{ fontFamily: "var(--font-dm-serif, serif)", fontWeight: 400, color: "var(--color-text-primary)" }}
+        >
           {title}
         </h1>
         {typeof count === "number" && (

@@ -293,12 +293,12 @@ export default function AdminCantantesCastingPage() {
       <div className="max-w-6xl mx-auto flex items-center justify-between mb-6">
         <div>
           <CastingsModeSwitch mode="cantantes" />
-          <h1 className="text-[24px] font-[500]" style={{ color: "var(--color-text-primary)" }}>Castings — Cantantes</h1>
+          <h1 className="text-[24px] leading-none" style={{ fontFamily: "var(--font-dm-serif, serif)", fontWeight: 400, color: "var(--color-text-primary)" }}>Castings — Cantantes</h1>
           <p className="text-[12px] mt-0.5" style={{ color: "var(--color-text-muted)" }}>Módulo separado del casting de locutores</p>
         </div>
         <div className="flex items-center gap-2">
           <a href="/voces/admin/castings/cantantes/results" className="ds-btn-secondary text-[12px] py-1.5 px-3">Resultados</a>
-          <button type="button" onClick={() => { setMsg(null); setShowCreateModal(true); }} className="ds-btn-primary text-[12px] py-1.5 px-3">
+          <button type="button" onClick={() => { setMsg(null); setShowCreateModal(true); }} className="ds-btn-primary-solid text-[12px] py-1.5 px-3">
             + Nuevo casting
           </button>
         </div>
@@ -488,7 +488,7 @@ export default function AdminCantantesCastingPage() {
             client={client} onClient={setClient}
             mediaType={mediaType} onMediaType={setMediaType}
           />
-          <button type="submit" disabled={creating} className="ds-btn-primary px-5 py-2">{creating ? "Creando…" : "Crear"}</button>
+          <button type="submit" disabled={creating} className="ds-btn-primary-solid px-5 py-2">{creating ? "Creando…" : "Crear"}</button>
         </form>
       </Modal>
 
@@ -512,7 +512,7 @@ export default function AdminCantantesCastingPage() {
                   <a href={`/voces/admin/castings/cantantes/candidates/${c.shareId}`} onClick={(e) => e.stopPropagation()} className="ds-btn-secondary text-[11px] py-1 px-2.5">Candidatos</a>
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); openEditor(c.id); }} className="absolute top-3 right-10 ds-btn-secondary text-[11px] py-1 px-2.5">Editar</button>
-                <button onClick={(e) => { e.stopPropagation(); setConfirmId((p) => (p === c.id ? null : c.id)); }} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors" style={{ color: confirmId === c.id ? "var(--color-accent)" : "var(--color-text-muted)" }} title="Eliminar">
+                <button onClick={(e) => { e.stopPropagation(); setConfirmId((p) => (p === c.id ? null : c.id)); }} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors" style={{ color: confirmId === c.id ? "var(--color-danger)" : "var(--color-text-muted)" }} title="Eliminar">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M12 2.25a9.75 9.75 0 100 19.5 9.75 9.75 0 000-19.5zM8 12.75a.75.75 0 01.75-.75h6.5a.75.75 0 010 1.5h-6.5a.75.75 0 01-.75-.75z" clipRule="evenodd" /></svg>
                 </button>
                 {confirmId === c.id && (
@@ -521,7 +521,7 @@ export default function AdminCantantesCastingPage() {
                     <p className="text-[11px] mb-3" style={{ color: "var(--color-text-muted)" }}>Esta acción no se puede deshacer.</p>
                     <div className="flex items-center justify-end gap-2">
                       <button className="ds-btn-secondary text-[11px] py-1 px-2.5" onClick={() => setConfirmId(null)}>Cancelar</button>
-                      <button className="text-[11px] py-1 px-2.5 rounded-[6px]" style={{ background: "rgba(232,76,43,0.12)", border: "0.5px solid rgba(232,76,43,0.30)", color: deletingId === c.id ? "rgba(232,76,43,0.4)" : "var(--color-accent)" }} onClick={() => onDelete(c.id)} disabled={deletingId === c.id}>{deletingId === c.id ? "Eliminando…" : "Eliminar"}</button>
+                      <button className="text-[11px] py-1 px-2.5 rounded-[6px]" style={{ background: "var(--color-danger-bg)", border: "0.5px solid var(--color-danger-border)", color: deletingId === c.id ? "var(--color-text-muted)" : "var(--color-danger)" }} onClick={() => onDelete(c.id)} disabled={deletingId === c.id}>{deletingId === c.id ? "Eliminando…" : "Eliminar"}</button>
                     </div>
                   </div>
                 )}
@@ -730,7 +730,7 @@ export default function AdminCantantesCastingPage() {
 
             <div className="flex items-center justify-end gap-2 pt-1">
               <button type="button" onClick={() => setEditOpen(false)} className="ds-btn-secondary text-[12px] py-1.5 px-3">Cancelar</button>
-              <button type="submit" disabled={editSaving} className="ds-btn-primary text-[12px] py-1.5 px-3">{editSaving ? "Guardando…" : "Guardar"}</button>
+              <button type="submit" disabled={editSaving} className="ds-btn-primary-solid text-[12px] py-1.5 px-3">{editSaving ? "Guardando…" : "Guardar"}</button>
             </div>
           </form>
         </div>
