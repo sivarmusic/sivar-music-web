@@ -177,7 +177,7 @@ export default function NotificationBell() {
             >
               Marcar vistas
             </button>
-            <a href="/voces/admin/clients#locutores" className="ds-btn-primary text-[11px] py-1.5 px-3">
+            <a href="/voces/admin/locutores" className="ds-btn-primary text-[11px] py-1.5 px-3">
               Ver lista
             </a>
           </div>

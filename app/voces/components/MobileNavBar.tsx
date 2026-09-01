@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/voces/components/AuthContext";
 import { useMobileMenu } from "@/app/voces/components/MobileMenuContext";
+import { ADMIN_NAV_ITEMS } from "@/app/voces/components/admin/AdminSidebar";
 
 type Child = { href: string; label: string };
 type Item = {
@@ -72,33 +73,40 @@ export default function MobileNavBar() {
   useEffect(() => { if (open) document.body.style.overflow = "hidden"; else document.body.style.overflow = ""; return () => { document.body.style.overflow = ""; }; }, [open]);
   useEffect(() => { if (open) close(); }, [pathname]);
 
-  const items: Item[] = [
-    {
-      href: "/voces",
-      label: "Locutores",
-      icon: <IconMic />,
-      children: isAdmin ? [{ href: "/voces/admin/casting", label: "Castings" }] : undefined,
-    },
-    {
-      href: "/voces/cantantes",
-      label: "Cantantes",
-      icon: <IconMusic />,
-      children: isAdmin ? [{ href: "/voces/admin/cantantes/casting", label: "Castings Cantantes" }] : undefined,
-    },
-    { href: "/voces/listas", label: "Proyectos Locutores", icon: <IconFolder />, clientOnly: true },
-    { href: "/voces/cantantes/proyectos", label: "Proyectos Cantantes", icon: <IconFolder />, clientOnly: true },
-    {
-      href: "/voces/admin/clients",
-      label: "Panel",
-      icon: <IconPanel />,
-      adminOnly: true,
-      children: isAdmin ? [{ href: "/voces/admin/reportes", label: "Reportes" }, { href: "/voces/notificaciones", label: "Notificaciones" }] : undefined,
-    },
-  ].filter((it) => {
-    if (it.adminOnly && !isAdmin) return false;
-    if (it.clientOnly && !client) return false;
-    return true;
-  });
+  const inAdmin = pathname?.startsWith("/voces/admin");
+
+  // Dentro del panel admin, el mismo hamburger/drawer muestra la navegación
+  // del admin (las 5 secciones de AdminSidebar) en vez del menú del sitio —
+  // así no hace falta un drawer aparte para mobile.
+  const items: Item[] = inAdmin && isAdmin
+    ? ADMIN_NAV_ITEMS
+    : [
+        {
+          href: "/voces",
+          label: "Locutores",
+          icon: <IconMic />,
+          children: isAdmin ? [{ href: "/voces/admin/castings/locutores", label: "Castings" }] : undefined,
+        },
+        {
+          href: "/voces/cantantes",
+          label: "Cantantes",
+          icon: <IconMusic />,
+          children: isAdmin ? [{ href: "/voces/admin/castings/cantantes", label: "Castings Cantantes" }] : undefined,
+        },
+        { href: "/voces/listas", label: "Proyectos Locutores", icon: <IconFolder />, clientOnly: true },
+        { href: "/voces/cantantes/proyectos", label: "Proyectos Cantantes", icon: <IconFolder />, clientOnly: true },
+        {
+          href: "/voces/admin/clientes",
+          label: "Panel",
+          icon: <IconPanel />,
+          adminOnly: true,
+          children: isAdmin ? [{ href: "/voces/admin/reportes", label: "Reportes" }, { href: "/voces/notificaciones", label: "Notificaciones" }] : undefined,
+        },
+      ].filter((it) => {
+        if (it.adminOnly && !isAdmin) return false;
+        if (it.clientOnly && !client) return false;
+        return true;
+      });
 
   return (
     <div>
