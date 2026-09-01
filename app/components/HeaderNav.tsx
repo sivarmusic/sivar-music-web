@@ -106,7 +106,7 @@ export default function HeaderNav({
             </div>
             <Link
               className="transition-colors duration-150 hover:text-white"
-              href="#"
+              href="/news"
               onClick={closeNav}
             >
               NEWS
