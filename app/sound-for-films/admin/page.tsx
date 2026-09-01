@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { verifyAdminSession } from "@/lib/pinkfest-auth";
 import GateToggle from "./GateToggle";
+import VideoManager from "./VideoManager";
 
 export const metadata: Metadata = {
   title: "Sound for Films · Acceso | Sivar Music",
@@ -24,6 +25,11 @@ export default async function SoundForFilmsAdminPage() {
     .eq("id", 1)
     .maybeSingle();
 
+  const { data: videos } = await supabase
+    .from("sound_for_films_videos")
+    .select("id, slug, title, description, partner_credit, visible, sort_order")
+    .order("sort_order", { ascending: true });
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-10 bg-black px-6 py-16 text-center text-white">
       <div className="flex flex-col gap-2">
@@ -42,6 +48,8 @@ export default async function SoundForFilmsAdminPage() {
         initialEnabled={data?.gate_enabled !== false}
         initialHasPassword={Boolean(data?.password_hash)}
       />
+
+      <VideoManager initialVideos={videos ?? []} />
 
       <Link
         href="/sound-for-films"

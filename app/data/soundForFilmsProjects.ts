@@ -1,4 +1,5 @@
 import blobManifest from "./soundForFilmsBlobManifest.json";
+import { supabase } from "@/lib/supabase";
 import {
   createSignedVideoUrls,
   toStorageObjectKey,
@@ -13,12 +14,16 @@ export type SoundForFilmsProject = {
   videoSrc: string;
 };
 
-type SoundForFilmsCatalogEntry = {
+// Row shape of the `sound_for_films_videos` table, the admin-editable source
+// of truth (see scripts/sound-for-films-videos-schema.sql). Only the columns
+// the showcase needs are selected.
+type SoundForFilmsVideoRow = {
+  slug: string;
   filename: string;
+  preview_filename: string | null;
   title: string;
   description: string;
-  partnerCredit?: string;
-  previewFilename?: string;
+  partner_credit: string;
 };
 
 type SoundForFilmsBlobManifest = {
@@ -26,117 +31,6 @@ type SoundForFilmsBlobManifest = {
   full: Record<string, string>;
   preview: Record<string, string>;
 };
-
-const soundForFilmsCatalog: SoundForFilmsCatalogEntry[] = [
-  {
-    filename: "BINTER.mp4",
-    title: "BINTER",
-    description: "SOUND DESIGN/MIX",
-  },
-  {
-    filename: "CORONA 100 AÑOS.mp4",
-    title: "CORONA 100 AÑOS",
-    description: "SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-  {
-    filename: "JEAN PAUL GAULTIER.mp4",
-    title: "JEAN PAUL GAULTIER",
-    description: "SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-  {
-    filename: "DON JULIO.mp4",
-    title: "DON JULIO",
-    description: "SOUND DESIGN/MIX",
-  },
-  {
-    filename: "GOOGLE PIXEL.mp4",
-    title: "GOOGLE PIXEL",
-    description: "SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-  {
-    filename: "AEROMEXICO.mp4",
-    title: "AEROMEXICO",
-    description: "MUSIC/SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-  {
-    filename: "ARREDO.mp4",
-    title: "ARREDO",
-    description: "SOUND DESIGN/MIX",
-  },
-  {
-    filename: "BUHO FILM.mp4",
-    title: "BUHO FILM",
-    description: "MUSIC/SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-  {
-    filename: "CHEVROLET.mp4",
-    title: "CHEVROLET",
-    description: "SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-  {
-    filename: "HBO MAX.mp4",
-    title: "HBO MAX",
-    description: "SOUND DESIGN/MIX",
-  },
-  {
-    filename: "KFC CARIBE.mp4",
-    title: "KFC CARIBE",
-    description: "MUSIC/SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-  {
-    filename: "KFC LATAM.mp4",
-    title: "KFC LATAM",
-    description: "MUSIC/SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-  {
-    filename: "MONTELOBOS.mp4",
-    title: "MONTELOBOS",
-    description: "MUSIC/SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-  {
-    filename: "NISSAN.mp4",
-    title: "NISSAN",
-    description: "SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-  {
-    filename: "OLYMPICS.mp4",
-    title: "OLYMPICS",
-    description: "MUSIC/SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-  {
-    filename: "SPORTS DIRECT.mp4",
-    title: "SPORTS DIRECT",
-    description: "MUSIC/SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-  {
-    filename: "TECATE.mp4",
-    title: "TECATE",
-    description: "MUSIC/SOUND DESIGN/MIX",
-    partnerCredit: "in partnership with BDS creative studio.",
-  },
-];
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^\w\s-]/g, "")
-    .trim()
-    .replace(/[\s_]+/g, "-")
-    .replace(/-+/g, "-");
-}
 
 function trimTrailingSlash(value: string) {
   return value.replace(/\/+$/, "");
@@ -191,20 +85,48 @@ function warnAboutLegacyFallback(missing: number) {
   );
 }
 
+let hasWarnedAboutVideosQuery = false;
+
+function warnAboutVideosQueryFailure(reason: string) {
+  if (hasWarnedAboutVideosQuery) return;
+  hasWarnedAboutVideosQuery = true;
+  console.warn(
+    `[sound-for-films] Could not load the video catalog from Supabase ` +
+      `("sound_for_films_videos": ${reason}). Returning an empty list instead ` +
+      `of a hardcoded fallback — check the table and the admin panel.`
+  );
+}
+
 /**
  * Resolves playable video URLs for the showcase.
  *
- * Videos live in a private Supabase bucket and are served through signed URLs
- * minted per request, so a shared link stops working once it expires. Files
- * that are not in the bucket yet fall back to the legacy public blob manifest
- * so the page keeps rendering during the migration.
+ * The catalog itself (title, description, partner credit, visible/hidden,
+ * ordering) is admin-editable and lives in the `sound_for_films_videos`
+ * table — see app/sound-for-films/admin/VideoManager.tsx. Videos live in a
+ * private Supabase bucket and are served through signed URLs minted per
+ * request, so a shared link stops working once it expires. Files that are
+ * not in the bucket yet fall back to the legacy public blob manifest so the
+ * page keeps rendering during the migration.
  */
 export async function getSoundForFilmsProjects(): Promise<
   SoundForFilmsProject[]
 > {
-  const paths = soundForFilmsCatalog.flatMap((entry) => [
+  const { data, error } = await supabase
+    .from("sound_for_films_videos")
+    .select("slug, filename, preview_filename, title, description, partner_credit")
+    .eq("visible", true)
+    .order("sort_order", { ascending: true });
+
+  if (error || !data || data.length === 0) {
+    warnAboutVideosQueryFailure(error?.message ?? "no visible rows");
+    return [];
+  }
+
+  const catalog = data as SoundForFilmsVideoRow[];
+
+  const paths = catalog.flatMap((entry) => [
     toStorageObjectKey("full", entry.filename),
-    toStorageObjectKey("preview", entry.previewFilename ?? entry.filename),
+    toStorageObjectKey("preview", entry.preview_filename ?? entry.filename),
   ]);
 
   const signedUrls = await createSignedVideoUrls(paths);
@@ -222,14 +144,14 @@ export async function getSoundForFilmsProjects(): Promise<
     return resolveBlobOrFallbackUrl(filename, type, envBaseUrl);
   };
 
-  const projects = soundForFilmsCatalog.map((entry) => ({
-    slug: slugify(entry.title),
+  const projects = catalog.map((entry) => ({
+    slug: entry.slug,
     title: entry.title,
     description: entry.description,
-    partnerCredit: entry.partnerCredit ?? "",
+    partnerCredit: entry.partner_credit ?? "",
     previewVideoSrc: resolve(
       "preview",
-      entry.previewFilename ?? entry.filename,
+      entry.preview_filename ?? entry.filename,
       previewVideoBaseUrl
     ),
     videoSrc: resolve("full", entry.filename, fullVideoBaseUrl),
