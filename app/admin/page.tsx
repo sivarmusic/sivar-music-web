@@ -40,10 +40,14 @@ const AVAILABLE: AdminCard[] = [
     label: "Sound for Films",
     description: "Control de acceso y videos del portfolio.",
   },
+  {
+    href: "/artists/admin",
+    label: "Artistas",
+    description: "Perfiles del roster: bio, claves y visibilidad.",
+  },
 ];
 
 const UPCOMING: Omit<AdminCard, "href">[] = [
-  { label: "Artistas", description: "Catálogo y perfiles de artistas." },
   { label: "Releases", description: "Lanzamientos y discografía." },
   { label: "Noticias", description: "Novedades y comunicados." },
 ];

@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import HeaderNav from "../components/HeaderNav";
-import { artists } from "../data/artists";
+import { getArtists } from "@/lib/artists";
 
-export default function ArtistsPage() {
+export default async function ArtistsPage() {
+  const artists = await getArtists();
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
       <div className="absolute inset-0 bg-gradient-to-b from-black via-black/80 to-black" />

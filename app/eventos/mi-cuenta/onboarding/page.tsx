@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
-import { artists } from '@/app/data/artists'
+
+type OnboardingArtist = { slug: string; name: string; genre: string; menuImage: string }
 
 const GENRE_KEYS = [
   'onboarding.genre.pop', 'onboarding.genre.reggaeton', 'onboarding.genre.rock',
@@ -21,6 +22,7 @@ export default function OnboardingPage() {
   const [genres, setGenres] = useState<string[]>([])
   const [followed, setFollowed] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
+  const [artists, setArtists] = useState<OnboardingArtist[]>([])
 
   useEffect(() => {
     supabaseBrowser.auth.getSession().then(({ data }) => {
@@ -28,6 +30,13 @@ export default function OnboardingPage() {
       setUserId(data.session.user.id)
     })
   }, [router])
+
+  useEffect(() => {
+    fetch('/api/artists/public')
+      .then(res => res.json())
+      .then(data => setArtists(data.artists ?? []))
+      .catch(() => setArtists([]))
+  }, [])
 
   function toggleGenre(key: string) {
     setGenres(g => g.includes(key) ? g.filter(x => x !== key) : [...g, key])

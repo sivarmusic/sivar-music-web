@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import MonicaSinTildeProfile from "../../components/MonicaSinTildeProfile";
 import HeaderNav from "../../components/HeaderNav";
-import { artists } from "../../data/artists";
+import { artistAssets } from "../../data/artists";
+import { getArtistBySlug } from "@/lib/artists";
 
 type ArtistPageProps = {
   params: Promise<{
@@ -12,12 +13,14 @@ type ArtistPageProps = {
 };
 
 export function generateStaticParams() {
-  return artists.map((artist) => ({ slug: artist.slug }));
+  // Solo un hint de pre-render (síncrono, en código); Next igual resuelve
+  // on-demand contra Supabase si falta algún slug.
+  return artistAssets.map((assets) => ({ slug: assets.slug }));
 }
 
 export default async function ArtistDetailPage({ params }: ArtistPageProps) {
   const { slug } = await params;
-  const artist = artists.find((item) => item.slug === slug);
+  const artist = await getArtistBySlug(slug);
 
   if (!artist) {
     notFound();
