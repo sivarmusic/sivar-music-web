@@ -1,0 +1,110 @@
+/* ============================================================
+   Casting público (locutores /voces/c y cantantes /voces/cc)
+   Tema "casting": papel crema + tinta. Solo aplica dentro de
+   [data-theme="casting"] (ver CastingShell), así el admin y el
+   catálogo no cambian. Los tokens globales de voces viven en :root,
+   por eso se redefinen acá para AudioPlayer / PdfViewer.
+============================================================ */
+
+[data-theme="casting"] {
+  --paper: #f5f1ea;
+  --paper-2: #ece6db;
+  --ink: #040404;
+  --ink-2: #4a4640;
+  --line: #7a7368;
+  --rule: #d6cec0;
+  --signal: #2338e0;
+  --danger: #b42318;
+  --ok: #1f7a4d;
+  --sep: #b5ac9c;
+  --placeholder: #6e685e;
+
+  /* Re-mapeo de los tokens de voces para componentes compartidos */
+  --color-bg-base: var(--paper);
+  --color-bg-card: var(--paper-2);
+  --color-bg-card-hover: var(--paper-2);
+  --color-bg-subtle: var(--paper-2);
+  --color-accent: var(--signal);
+  --color-accent-bg: var(--paper-2);
+  --color-accent-border: var(--line);
+  --color-danger: var(--danger);
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-2);
+  --color-text-muted: var(--ink-2);
+  --color-border-default: var(--rule);
+  --color-border-hover: var(--line);
+  --color-border-subtle: var(--line);
+  /* Pista del slider de AudioPlayer (antes blanco translúcido fijo) */
+  --audio-track: var(--rule);
+
+  background: var(--paper);
+  color: var(--ink);
+  color-scheme: light;
+  min-height: 100vh;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  overflow-x: clip;
+}
+
+/* Radios 0 y sin sombras dentro del flujo (salvo el punto de estado) */
+[data-theme="casting"] *:not(.cs-dot) {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Foco global */
+.voces-scope [data-theme="casting"] :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
+  border-radius: 0;
+}
+
+[data-theme="casting"] ::selection {
+  background: var(--signal);
+  color: var(--paper);
+}
+
+/* Contenedor */
+.cs-container {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 20px;
+}
+@media (min-width: 1024px) {
+  .cs-container {
+    padding-inline: 40px;
+  }
+}
+
+.cs-display {
+  font-family: var(--font-display), Impact, sans-serif;
+  font-stretch: 62%;
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 0.86;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+.cs-mono {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Animaciones */
+@keyframes cs-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@keyframes cs-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="casting"] *,
+  [data-theme="casting"] *::before,
+  [data-theme="casting"] *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
