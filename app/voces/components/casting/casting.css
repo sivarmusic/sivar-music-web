@@ -468,3 +468,43 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 28px 32px;
 }
+
+/* ---------- Gracias ---------- */
+.cs-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--ok);
+  color: var(--paper);
+}
+.cs-h1:focus { outline: none; }
+.cs-table { margin: 0; border-top: 1px solid var(--ink); }
+.cs-table-row {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  gap: 16px;
+  padding-block: 16px;
+  border-bottom: 1px solid var(--rule);
+}
+@media (min-width: 1024px) {
+  .cs-table-row { grid-template-columns: 200px 1fr; }
+}
+.cs-table-row dt { font-size: 13px; color: var(--ink-2); line-height: 1.7; }
+.cs-table-row dd { margin: 0; font-size: 17px; }
+.cs-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.cs-link:hover { color: var(--signal); }
+.cs-band--bleed { padding: 48px 0; width: 100%; }
+@media (min-width: 1024px) {
+  .cs-band--bleed { padding: 64px 0; }
+}
