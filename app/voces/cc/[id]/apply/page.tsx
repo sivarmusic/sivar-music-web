@@ -2,6 +2,19 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/voces/components/AuthContext";
+import {
+  AdminBanner,
+  ApplyShell,
+  AudioField,
+  ClosedPanel,
+  DupNotice,
+  ErrorBanner,
+  Field,
+  Segmented,
+  SelectWrap,
+  SubmitButton,
+} from "@/app/voces/components/casting/ApplyParts";
+import Section from "@/app/voces/components/casting/Section";
 
 // Ported from voces-bds's app/cc/[id]/apply/page.tsx: public cantante
 // casting application form. No auth required to submit — /voces/cc/ is
@@ -13,6 +26,7 @@ import { useAuth } from "@/app/voces/components/AuthContext";
 //    /api/cantantes/casting/upload-url -> /api/voces/cantantes/casting/upload-url,
 //    /api/cantantes/casting/apply -> /api/voces/cantantes/casting/apply.
 //  - Links: /cc/{id} -> /voces/cc/{id}, /cc/{id}/gracias -> /voces/cc/{id}/gracias.
+// Presentación: rediseño visual (tema casting); estado, validaciones y payload no cambiaron.
 
 export default function CantanteCastingApplyPage() {
   const { id } = useParams();
@@ -98,107 +112,137 @@ export default function CantanteCastingApplyPage() {
     }
   }
 
-  const inputClass = "ds-input [color-scheme:dark]";
   const isOpen = !casting?.deadline || new Date() < new Date(casting.deadline);
+  // Solo visual: marca el campo asociado al mensaje de error actual (no valida nada).
+  const bad = (re: RegExp) => !!error && re.test(error);
+  const errId = "apply-error";
+  const describedBy = error ? errId : undefined;
 
   if (casting && !isOpen && !isAdmin) {
     return (
-      <main style={{ background: "var(--color-bg-base)", minHeight: "100vh" }} className="px-4 py-10 flex items-center justify-center">
-        <div className="max-w-lg w-full mx-auto text-center rounded-[16px] p-10" style={{ background: "var(--color-bg-card)", border: "0.5px solid var(--color-border-default)" }}>
-          <h1 className="text-[24px] mb-3" style={{ fontFamily: "var(--font-dm-serif, serif)", fontWeight: 400, color: "var(--color-text-primary)" }}>{casting.title || "Casting"}</h1>
-          <p className="text-[14px]" style={{ color: "var(--color-text-muted)" }}>Este casting ya cerró y no acepta nuevas postulaciones.</p>
-          <a href={`/voces/cc/${id}`} className="mt-6 inline-block text-[13px]" style={{ color: "#644cc8" }}>Volver al casting</a>
-        </div>
+      <main>
+        <ClosedPanel title={casting.title || "Casting"} deadline={casting.deadline} backHref={`/voces/cc/${id}`}>
+          <p>Este casting ya cerró y no acepta nuevas postulaciones.</p>
+        </ClosedPanel>
       </main>
     );
   }
 
   return (
-    <main style={{ background: "var(--color-bg-base)", minHeight: "100vh" }} className="px-4 py-10">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-8">
-          <span className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-4" style={{ background: "rgba(100,76,200,0.08)", border: "0.5px solid rgba(100,76,200,0.25)" }}>
-            <span className="text-[11px] font-[600] tracking-widest uppercase" style={{ color: "#644cc8" }}>Aplicar al casting</span>
-          </span>
-          {casting && (
-            <p className="text-[13px]" style={{ color: "var(--color-text-muted)" }}>
-              Proyecto: <span className="font-[500]" style={{ color: "var(--color-text-primary)" }}>{casting.title || "Sin título"}</span>
-            </p>
-          )}
-        </div>
-
-        <div className="rounded-[16px] p-8" style={{ background: "var(--color-bg-card)", border: "0.5px solid var(--color-border-default)" }}>
-          <form onSubmit={onSubmit} className="grid grid-cols-1 gap-5">
+    <main>
+      <ApplyShell
+        projectName={casting ? casting.title || "Sin título" : undefined}
+        deadline={casting?.deadline}
+        backHref={`/voces/cc/${id}`}
+        index={[
+          { id: "datos", label: "Tus datos" },
+          { id: "setup", label: "Tu setup" },
+          { id: "audio", label: "Audio" },
+        ]}
+      >
+        <form onSubmit={onSubmit} className="space-y-12">
+          <div className="space-y-4 empty:hidden">
             {isAdmin && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px]" style={{ background: "rgba(100,76,200,0.08)", border: "0.5px solid rgba(100,76,200,0.25)", color: "#644cc8" }}>
+              <AdminBanner>
                 Modo admin — podés enviar sin completar todos los campos.
-              </div>
+              </AdminBanner>
             )}
-            {error && <p className="text-[13px] px-4 py-3 rounded-[10px]" style={{ color: "var(--color-accent)", background: "rgba(232,76,43,0.08)", border: "0.5px solid rgba(232,76,43,0.20)" }}>{error}</p>}
+            <ErrorBanner id={errId} message={error} />
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label className="block text-[11px] font-[600] uppercase tracking-wider mb-1.5" style={{ color: "var(--color-text-muted)" }}>Nombre</label><input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Tu nombre" className={inputClass} /></div>
-              <div><label className="block text-[11px] font-[600] uppercase tracking-wider mb-1.5" style={{ color: "var(--color-text-muted)" }}>Apellido</label><input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Tu apellido" className={inputClass} /></div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label className="block text-[11px] font-[600] uppercase tracking-wider mb-1.5" style={{ color: "var(--color-text-muted)" }}>Teléfono</label><input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+54 9 11 ..." className={inputClass} /></div>
+          <Section id="datos" n={1} title="Tus datos">
+            <div className="cs-grid">
+              <Field label="Nombre" invalid={bad(/nombre/i)} describedBy={describedBy}>
+                {(p) => <input {...p} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Tu nombre" />}
+              </Field>
+              <Field label="Apellido" invalid={bad(/apellido/i)} describedBy={describedBy}>
+                {(p) => <input {...p} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Tu apellido" />}
+              </Field>
+              <Field label="Teléfono">
+                {(p) => <input {...p} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+54 9 11 ..." />}
+              </Field>
               <div>
-                <label className="block text-[11px] font-[600] uppercase tracking-wider mb-1.5" style={{ color: "var(--color-text-muted)" }}>Email</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" className={inputClass} />
-                {serverDup && <p className="mt-1.5 text-[12px]" style={{ color: "var(--color-accent)" }}>Este email ya postuló a este casting.</p>}
+                <Field label="Email" describedBy={serverDup ? "apply-dup" : undefined}>
+                  {(p) => <input {...p} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" />}
+                </Field>
+                {serverDup ? (
+                  <DupNotice id="apply-dup">Este email ya postuló a este casting.</DupNotice>
+                ) : null}
               </div>
+              <Field label="País">
+                {(p) => <input {...p} value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Argentina, México…" />}
+              </Field>
+              <Field label="Género" required invalid={bad(/masculino|femenino/i)} describedBy={describedBy}>
+                {(p) => (
+                  <SelectWrap>
+                    <select {...p} value={gender} onChange={(e) => setGender(e.target.value)}>
+                      <option value="">Seleccionar…</option>
+                      <option value="Male">Masculino</option>
+                      <option value="Female">Femenino</option>
+                    </select>
+                  </SelectWrap>
+                )}
+              </Field>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label className="block text-[11px] font-[600] uppercase tracking-wider mb-1.5" style={{ color: "var(--color-text-muted)" }}>País</label><input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Argentina, México…" className={inputClass} /></div>
-              <div>
-                <label className="block text-[11px] font-[600] uppercase tracking-wider mb-1.5" style={{ color: "var(--color-text-muted)" }}>Género <span style={{ color: "var(--color-accent)" }}>*</span></label>
-                <select value={gender} onChange={(e) => setGender(e.target.value)} className={inputClass}>
-                  <option value="">Seleccionar…</option>
-                  <option value="Male">Masculino</option>
-                  <option value="Female">Femenino</option>
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label className="block text-[11px] font-[600] uppercase tracking-wider mb-1.5" style={{ color: "var(--color-text-muted)" }}>¿Tenés home studio?</label><select value={homeStudio} onChange={(e) => setHomeStudio(e.target.value)} className={inputClass}><option value="no">No</option><option value="si">Sí</option></select></div>
-              <div><label className="block text-[11px] font-[600] uppercase tracking-wider mb-1.5" style={{ color: "var(--color-text-muted)" }}>¿Disponible para sesiones online?</label><select value={onlineSessions} onChange={(e) => setOnlineSessions(e.target.value)} className={inputClass}><option value="no">No</option><option value="si">Sí</option></select></div>
-            </div>
+          </Section>
 
-            {/* Audio */}
-            <div className="rounded-[12px] p-4" style={{ background: "var(--color-bg-subtle)", border: "0.5px solid var(--color-border-default)" }}>
-              <div className="flex items-center gap-1.5 mb-3">
-                <span className="text-[11px] font-[600] uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Audio</span>
-                <span className="text-[11px] font-[600]" style={{ color: "var(--color-accent)" }}>*</span>
-              </div>
-              <input id="cc-apply-audio" type="file" accept="audio/*" onChange={(e) => {
+          <Section id="setup" n={2} title="Tu setup">
+            <div className="cs-grid">
+              <Segmented
+                legend="¿Tenés home studio?"
+                name="homeStudio"
+                value={homeStudio}
+                onChange={setHomeStudio}
+                options={[{ value: "no", label: "No" }, { value: "si", label: "Sí" }]}
+              />
+              <Segmented
+                legend="¿Disponible para sesiones online?"
+                name="onlineSessions"
+                value={onlineSessions}
+                onChange={setOnlineSessions}
+                options={[{ value: "no", label: "No" }, { value: "si", label: "Sí" }]}
+              />
+            </div>
+          </Section>
+
+          <Section id="audio" n={3} title="Audio">
+            <AudioField
+              inputId="cc-apply-audio"
+              audioFile={audioFile}
+              audioLink={audioLink}
+              invalid={bad(/audio|link|MB|archivo/i)}
+              describedBy={describedBy}
+              hint="mp3, wav, ogg. Máximo 10 MB."
+              linkLabel="Link (Google Drive, Dropbox…)"
+              onFileChange={(e) => {
                 const file = e.target.files?.[0] || null;
-                if (file && file.size > 10 * 1024 * 1024) { setError("Máximo 10 MB."); e.target.value = ""; return; }
+                if (file && file.size > 10 * 1024 * 1024) {
+                  setError("Máximo 10 MB.");
+                  e.target.value = "";
+                  return;
+                }
                 setAudioFile(file);
                 if (file) setAudioLink("");
-              }} className="hidden" />
-              <div className="flex items-center gap-3">
-                <button type="button" onClick={() => document.getElementById("cc-apply-audio")?.click()} className="ds-btn-secondary text-[12px] py-1.5 px-4">Seleccionar archivo</button>
-                <span className="text-[12px] truncate max-w-[14rem]" style={{ color: "var(--color-text-muted)" }}>{audioFile?.name || "Ningún archivo"}</span>
-              </div>
-              <p className="mt-2 text-[11px]" style={{ color: "var(--color-text-muted)" }}>mp3, wav, ogg. Máximo 10 MB.</p>
-              <div className="flex items-center gap-3 my-3">
-                <div className="flex-1 h-px" style={{ background: "var(--color-border-default)" }} />
-                <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>o</span>
-                <div className="flex-1 h-px" style={{ background: "var(--color-border-default)" }} />
-              </div>
-              <label className="block text-[11px] font-[600] uppercase tracking-wider mb-1.5" style={{ color: "var(--color-text-muted)" }}>Link (Google Drive, Dropbox…)</label>
-              <input type="url" value={audioLink} onChange={(e) => { setAudioLink(e.target.value); if (e.target.value) { setAudioFile(null); const fi = document.getElementById("cc-apply-audio") as HTMLInputElement | null; if (fi) fi.value = ""; } }} placeholder="https://drive.google.com/…" className={inputClass} />
-            </div>
+              }}
+              onLinkChange={(v) => {
+                setAudioLink(v);
+                if (v) {
+                  setAudioFile(null);
+                  const fi = document.getElementById("cc-apply-audio") as HTMLInputElement | null;
+                  if (fi) fi.value = "";
+                }
+              }}
+              onRemoveFile={() => {
+                setAudioFile(null);
+                const fi = document.getElementById("cc-apply-audio") as HTMLInputElement | null;
+                if (fi) fi.value = "";
+              }}
+            />
+          </Section>
 
-            <div className="flex items-center gap-4 pt-2">
-              <button type="submit" disabled={submitting} className="ds-btn-primary text-[13px] px-6 py-3" style={{ background: submitting ? undefined : "#644cc8", opacity: submitting ? 0.5 : 1 }}>
-                {submitting ? "Enviando…" : "Enviar postulación"}
-              </button>
-              <a href={`/voces/cc/${id}`} className="text-[13px] transition-colors" style={{ color: "var(--color-text-muted)" }}>Volver</a>
-            </div>
-          </form>
-        </div>
-      </div>
+          <SubmitButton submitting={submitting} />
+        </form>
+      </ApplyShell>
     </main>
   );
 }
