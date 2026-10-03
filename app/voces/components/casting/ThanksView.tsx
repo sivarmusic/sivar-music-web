@@ -39,7 +39,7 @@ export default function ThanksView({
           </span>
           <p className="cs-mono text-[13px]">Postulación enviada</p>
         </div>
-        <h1 ref={h1} tabIndex={-1} className="cs-display cs-h1 mt-6 text-[72px] md:text-[96px] text-cs-ink">{heading}</h1>
+        <h1 ref={h1} tabIndex={-1} className="cs-display cs-h1 mt-6 text-[60px] md:text-[96px] text-cs-ink">{heading}</h1>
         {lead ? <p className="mt-6 max-w-2xl text-[16px] text-cs-ink-2">{lead}</p> : null}
 
         <dl className="cs-table mt-12 max-w-3xl">
