@@ -38,6 +38,11 @@ export default function Modal({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  // onClose en un ref: los callers pasan una arrow inline (nueva identidad en
+  // cada render). Si el efecto dependiera de ella, cada tecla tipada en un
+  // input re-ejecutaría el efecto y robaría el foco hacia el botón de cerrar.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
@@ -51,7 +56,7 @@ export default function Modal({
 
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key === "Tab" && panel) {
@@ -75,7 +80,7 @@ export default function Modal({
       document.body.style.overflow = "";
       previouslyFocused.current?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
