@@ -177,7 +177,7 @@ export default function AudioPlayer({ src: rawSrc, ariaLabel, trackName }: { src
               step="0.01"
               className="w-full h-1 appearance-none rounded-full cursor-pointer"
               style={{
-                background: `linear-gradient(to right, var(--color-accent) ${pct}%, rgba(255,255,255,0.12) ${pct}%)`,
+                background: `linear-gradient(to right, var(--color-accent) ${pct}%, var(--audio-track, rgba(255,255,255,0.12)) ${pct}%)`,
                 accentColor: "var(--color-accent)",
               }}
               aria-label={t("audioProgress")}

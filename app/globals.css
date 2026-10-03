@@ -10,6 +10,17 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Casting público (tema [data-theme="casting"], ver app/voces/components/casting) */
+  --color-cs-paper: var(--paper);
+  --color-cs-paper-2: var(--paper-2);
+  --color-cs-ink: var(--ink);
+  --color-cs-ink-2: var(--ink-2);
+  --color-cs-line: var(--line);
+  --color-cs-rule: var(--rule);
+  --color-cs-signal: var(--signal);
+  --color-cs-danger: var(--danger);
+  --color-cs-ok: var(--ok);
 }
 
 html {
