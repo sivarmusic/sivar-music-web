@@ -152,10 +152,10 @@ export default function CantanteCastingApplyPage() {
 
           <Section id="datos" n={1} title="Tus datos">
             <div className="cs-grid">
-              <Field label="Nombre" invalid={bad(/nombre/i)} describedBy={describedBy} errorText={error}>
+              <Field label="Nombre" invalid={bad(/nombre/i) && !firstName} describedBy={describedBy} errorText="Falta tu nombre">
                 {(p) => <input {...p} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Tu nombre" />}
               </Field>
-              <Field label="Apellido" invalid={bad(/apellido/i)} describedBy={describedBy} errorText={error}>
+              <Field label="Apellido" invalid={bad(/apellido/i) && !lastName} describedBy={describedBy} errorText="Falta tu apellido">
                 {(p) => <input {...p} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Tu apellido" />}
               </Field>
               <Field label="Teléfono">
@@ -172,7 +172,7 @@ export default function CantanteCastingApplyPage() {
               <Field label="País">
                 {(p) => <input {...p} value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Argentina, México…" />}
               </Field>
-              <Field label="Género" required invalid={bad(/masculino|femenino/i)} describedBy={describedBy} errorText={error}>
+              <Field label="Género" required invalid={bad(/masculino|femenino|género/i) && !gender} describedBy={describedBy} errorText="Elegí una opción">
                 {(p) => (
                   <SelectWrap>
                     <select {...p} value={gender} onChange={(e) => setGender(e.target.value)}>
@@ -210,7 +210,7 @@ export default function CantanteCastingApplyPage() {
               inputId="cc-apply-audio"
               audioFile={audioFile}
               audioLink={audioLink}
-              invalid={bad(/audio|link|MB|archivo/i)}
+              invalid={bad(/audio|link|archivo|\bMB\b/i) && !audioFile && !audioLink.trim()}
               describedBy={describedBy}
               errorText={error}
               hint="mp3, wav, ogg. Máximo 10 MB."

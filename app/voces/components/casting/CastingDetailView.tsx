@@ -50,13 +50,13 @@ export function CastingErrorState({ message }: { message: string }) {
   return (
     <div>
       <div className="cs-container pt-10 md:pt-16">
-        <p className="cs-mono cs-err-code text-[13px]" aria-hidden="true">ERR 404 / SIN SEÑAL</p>
+        <p className="cs-mono cs-err-code text-[13px]" aria-hidden="true">SIN SEÑAL</p>
         <p className="cs-mono mt-3 text-[13px] text-cs-danger">Error</p>
         <h1 className="cs-display cs-poster mt-3 text-cs-ink" style={{ fontSize: "clamp(56px, 13vw, 160px)" }}>No disponible</h1>
       </div>
       <Waveform error size="hero" className="mt-8 text-cs-danger" />
       <div className="cs-container pb-10 md:pb-16">
-        <p role="alert" className="mt-8 max-w-xl text-[16px] text-cs-ink-2">{message}</p>
+        <p role="alert" className={message === "No disponible" ? "sr-only" : "mt-8 max-w-xl text-[16px] text-cs-ink-2"}>{message}</p>
         <button ref={retry} type="button" className="cs-btn-secondary mt-8" onClick={() => window.location.reload()}>
           Reintentar
         </button>
@@ -107,7 +107,7 @@ export default function CastingDetailView({
   );
 
   return (
-    <div className="pb-20 lg:pb-0">
+    <div>
       {/* Portada: título tipo cartel + onda viva a sangre */}
       <header className="cs-hero">
         <div className="cs-container cs-hero-in">
@@ -167,7 +167,7 @@ export default function CastingDetailView({
         <div className="cs-slab cs-slab--ink cs-on-blue cs-finale">
           <div className="cs-container">
             <Reveal className="cs-finale-in">
-              <Waveform seed={`${title}-fin`} size="md" bars={56} className="cs-finale-wave" />
+              <Waveform still seed={`${title}-fin`} size="md" bars={56} className="cs-finale-wave" />
               {cta("cs-btn-paper cs-btn-paper--lg")}
             </Reveal>
           </div>
@@ -176,7 +176,7 @@ export default function CastingDetailView({
         <div className="cs-slab cs-slab--deep cs-on-blue cs-finale">
           <div className="cs-container">
             <p className="cs-display cs-finale-title">Casting terminado</p>
-            <span aria-disabled="true" className="cs-btn-secondary cs-btn-secondary--inv mt-6 opacity-60">Casting cerrado</span>
+            <span aria-disabled="true" className="cs-btn-secondary cs-btn-secondary--inv mt-6">Casting cerrado</span>
           </div>
         </div>
       )}
@@ -185,7 +185,7 @@ export default function CastingDetailView({
       {isOpen && heroGone ? (
         <div className="cs-sticky lg:hidden">
           <div className="cs-sticky-info min-w-0">
-            <Waveform size="sm" bars={14} className="cs-sticky-wave" />
+            <Waveform still size="sm" bars={10} className="cs-sticky-wave" />
             <div className="min-w-0">
               <p className="cs-mono text-[11px]">Cierra en</p>
               {dl ? <Timecode countdown={countdown} size="xs" label={timerLabel} /> : null}

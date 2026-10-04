@@ -25,6 +25,7 @@ export default function Waveform({
   flat = false,
   error = false,
   scan = false,
+  still = false,
   size = "md",
   bars,
   className = "",
@@ -33,6 +34,8 @@ export default function Waveform({
   flat?: boolean;
   error?: boolean;
   scan?: boolean;
+  /** Se levanta una vez y queda quieta (ondas secundarias). */
+  still?: boolean;
   size?: WaveSize;
   bars?: number;
   className?: string;
@@ -51,7 +54,7 @@ export default function Waveform({
   }, []);
 
   const spike = Math.floor(n * 0.4);
-  const state = error ? "cs-vu--error" : flat ? "cs-vu--flat" : scan ? "cs-vu--scan" : "cs-vu--live";
+  const state = error ? "cs-vu--error" : flat ? "cs-vu--flat" : scan ? "cs-vu--scan" : still ? "cs-vu--still" : "cs-vu--live";
   return (
     <div ref={wrap} aria-hidden="true" className={`cs-vu cs-vu--${size} ${state} ${className}`.trim()}>
       {Array.from({ length: n }, (_, i) => {

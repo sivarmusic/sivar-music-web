@@ -18,7 +18,7 @@
   --ok: #1f7a4d;
   --sep: #b5ac9c;
   --placeholder: #6e685e;
-  --signal-deep: #1b2bb8;
+  --signal-deep: #15208a;
 
   /* Re-mapeo de los tokens de voces para componentes compartidos */
   --color-bg-base: var(--paper);
@@ -166,7 +166,7 @@
 .cs-tc-num { font-weight: 500; }
 .cs-tc-num--sec { color: var(--signal); }
 .cs-tc-label {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
   color: var(--ink-2);
   font-weight: 400;

@@ -4,10 +4,10 @@ import { useEffect, useRef } from "react";
 /** Tamaño tipo póster según el largo del título (clamp fluido, sin saltos de breakpoint). */
 export function posterSize(t: string) {
   const n = t.length;
-  if (n <= 10) return "clamp(84px, 24vw, 280px)";
-  if (n <= 20) return "clamp(64px, 16vw, 210px)";
-  if (n <= 32) return "clamp(54px, 14vw, 150px)";
-  return "clamp(40px, 8.5vw, 112px)";
+  if (n <= 10) return "clamp(72px, 18vw, 200px)";
+  if (n <= 20) return "clamp(56px, 11vw, 132px)";
+  if (n <= 32) return "clamp(52px, 9.5vw, 120px)";
+  return "clamp(40px, 7.5vw, 96px)";
 }
 
 /**

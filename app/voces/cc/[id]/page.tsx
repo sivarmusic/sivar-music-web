@@ -40,6 +40,9 @@ async function triggerDownload(url: string, label: string) {
   }
 }
 
+// Solo etiqueta de presentación: el valor guardado sigue siendo Female/Male.
+const GENDER_ES: Record<string, string> = { Female: "Femenino", Male: "Masculino" };
+
 export default function CantanteCastingPublicPage() {
   const { id } = useParams();
   const [item, setItem] = useState<any | null>(null);
@@ -79,14 +82,18 @@ export default function CantanteCastingPublicPage() {
   const sections: DetailSection[] = [];
 
   if (item.criteria && (item.criteria.styles?.length || item.criteria.country || item.criteria.gender || item.criteria.vocalRange)) {
-    const perfil: string[] = [item.criteria.country, item.criteria.gender, item.criteria.vocalRange].filter(Boolean);
+    const pais: string[] = [item.criteria.country].filter(Boolean);
+    const genero: string[] = [item.criteria.gender].filter(Boolean).map((g: string) => GENDER_ES[g] || g);
+    const registro: string[] = [item.criteria.vocalRange].filter(Boolean);
     const estilos: string[] = item.criteria.styles || [];
     sections.push({
       key: "perfil",
       title: "Perfil buscado",
       node: (
         <div className="cs-spec">
-          <ChipRow label="Perfil" items={perfil} />
+          <ChipRow label="País" items={pais} />
+          <ChipRow label="Género" items={genero} />
+          <ChipRow label="Registro" items={registro} />
           <ChipRow label="Estilos" items={estilos} />
         </div>
       ),

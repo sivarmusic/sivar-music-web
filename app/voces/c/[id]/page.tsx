@@ -18,6 +18,9 @@ import DocFrame from "@/app/voces/components/casting/DocFrame";
 //  - "BDS Voces" branding in the closed-casting message removed (see below).
 // Presentación: rediseño visual (tema casting); la lógica de datos no cambió.
 
+// Solo etiqueta de presentación: el valor guardado sigue siendo Female/Male.
+const GENDER_ES: Record<string, string> = { Female: "Femenino", Male: "Masculino" };
+
 export default function CastingPublicPage() {
   const { id } = useParams();
   const [item, setItem] = useState<any | null>(null);
@@ -54,7 +57,7 @@ export default function CastingPublicPage() {
   if (item?.criteria) {
     const voz: string[] = [];
     if (item.criteria.language) voz.push(`${item.criteria.language}${item.criteria.accent ? ` - ${item.criteria.accent}` : ""}`);
-    if (item.criteria.gender) voz.push(item.criteria.gender);
+    if (item.criteria.gender) voz.push(GENDER_ES[item.criteria.gender] || item.criteria.gender);
     const estilos: string[] = item.criteria.styles || [];
     const edades: string[] = item.criteria.ages || [];
     sections.push({

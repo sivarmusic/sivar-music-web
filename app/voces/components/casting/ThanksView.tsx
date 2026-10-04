@@ -69,7 +69,7 @@ export default function ThanksView({
         <div className="cs-band cs-band--bleed">
           <div className="cs-container !py-0">
             <Reveal>
-              <Waveform seed={project || band.title} size="md" className="cs-band-wave" />
+              <Waveform still seed={project || band.title} size="md" className="cs-band-wave" />
               <h2 className="cs-display cs-band-title mt-8">{band.title}</h2>
               <p className="mt-6 max-w-xl text-[16px] text-cs-rule">{band.text}</p>
               <div className="mt-8 flex flex-col gap-4 md:flex-row">

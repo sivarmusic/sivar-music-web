@@ -56,6 +56,17 @@ export function ApplyShell({
   }, []);
 
   useEffect(() => {
+    const last = index[index.length - 1]?.id;
+    if (!last) return;
+    const onScroll = () => {
+      if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 8) setActive(last);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     const root = bodyRef.current;
     if (!root) return;
     const compute = () => {
@@ -160,6 +171,9 @@ export function ApplyShell({
 }
 
 /* ---------- Banners ---------- */
+// Errores de validación del formulario (faltan datos) vs. fallas del servidor/red.
+const VALIDATION_RE = /^(Completá|Indicá|Debés|El archivo es demasiado)/;
+
 export function ErrorBanner({ id, message }: { id: string; message: string | null }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const host = useSyncExternalStore(
@@ -169,9 +183,11 @@ export function ErrorBanner({ id, message }: { id: string; message: string | nul
   );
   const [dismissed, setDismissed] = useState<string | null>(null);
   if (!message && dismissed) setDismissed(null);
+  const isValidation = !!message && VALIDATION_RE.test(message);
   useEffect(() => {
-    if (!message || !host) return;
+    if (!message) return;
     ref.current?.focus({ preventScroll: true });
+    if (!isValidation) return;
     // Lleva al usuario al primer campo con error y lo "sacude" (si el movimiento está permitido).
     const bad = document.querySelector<HTMLElement>('.cs-input[aria-invalid="true"], .cs-drop--invalid');
     if (!bad) return;
@@ -185,23 +201,35 @@ export function ErrorBanner({ id, message }: { id: string; message: string | nul
       const off = () => target.classList.remove("cs-shake");
       target.addEventListener("animationend", off, { once: true });
     }
-  }, [message, host]);
-  if (!message || !host || dismissed === message) return null;
-  // Se monta como toast fijo (portal dentro del tema) para no empujar el layout del formulario.
+  }, [message, isValidation]);
+  // Fallas de servidor: se cierran solas a los 8 s, salvo que el foco esté dentro.
+  useEffect(() => {
+    if (!message || isValidation) return;
+    const t = setTimeout(() => {
+      if (!ref.current?.contains(document.activeElement) || document.activeElement === ref.current) setDismissed(message);
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [message, isValidation]);
+  if (!message || dismissed === message) return null;
+
+  if (isValidation) {
+    // Validación: banner en flujo (no tapa el campo que se corrige).
+    return (
+      <div ref={ref} id={id} tabIndex={-1} role="alert" className="cs-banner cs-banner--error">
+        <p className="font-[600] text-cs-danger">Falta completar</p>
+        <p className="text-[15px] text-cs-ink">{message}</p>
+      </div>
+    );
+  }
+  if (!host) return null;
+  // Servidor/red: toast fijo (portal dentro del tema) para no empujar el layout.
   return createPortal(
     <div ref={ref} id={id} tabIndex={-1} role="alert" className="cs-banner cs-banner--error cs-toast">
       <div className="min-w-0">
         <p className="font-[600] text-cs-danger">No pudimos enviar tu postulación</p>
         <p className="text-[15px] text-cs-ink">{message}</p>
       </div>
-      <button
-        type="button"
-        className="cs-toast-close cs-mono"
-        onClick={() => {
-          setDismissed(message);
-          document.querySelector<HTMLElement>('.cs-input[aria-invalid="true"]')?.focus();
-        }}
-      >
+      <button type="button" className="cs-toast-close cs-mono" onClick={() => setDismissed(message)}>
         Cerrar
       </button>
     </div>,
