@@ -202,14 +202,14 @@ export default function CastingApplyPage() {
 
           <Section id="datos" n={1} title="Tus datos">
             <div className="cs-grid">
-              <Field label="Nombre" invalid={ui.flags.nombre} describedBy={describedBy} errorText="Falta tu nombre">
+              <Field label="Nombre" required invalid={ui.flags.nombre} describedBy={describedBy} errorText="Falta tu nombre">
                 {(p) => <input {...p} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Tu nombre" />}
               </Field>
-              <Field label="Apellido" invalid={ui.flags.apellido} describedBy={describedBy} errorText="Falta tu apellido">
+              <Field label="Apellido" required invalid={ui.flags.apellido} describedBy={describedBy} errorText="Falta tu apellido">
                 {(p) => <input {...p} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Tu apellido" />}
               </Field>
               <Field label="Teléfono">
-                {(p) => <input {...p} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+54 9 11 ..." />}
+                {(p) => <input {...p} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+503 ..." />}
               </Field>
               <div>
                 <Field label="Email" describedBy={serverDup ? "apply-dup" : undefined}>

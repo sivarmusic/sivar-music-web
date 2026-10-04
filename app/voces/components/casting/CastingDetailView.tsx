@@ -135,7 +135,7 @@ export default function CastingDetailView({
           <div className="min-w-0">
             {dl ? (
               <p className="cs-mono cs-slab-date">
-                {isOpen ? "Cierra el" : "Cerró el"} {dl.date} · <span className="cs-nowrap">{dl.time} hs</span>
+                {isOpen ? "Cierra el" : "Cerró el"} {dl.date} · <span className="cs-nowrap">{dl.time}</span>
                 {today ? <strong className="ml-2">Cierra hoy</strong> : null}
               </p>
             ) : null}

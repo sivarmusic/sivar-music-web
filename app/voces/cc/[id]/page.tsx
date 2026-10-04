@@ -179,7 +179,14 @@ export default function CantanteCastingPublicPage() {
 
   return (
     <main>
-      <CastingDetailView item={item} applyHref={`/voces/cc/${id}/apply`} sections={sections} />
+      <CastingDetailView item={item} applyHref={`/voces/cc/${id}/apply`} sections={sections}
+        closedNext={{
+          title: "No te pierdas ningún casting",
+          text: "Enviamos nuestros castings por mail. Sumate a Sivar Voces o mantené tus datos actualizados para que te tengamos en cuenta y recibas todas las oportunidades.",
+          primary: { href: "/voces/registro", label: "Sumarme a la base" },
+          secondary: { href: "/voces/actualizar-reel", label: "Actualizar mi información" },
+        }}
+      />
     </main>
   );
 }

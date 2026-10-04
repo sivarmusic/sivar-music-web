@@ -2,7 +2,7 @@
 import type { ReactNode } from "react";
 import Arrow from "./Arrow";
 import { RecTape, Seal } from "./Ceremony";
-import PosterTitle from "./PosterTitle";
+import PosterTitle, { fitSize } from "./PosterTitle";
 import Reveal from "./Reveal";
 import Waveform from "./Waveform";
 
@@ -38,7 +38,7 @@ export default function ThanksView({
               <RecTape />
             </div>
           </div>
-          <PosterTitle text={heading} size="clamp(68px, 18vw, 210px)" focusOnMount className="cs-thanks-h1" />
+          <PosterTitle text={heading} size={fitSize(heading)} focusOnMount className="cs-thanks-h1" />
           {lead ? <p className="cs-thanks-lead">{lead}</p> : null}
         </div>
         <Waveform seed={project || heading} size="hero" className="cs-thanks-wave" />

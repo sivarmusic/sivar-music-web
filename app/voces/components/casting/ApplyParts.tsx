@@ -548,7 +548,7 @@ export function ClosedPanel({
       <Waveform flat size="hero" className="mt-8 text-cs-ink-2" />
       <div className="cs-container py-8 md:py-12">
         <div className="space-y-6">
-          {dl ? <p className="cs-mono text-[13px] text-cs-ink-2">Cerró el <span className="cs-nowrap">{long} hs</span></p> : null}
+          {dl ? <p className="cs-mono text-[13px] text-cs-ink-2">Cerró el <span className="cs-nowrap">{long}</span></p> : null}
           <Timecode countdown={null} closed size="md" label={dl ? `Cerró el ${dl.date}, ${dl.time} hs` : "Casting cerrado"} />
           <p aria-hidden="true" className="cs-mono text-[13px] text-cs-ink-2">SESIÓN CERRADA — FIN DE TOMA</p>
         </div>

@@ -445,6 +445,9 @@
   .cs-sticky { display: none; }
 }
 .cs-sticky .cs-tc-group:last-child { display: none; }
+.cs-sticky .cs-tc,
+.cs-sticky .cs-tc-num,
+.cs-sticky .cs-tc-label { color: var(--paper); }
 .cs-sticky-info { min-width: 0; flex: 1 1 auto; display: block; }
 
 /* ---------- Estados ---------- */
@@ -613,7 +616,9 @@
 }
 .cs-thanks > .cs-container { width: 100%; }
 .cs-thanks-top { display: flex; align-items: center; gap: 20px; }
-.cs-thanks-h1 { margin-top: 56px; line-height: 0.9; }
+.cs-thanks-status { min-width: 0; }
+.cs-thanks-h1 { margin-top: 56px; line-height: 0.9; overflow-wrap: normal; }
+.cs-poster:focus-visible { outline: none; }
 .cs-thanks-lead { margin-top: 32px; max-width: 36rem; font-size: 18px; color: var(--paper); }
 .cs-thanks-wave { margin-top: auto; padding-top: 48px; color: var(--paper); }
 .cs-thanks-status .cs-rec { margin-top: 6px; }
@@ -632,8 +637,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 20px;
-  letter-spacing: 0.06em;
+  font-size: clamp(14px, 4.6vw, 20px);
+  letter-spacing: 0.04em;
+  min-width: 0;
   font-variant-numeric: tabular-nums;
   color: var(--paper);
 }
