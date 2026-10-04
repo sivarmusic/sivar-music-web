@@ -5,9 +5,9 @@ import { useEffect, useRef } from "react";
 export function posterSize(t: string) {
   const n = t.length;
   if (n <= 10) return "clamp(72px, 18vw, 200px)";
-  if (n <= 20) return "clamp(56px, 11vw, 132px)";
-  if (n <= 32) return "clamp(52px, 9.5vw, 120px)";
-  return "clamp(40px, 7.5vw, 96px)";
+  if (n <= 20) return "clamp(64px, 11vw, 132px)";
+  if (n <= 32) return "clamp(60px, 9.5vw, 120px)";
+  return "clamp(48px, 7.5vw, 96px)";
 }
 
 /**

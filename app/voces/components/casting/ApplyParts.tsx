@@ -174,7 +174,43 @@ export function ApplyShell({
 // Errores de validación del formulario (faltan datos) vs. fallas del servidor/red.
 const VALIDATION_RE = /^(Completá|Indicá|Debés|El archivo es demasiado)/;
 
-export function ErrorBanner({ id, message }: { id: string; message: string | null }) {
+/**
+ * Solo UI: tras un envío fallido por validación, deriva qué requeridos siguen vacíos
+ * (a partir de los valores actuales) para marcarlos todos a la vez y mantener el banner
+ * sincronizado. No valida ni toca el estado de negocio.
+ */
+export function useRequiredUi(
+  error: string | null,
+  enabled: boolean,
+  empty: { nombre: boolean; apellido: boolean; genero: boolean; audio: boolean },
+) {
+  const [attempted, setAttempted] = useState(false);
+  const submitFail = !!error && /^(Completá|Indicá|Debés)/.test(error);
+  if (submitFail && !attempted) setAttempted(true);
+  const isValidation = !!error && VALIDATION_RE.test(error);
+  const sizeErr = !!error && error.startsWith("El archivo es demasiado");
+  const show = attempted && enabled;
+  const flags = {
+    nombre: show && empty.nombre,
+    apellido: show && empty.apellido,
+    genero: show && empty.genero,
+    audio: (show || (sizeErr && enabled)) && empty.audio,
+  };
+  const missing = [
+    flags.nombre && "nombre",
+    flags.apellido && "apellido",
+    flags.genero && "género",
+    flags.audio && "audio o link",
+  ].filter(Boolean) as string[];
+  let message: string | null = error;
+  if (isValidation && enabled) {
+    if (error!.startsWith("El archivo es demasiado")) message = flags.audio ? error : null;
+    else message = missing.length ? `Falta: ${missing.join(", ")}` : null;
+  }
+  return { flags, message, validation: isValidation && enabled };
+}
+
+export function ErrorBanner({ id, message, validation = false }: { id: string; message: string | null; validation?: boolean }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const host = useSyncExternalStore(
     () => () => {},
@@ -183,12 +219,11 @@ export function ErrorBanner({ id, message }: { id: string; message: string | nul
   );
   const [dismissed, setDismissed] = useState<string | null>(null);
   if (!message && dismissed) setDismissed(null);
-  const isValidation = !!message && VALIDATION_RE.test(message);
-  useEffect(() => {
-    if (!message) return;
+  const isValidation = !!message && validation;
+
+  // Lleva al usuario al primer campo con error y lo "sacude" (si el movimiento está permitido).
+  const reveal = () => {
     ref.current?.focus({ preventScroll: true });
-    if (!isValidation) return;
-    // Lleva al usuario al primer campo con error y lo "sacude" (si el movimiento está permitido).
     const bad = document.querySelector<HTMLElement>('.cs-input[aria-invalid="true"], .cs-drop--invalid');
     if (!bad) return;
     const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -201,7 +236,40 @@ export function ErrorBanner({ id, message }: { id: string; message: string | nul
       const off = () => target.classList.remove("cs-shake");
       target.addEventListener("animationend", off, { once: true });
     }
+  };
+  const revealRef = useRef(reveal);
+  useEffect(() => {
+    revealRef.current = reveal;
+  });
+
+  // Errores de servidor: foco al aparecer. Validación: en cada envío (aunque el mensaje no cambie).
+  const was = useRef(false);
+  useEffect(() => {
+    const present = !!message;
+    if (present && !was.current && !isValidation) ref.current?.focus({ preventScroll: true });
+    was.current = present;
   }, [message, isValidation]);
+  useEffect(() => {
+    if (!isValidation) return;
+    const form = document.querySelector("form");
+    if (!form) return;
+    let t: ReturnType<typeof setTimeout>;
+    const onSubmit = () => {
+      t = setTimeout(() => revealRef.current(), 60);
+    };
+    form.addEventListener("submit", onSubmit);
+    return () => {
+      form.removeEventListener("submit", onSubmit);
+      clearTimeout(t);
+    };
+  }, [isValidation]);
+  // Primera aparición de la validación: llevar al primer campo.
+  const shown = useRef(false);
+  useEffect(() => {
+    if (isValidation && !shown.current) revealRef.current();
+    shown.current = isValidation;
+  }, [isValidation]);
+
   // Fallas de servidor: se cierran solas a los 8 s, salvo que el foco esté dentro.
   useEffect(() => {
     if (!message || isValidation) return;
@@ -213,7 +281,6 @@ export function ErrorBanner({ id, message }: { id: string; message: string | nul
   if (!message || dismissed === message) return null;
 
   if (isValidation) {
-    // Validación: banner en flujo (no tapa el campo que se corrige).
     return (
       <div ref={ref} id={id} tabIndex={-1} role="alert" className="cs-banner cs-banner--error">
         <p className="font-[600] text-cs-danger">Falta completar</p>
@@ -222,7 +289,6 @@ export function ErrorBanner({ id, message }: { id: string; message: string | nul
     );
   }
   if (!host) return null;
-  // Servidor/red: toast fijo (portal dentro del tema) para no empujar el layout.
   return createPortal(
     <div ref={ref} id={id} tabIndex={-1} role="alert" className="cs-banner cs-banner--error cs-toast">
       <div className="min-w-0">
@@ -482,7 +548,7 @@ export function ClosedPanel({
       <Waveform flat size="hero" className="mt-8 text-cs-ink-2" />
       <div className="cs-container py-8 md:py-12">
         <div className="space-y-6">
-          {dl ? <p className="cs-mono text-[13px] text-cs-ink-2">Cerró el {long} hs</p> : null}
+          {dl ? <p className="cs-mono text-[13px] text-cs-ink-2">Cerró el <span className="cs-nowrap">{long} hs</span></p> : null}
           <Timecode countdown={null} closed size="md" label={dl ? `Cerró el ${dl.date}, ${dl.time} hs` : "Casting cerrado"} />
           <p aria-hidden="true" className="cs-mono text-[13px] text-cs-ink-2">SESIÓN CERRADA — FIN DE TOMA</p>
         </div>

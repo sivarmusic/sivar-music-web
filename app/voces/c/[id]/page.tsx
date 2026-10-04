@@ -110,7 +110,7 @@ export default function CastingPublicPage() {
       ) : /\.(mp3|wav|ogg)$/i.test(item.referenceUrl) ? (
         <AudioPlayer src={item.referenceUrl} ariaLabel="Referencia de audio" />
       ) : (
-        <a href={item.referenceUrl} target="_blank" className="cs-ref cs-mono"><span aria-hidden="true" className="cs-ref-play">▶</span><span className="min-w-0 break-all">{item.referenceUrl}</span></a>
+        <a href={item.referenceUrl} target="_blank" className="cs-ref cs-mono"><span aria-hidden="true" className="cs-ref-play">▶</span><span>{(item.referenceUrl as string).split(/(?<=\/)/).map((part: string, i: number) => (<span key={i}>{i > 0 ? <wbr /> : null}{part}</span>))}</span></a>
       ),
     });
   }
@@ -135,7 +135,14 @@ export default function CastingPublicPage() {
 
   return (
     <main>
-      <CastingDetailView item={item} applyHref={`/voces/c/${id}/apply`} sections={sections} />
+      <CastingDetailView item={item} applyHref={`/voces/c/${id}/apply`} sections={sections}
+        closedNext={{
+          title: "No te pierdas ningún casting",
+          text: "Enviamos nuestros castings por mail. Sumate a Sivar Voces o mantené tus datos actualizados para que te tengamos en cuenta y recibas todas las oportunidades.",
+          primary: { href: "/voces/registro", label: "Sumarme a la base" },
+          secondary: { href: "/voces/actualizar-reel", label: "Actualizar mi información" },
+        }}
+      />
     </main>
   );
 }

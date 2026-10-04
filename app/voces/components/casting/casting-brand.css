@@ -109,6 +109,20 @@
   .cs-vu.is-paused i { animation-play-state: paused; }
 }
 .cs-vu--scan i { --h: 0.2; }
+.cs-vu--flat { position: relative; }
+.cs-vu--flat::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - 1.5px);
+  height: 3px;
+  background: currentColor;
+}
+@keyframes cs-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  .cs-vu--flat::before { animation: cs-fade-in 300ms linear 900ms both; }
+}
 
 /* ---------- Portada / póster ---------- */
 .cs-hero-in { padding-top: 40px; }
@@ -163,8 +177,8 @@
 .cs-tc--lg { font-size: clamp(44px, 12.5vw, 88px); }
 .cs-tc-clip { display: block; }
 @keyframes cs-roll {
-  from { transform: translateY(35%); opacity: 0; }
-  to { transform: none; opacity: 1; }
+  from { transform: translateY(30%); }
+  to { transform: none; }
 }
 @keyframes cs-draw {
   from { transform: scaleX(0); }
@@ -302,7 +316,6 @@
   letter-spacing: 0.14em;
   color: var(--ink);
 }
-.cs-frame-wave { width: 56px; flex: none; color: var(--ink); }
 .cs-frame-in .h-\[70vh\] {
   height: auto;
   max-height: min(75vh, 760px);
@@ -334,6 +347,8 @@
   text-decoration: none;
   transition: background-color 120ms, color 120ms;
 }
+.cs-ref > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.cs-nowrap { white-space: nowrap; }
 .cs-ref-play { flex: none; color: var(--signal); font-size: 12px; }
 .cs-ref:hover { background: var(--ink); color: var(--paper); }
 .cs-ref:hover .cs-ref-play { color: var(--paper); }
@@ -378,14 +393,14 @@
 @media (min-width: 1024px) {
   .cs-finale-in { flex-direction: row; align-items: center; gap: 64px; }
 }
-.cs-finale-wave { color: var(--paper); flex: 1 1 auto; }
+.cs-finale-rule { display: block; flex: 1 1 auto; height: 1px; background: rgba(245, 241, 234, 0.35); }
+.cs-band-rule { display: block; width: 100%; max-width: 480px; height: 1px; background: rgba(245, 241, 234, 0.35); }
 .cs-finale-title,
 .cs-band-title {
   font-size: clamp(48px, 11vw, 140px);
   line-height: 0.9;
 }
 .cs-band-title { font-size: clamp(40px, 8vw, 88px); }
-.cs-band-wave { color: var(--paper); max-width: 480px; }
 
 /* ---------- Barra inferior mobile ---------- */
 .cs-sticky {
@@ -422,11 +437,15 @@
 @media (prefers-reduced-motion: no-preference) {
   .cs-sticky { animation: cs-sticky-in 240ms cubic-bezier(0.2, 0.7, 0.1, 1) both; }
 }
-.cs-sticky-info { display: flex; align-items: center; gap: 12px; }
 .cs-sticky-info .cs-mono { color: var(--paper); font-size: 12px; }
 .cs-sticky .cs-tc-sep { color: rgba(245, 241, 234, 0.55); }
 .cs-sticky .cs-tc-num--sec { color: #c9d1ff; }
-.cs-sticky-wave { width: 36px; flex: none; color: var(--paper); }
+/* Solo mobile: oculta por CSS (no depende de utilidades) y sin segundos */
+@media (min-width: 1024px) {
+  .cs-sticky { display: none; }
+}
+.cs-sticky .cs-tc-group:last-child { display: none; }
+.cs-sticky-info { min-width: 0; flex: 1 1 auto; display: block; }
 
 /* ---------- Estados ---------- */
 .cs-err-code { color: var(--danger); letter-spacing: 0.14em; }
@@ -493,6 +512,7 @@
 .cs-input { height: 56px; font-size: 18px; }
 .cs-input:not(:placeholder-shown) { font-weight: 500; }
 .cs-input:focus { border-bottom-color: var(--line); }
+.voces-scope [data-theme="casting"] .cs-input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 .cs-bar {
   position: absolute;
   left: 0;
@@ -598,7 +618,10 @@
 .cs-thanks-wave { margin-top: auto; padding-top: 48px; color: var(--paper); }
 .cs-thanks-status .cs-rec { margin-top: 6px; }
 
-.cs-seal { flex: none; width: 88px; height: 88px; color: var(--paper); }
+.cs-seal { flex: none; width: 112px; height: 112px; color: var(--paper); }
+@media (min-width: 768px) {
+  .cs-seal { width: 88px; height: 88px; }
+}
 .cs-seal-rot { transform-box: fill-box; transform-origin: center; }
 @keyframes cs-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: no-preference) {
@@ -646,3 +669,13 @@
 
 /* Errores de validación en flujo */
 .cs-banner--warn { border-left-color: var(--danger); }
+
+/* Siguiente paso en cerrado */
+.cs-next { margin-top: 32px; display: flex; flex-direction: column; gap: 16px; max-width: 36rem; }
+@media (min-width: 768px) {
+  .cs-next-actions { display: flex; gap: 16px; }
+}
+.cs-next-actions { display: flex; flex-direction: column; gap: 16px; }
+@media (min-width: 768px) {
+  .cs-next-actions { flex-direction: row; }
+}

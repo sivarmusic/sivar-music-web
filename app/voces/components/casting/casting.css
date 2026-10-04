@@ -17,7 +17,7 @@
   --danger: #b42318;
   --ok: #1f7a4d;
   --sep: #b5ac9c;
-  --placeholder: #6e685e;
+  --placeholder: #5f5a50;
   --signal-deep: #15208a;
 
   /* Re-mapeo de los tokens de voces para componentes compartidos */
@@ -318,10 +318,9 @@
   outline: none;
   transition: none;
 }
-.cs-input::placeholder { color: var(--placeholder); }
+.cs-input::placeholder { color: var(--placeholder); opacity: 1; }
 .cs-input:focus { border-bottom: 2px solid var(--signal); }
 .cs-input[aria-invalid="true"] { border-bottom: 2px solid var(--danger); }
-.voces-scope [data-theme="casting"] .cs-input:focus-visible { outline: none; }
 .cs-select { position: relative; }
 .cs-select select { appearance: none; -webkit-appearance: none; padding-right: 28px; border-radius: 0; cursor: pointer; }
 

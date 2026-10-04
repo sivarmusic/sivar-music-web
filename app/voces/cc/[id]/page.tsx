@@ -126,7 +126,7 @@ export default function CantanteCastingPublicPage() {
       ) : /\.(mp3|wav|ogg)$/i.test(item.referenceUrl) ? (
         <AudioPlayer src={item.referenceUrl} ariaLabel="Referencia de audio" />
       ) : (
-        <a href={item.referenceUrl} target="_blank" className="cs-ref cs-mono"><span aria-hidden="true" className="cs-ref-play">▶</span><span className="min-w-0 break-all">{item.referenceUrl}</span></a>
+        <a href={item.referenceUrl} target="_blank" className="cs-ref cs-mono"><span aria-hidden="true" className="cs-ref-play">▶</span><span>{(item.referenceUrl as string).split(/(?<=\/)/).map((part: string, i: number) => (<span key={i}>{i > 0 ? <wbr /> : null}{part}</span>))}</span></a>
       ),
     });
   }

@@ -69,10 +69,18 @@ export default function CastingDetailView({
   item,
   applyHref,
   sections,
+  closedNext,
 }: {
   item: { title?: string; brief?: string; deadline?: string | null };
   applyHref: string;
   sections: DetailSection[];
+  /** Salida del estado cerrado con destinos/textos ya existentes. */
+  closedNext?: {
+    title: string;
+    text: string;
+    primary: { href: string; label: string };
+    secondary: { href: string; label: string };
+  };
 }) {
   const isOpen = !item?.deadline || new Date() < new Date(item.deadline);
   const countdown = useCountdown(item?.deadline);
@@ -127,7 +135,7 @@ export default function CastingDetailView({
           <div className="min-w-0">
             {dl ? (
               <p className="cs-mono cs-slab-date">
-                {isOpen ? "Cierra el" : "Cerró el"} {dl.date} · {dl.time} hs
+                {isOpen ? "Cierra el" : "Cerró el"} {dl.date} · <span className="cs-nowrap">{dl.time} hs</span>
                 {today ? <strong className="ml-2">Cierra hoy</strong> : null}
               </p>
             ) : null}
@@ -167,7 +175,7 @@ export default function CastingDetailView({
         <div className="cs-slab cs-slab--ink cs-on-blue cs-finale">
           <div className="cs-container">
             <Reveal className="cs-finale-in">
-              <Waveform still seed={`${title}-fin`} size="md" bars={56} className="cs-finale-wave" />
+              <span aria-hidden="true" className="cs-finale-rule" />
               {cta("cs-btn-paper cs-btn-paper--lg")}
             </Reveal>
           </div>
@@ -177,19 +185,29 @@ export default function CastingDetailView({
           <div className="cs-container">
             <p className="cs-display cs-finale-title">Casting terminado</p>
             <span aria-disabled="true" className="cs-btn-secondary cs-btn-secondary--inv mt-6">Casting cerrado</span>
+            {closedNext ? (
+              <div className="cs-next">
+                <p className="cs-mono text-[13px]">{closedNext.title}</p>
+                <p className="text-[16px]">{closedNext.text}</p>
+                <div className="cs-next-actions">
+                  <a href={closedNext.primary.href} className="cs-btn-paper">
+                    <span>{closedNext.primary.label}</span>
+                    <Arrow />
+                  </a>
+                  <a href={closedNext.secondary.href} className="cs-btn-secondary cs-btn-secondary--inv">{closedNext.secondary.label}</a>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       )}
 
       {/* Barra inferior (solo mobile, cuando la franja sale de pantalla) */}
       {isOpen && heroGone ? (
-        <div className="cs-sticky lg:hidden">
-          <div className="cs-sticky-info min-w-0">
-            <Waveform still size="sm" bars={10} className="cs-sticky-wave" />
-            <div className="min-w-0">
-              <p className="cs-mono text-[11px]">Cierra en</p>
-              {dl ? <Timecode countdown={countdown} size="xs" label={timerLabel} /> : null}
-            </div>
+        <div className="cs-sticky">
+          <div className="cs-sticky-info">
+            <p className="cs-mono text-[11px]">Cierra en</p>
+            {dl ? <Timecode countdown={countdown} size="xs" label={timerLabel} /> : null}
           </div>
           <a href={applyHref} className="cs-sticky-btn">Aplicar al casting</a>
         </div>

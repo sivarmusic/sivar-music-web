@@ -38,7 +38,7 @@ export default function ThanksView({
               <RecTape />
             </div>
           </div>
-          <PosterTitle text={heading} size="clamp(60px, 15vw, 210px)" focusOnMount className="cs-thanks-h1" />
+          <PosterTitle text={heading} size="clamp(68px, 18vw, 210px)" focusOnMount className="cs-thanks-h1" />
           {lead ? <p className="cs-thanks-lead">{lead}</p> : null}
         </div>
         <Waveform seed={project || heading} size="hero" className="cs-thanks-wave" />
@@ -69,7 +69,7 @@ export default function ThanksView({
         <div className="cs-band cs-band--bleed">
           <div className="cs-container !py-0">
             <Reveal>
-              <Waveform still seed={project || band.title} size="md" className="cs-band-wave" />
+              <span aria-hidden="true" className="cs-band-rule" />
               <h2 className="cs-display cs-band-title mt-8">{band.title}</h2>
               <p className="mt-6 max-w-xl text-[16px] text-cs-rule">{band.text}</p>
               <div className="mt-8 flex flex-col gap-4 md:flex-row">
