@@ -9,6 +9,7 @@ import CastingDetailView, {
   type DetailSection,
 } from "@/app/voces/components/casting/CastingDetailView";
 import { ChipRow } from "@/app/voces/components/casting/Chips";
+import DocFrame from "@/app/voces/components/casting/DocFrame";
 
 // Ported from voces-bds's app/cc/[id]/page.tsx: public cantante casting
 // detail page (the /voces/cc/{shareId} link shared with talents). No auth:
@@ -84,7 +85,7 @@ export default function CantanteCastingPublicPage() {
       key: "perfil",
       title: "Perfil buscado",
       node: (
-        <div>
+        <div className="cs-spec">
           <ChipRow label="Perfil" items={perfil} />
           <ChipRow label="Estilos" items={estilos} />
         </div>
@@ -99,8 +100,10 @@ export default function CantanteCastingPublicPage() {
           title: "Letra / Guion",
           node: (
             <div>
-              <PdfViewer src={pdfSrc} fallbackHref={item.scriptUrl} />
-              <p className="mt-3 text-[14px] text-cs-ink-2">Si no ves el documento, <a href={item.scriptUrl} target="_blank" className="underline text-cs-signal">abrilo aquí</a>.</p>
+              <DocFrame label="LETRA / GUION · PDF">
+                <PdfViewer src={pdfSrc} fallbackHref={item.scriptUrl} />
+              </DocFrame>
+              <p className="mt-3 text-[14px] text-cs-ink-2">Si no ves el documento, <a href={item.scriptUrl} target="_blank" className="cs-textlink">abrilo aquí</a>.</p>
             </div>
           ),
         }
@@ -116,7 +119,7 @@ export default function CantanteCastingPublicPage() {
       ) : /\.(mp3|wav|ogg)$/i.test(item.referenceUrl) ? (
         <AudioPlayer src={item.referenceUrl} ariaLabel="Referencia de audio" />
       ) : (
-        <a href={item.referenceUrl} target="_blank" className="underline break-all text-[14px] text-cs-signal">{item.referenceUrl}</a>
+        <a href={item.referenceUrl} target="_blank" className="cs-ref cs-mono"><span aria-hidden="true" className="cs-ref-play">▶</span><span className="min-w-0 break-all">{item.referenceUrl}</span></a>
       ),
     });
   }

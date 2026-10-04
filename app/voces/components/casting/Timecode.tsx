@@ -11,7 +11,7 @@ export default function Timecode({
 }: {
   countdown: Countdown | null;
   closed?: boolean;
-  size?: "md" | "sm" | "xs";
+  size?: "lg" | "md" | "sm" | "xs";
   label: string;
 }) {
   const c = closed || !countdown ? { days: 0, hours: 0, minutes: 0, seconds: 0 } : countdown;
@@ -31,7 +31,10 @@ export default function Timecode({
         <span key={p.l} className="cs-tc-group">
           {i > 0 ? <span aria-hidden="true" className="cs-tc-sep">:</span> : null}
           <span className="cs-tc-cell">
-            <span aria-hidden="true" className={`cs-tc-num${i === 3 && !closed ? " cs-tc-num--sec" : ""}`}>{pad(p.v)}</span>
+            <span className="cs-tc-clip" aria-hidden="true">
+              {/* key = valor: al cambiar el segundo el dígito "rueda" (solo transform/opacity) */}
+              <span key={i === 3 && !closed ? p.v : "s"} className={`cs-tc-num${i === 3 && !closed ? " cs-tc-num--sec cs-tc-roll" : ""}`}>{pad(p.v)}</span>
+            </span>
             <span aria-hidden="true" className="cs-tc-label">{p.l}</span>
           </span>
         </span>

@@ -1,4 +1,7 @@
-/** Sección con filete superior y número de pista (01, 02…). */
+"use client";
+import { useReveal } from "./useReveal";
+
+/** Sección con filete que se dibuja, numeral gigante en contorno y reveal al scrollear. */
 export default function Section({
   n,
   title,
@@ -10,10 +13,12 @@ export default function Section({
   title: string;
   children: React.ReactNode;
 }) {
+  const ref = useReveal<HTMLElement>();
   return (
-    <section id={id} className="cs-section" aria-label={title}>
+    <section ref={ref} id={id} className="cs-section" aria-label={title}>
+      <span aria-hidden="true" className="cs-rule" />
       <div className="cs-section-head">
-        {n ? <span className="cs-mono cs-section-n" aria-hidden="true">{String(n).padStart(2, "0")}</span> : null}
+        {n ? <span className="cs-section-n" aria-hidden="true">{String(n).padStart(2, "0")}</span> : null}
         <h2 className="cs-h2">{title}</h2>
       </div>
       <div>{children}</div>
