@@ -9,6 +9,7 @@ import CastingDetailView, {
   type DetailSection,
 } from "@/app/voces/components/casting/CastingDetailView";
 import { ChipRow } from "@/app/voces/components/casting/Chips";
+import DocFrame from "@/app/voces/components/casting/DocFrame";
 
 // Ported from voces-bds's app/c/[id]/page.tsx: public locutor casting detail
 // page (the /voces/c/{shareId} link shared with talents). No auth: /voces/c/
@@ -16,6 +17,9 @@ import { ChipRow } from "@/app/voces/components/casting/Chips";
 //  - /api/casting?id= -> /api/voces/casting?id=.
 //  - "BDS Voces" branding in the closed-casting message removed (see below).
 // Presentación: rediseño visual (tema casting); la lógica de datos no cambió.
+
+// Solo etiqueta de presentación: el valor guardado sigue siendo Female/Male.
+const GENDER_ES: Record<string, string> = { Female: "Femenino", Male: "Masculino" };
 
 export default function CastingPublicPage() {
   const { id } = useParams();
@@ -53,14 +57,14 @@ export default function CastingPublicPage() {
   if (item?.criteria) {
     const voz: string[] = [];
     if (item.criteria.language) voz.push(`${item.criteria.language}${item.criteria.accent ? ` - ${item.criteria.accent}` : ""}`);
-    if (item.criteria.gender) voz.push(item.criteria.gender);
+    if (item.criteria.gender) voz.push(GENDER_ES[item.criteria.gender] || item.criteria.gender);
     const estilos: string[] = item.criteria.styles || [];
     const edades: string[] = item.criteria.ages || [];
     sections.push({
       key: "voz",
       title: "Características de la voz",
       node: (
-        <div>
+        <div className="cs-spec">
           <ChipRow label="Voz" items={voz} />
           <ChipRow label="Estilos" items={estilos} />
           <ChipRow label="Edades" items={edades} />
@@ -76,10 +80,12 @@ export default function CastingPublicPage() {
           title: "Guion del casting",
           node: (
             <div>
-              <PdfViewer src={pdfSrc} fallbackHref={item.scriptUrl} />
+              <DocFrame label="GUION · PDF">
+                <PdfViewer src={pdfSrc} fallbackHref={item.scriptUrl} />
+              </DocFrame>
               <p className="mt-3 text-[14px] text-cs-ink-2">
                 Si no ves el documento,{" "}
-                <a href={item.scriptUrl} target="_blank" className="underline text-cs-signal">
+                <a href={item.scriptUrl} target="_blank" className="cs-textlink">
                   abrilo aquí
                 </a>.
               </p>
@@ -104,7 +110,7 @@ export default function CastingPublicPage() {
       ) : /\.(mp3|wav|ogg)$/i.test(item.referenceUrl) ? (
         <AudioPlayer src={item.referenceUrl} ariaLabel="Referencia de audio" />
       ) : (
-        <a href={item.referenceUrl} target="_blank" className="underline break-all text-[14px] text-cs-signal">{item.referenceUrl}</a>
+        <a href={item.referenceUrl} target="_blank" className="cs-ref cs-mono"><span aria-hidden="true" className="cs-ref-play">▶</span><span>{(item.referenceUrl as string).split(/(?<=\/)/).map((part: string, i: number) => (<span key={i}>{i > 0 ? <wbr /> : null}{part}</span>))}</span></a>
       ),
     });
   }
@@ -129,7 +135,14 @@ export default function CastingPublicPage() {
 
   return (
     <main>
-      <CastingDetailView item={item} applyHref={`/voces/c/${id}/apply`} sections={sections} />
+      <CastingDetailView item={item} applyHref={`/voces/c/${id}/apply`} sections={sections}
+        closedNext={{
+          title: "No te pierdas ningún casting",
+          text: "Enviamos nuestros castings por mail. Sumate a Sivar Voces o mantené tus datos actualizados para que te tengamos en cuenta y recibas todas las oportunidades.",
+          primary: { href: "/voces/registro", label: "Sumarme a la base" },
+          secondary: { href: "/voces/actualizar-reel", label: "Actualizar mi información" },
+        }}
+      />
     </main>
   );
 }

@@ -9,6 +9,7 @@ import {
   ClosedPanel,
   DupNotice,
   ErrorBanner,
+  useRequiredUi,
   Field,
   Segmented,
   SelectWrap,
@@ -153,8 +154,12 @@ export default function CastingApplyPage() {
   }
 
   const isOpen = !casting?.deadline || new Date() < new Date(casting.deadline);
-  // Solo visual: marca el campo asociado al mensaje de error actual (no valida nada).
-  const bad = (re: RegExp) => !!error && re.test(error);
+  const ui = useRequiredUi(error, !isAdmin, {
+    nombre: !firstName,
+    apellido: !lastName,
+    genero: !gender,
+    audio: !audioFile && !audioLink.trim(),
+  });
   const errId = "apply-error";
   const describedBy = error ? errId : undefined;
 
@@ -192,19 +197,19 @@ export default function CastingApplyPage() {
                 Modo admin — podés enviar sin completar los campos obligatorios y aunque el casting esté cerrado o el email ya haya postulado.
               </AdminBanner>
             )}
-            <ErrorBanner id={errId} message={error} />
+            <ErrorBanner id={errId} message={ui.message} validation={ui.validation} />
           </div>
 
           <Section id="datos" n={1} title="Tus datos">
             <div className="cs-grid">
-              <Field label="Nombre" invalid={bad(/nombre/i)} describedBy={describedBy}>
+              <Field label="Nombre" required invalid={ui.flags.nombre} describedBy={describedBy} errorText="Falta tu nombre">
                 {(p) => <input {...p} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Tu nombre" />}
               </Field>
-              <Field label="Apellido" invalid={bad(/apellido/i)} describedBy={describedBy}>
+              <Field label="Apellido" required invalid={ui.flags.apellido} describedBy={describedBy} errorText="Falta tu apellido">
                 {(p) => <input {...p} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Tu apellido" />}
               </Field>
               <Field label="Teléfono">
-                {(p) => <input {...p} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+54 9 11 ..." />}
+                {(p) => <input {...p} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+503 ..." />}
               </Field>
               <div>
                 <Field label="Email" describedBy={serverDup ? "apply-dup" : undefined}>
@@ -217,7 +222,7 @@ export default function CastingApplyPage() {
               <Field label="País de residencia">
                 {(p) => <input {...p} value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Argentina, México, España…" />}
               </Field>
-              <Field label="Género" required invalid={bad(/masculino|femenino/i)} describedBy={describedBy}>
+              <Field label="Género" required invalid={ui.flags.genero} describedBy={describedBy} errorText="Elegí una opción">
                 {(p) => (
                   <SelectWrap>
                     <select {...p} value={gender} onChange={(e) => setGender(e.target.value)}>
@@ -255,8 +260,9 @@ export default function CastingApplyPage() {
               inputId="apply-audio"
               audioFile={audioFile}
               audioLink={audioLink}
-              invalid={bad(/audio|link|MB|archivo/i)}
+              invalid={ui.flags.audio}
               describedBy={describedBy}
+              errorText="Subí un audio o pegá un link"
               hint="Formatos aceptados: mp3, wav, ogg, etc. Máximo 10 MB."
               linkLabel="Enviar link (Google Drive, Dropbox…)"
               onFileChange={(e) => {

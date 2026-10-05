@@ -9,6 +9,7 @@ import CastingDetailView, {
   type DetailSection,
 } from "@/app/voces/components/casting/CastingDetailView";
 import { ChipRow } from "@/app/voces/components/casting/Chips";
+import DocFrame from "@/app/voces/components/casting/DocFrame";
 
 // Ported from voces-bds's app/cc/[id]/page.tsx: public cantante casting
 // detail page (the /voces/cc/{shareId} link shared with talents). No auth:
@@ -38,6 +39,9 @@ async function triggerDownload(url: string, label: string) {
     window.open(url, "_blank");
   }
 }
+
+// Solo etiqueta de presentación: el valor guardado sigue siendo Female/Male.
+const GENDER_ES: Record<string, string> = { Female: "Femenino", Male: "Masculino" };
 
 export default function CantanteCastingPublicPage() {
   const { id } = useParams();
@@ -78,14 +82,18 @@ export default function CantanteCastingPublicPage() {
   const sections: DetailSection[] = [];
 
   if (item.criteria && (item.criteria.styles?.length || item.criteria.country || item.criteria.gender || item.criteria.vocalRange)) {
-    const perfil: string[] = [item.criteria.country, item.criteria.gender, item.criteria.vocalRange].filter(Boolean);
+    const pais: string[] = [item.criteria.country].filter(Boolean);
+    const genero: string[] = [item.criteria.gender].filter(Boolean).map((g: string) => GENDER_ES[g] || g);
+    const registro: string[] = [item.criteria.vocalRange].filter(Boolean);
     const estilos: string[] = item.criteria.styles || [];
     sections.push({
       key: "perfil",
       title: "Perfil buscado",
       node: (
-        <div>
-          <ChipRow label="Perfil" items={perfil} />
+        <div className="cs-spec">
+          <ChipRow label="País" items={pais} />
+          <ChipRow label="Género" items={genero} />
+          <ChipRow label="Registro" items={registro} />
           <ChipRow label="Estilos" items={estilos} />
         </div>
       ),
@@ -99,8 +107,10 @@ export default function CantanteCastingPublicPage() {
           title: "Letra / Guion",
           node: (
             <div>
-              <PdfViewer src={pdfSrc} fallbackHref={item.scriptUrl} />
-              <p className="mt-3 text-[14px] text-cs-ink-2">Si no ves el documento, <a href={item.scriptUrl} target="_blank" className="underline text-cs-signal">abrilo aquí</a>.</p>
+              <DocFrame label="LETRA / GUION · PDF">
+                <PdfViewer src={pdfSrc} fallbackHref={item.scriptUrl} />
+              </DocFrame>
+              <p className="mt-3 text-[14px] text-cs-ink-2">Si no ves el documento, <a href={item.scriptUrl} target="_blank" className="cs-textlink">abrilo aquí</a>.</p>
             </div>
           ),
         }
@@ -116,7 +126,7 @@ export default function CantanteCastingPublicPage() {
       ) : /\.(mp3|wav|ogg)$/i.test(item.referenceUrl) ? (
         <AudioPlayer src={item.referenceUrl} ariaLabel="Referencia de audio" />
       ) : (
-        <a href={item.referenceUrl} target="_blank" className="underline break-all text-[14px] text-cs-signal">{item.referenceUrl}</a>
+        <a href={item.referenceUrl} target="_blank" className="cs-ref cs-mono"><span aria-hidden="true" className="cs-ref-play">▶</span><span>{(item.referenceUrl as string).split(/(?<=\/)/).map((part: string, i: number) => (<span key={i}>{i > 0 ? <wbr /> : null}{part}</span>))}</span></a>
       ),
     });
   }
@@ -169,7 +179,14 @@ export default function CantanteCastingPublicPage() {
 
   return (
     <main>
-      <CastingDetailView item={item} applyHref={`/voces/cc/${id}/apply`} sections={sections} />
+      <CastingDetailView item={item} applyHref={`/voces/cc/${id}/apply`} sections={sections}
+        closedNext={{
+          title: "No te pierdas ningún casting",
+          text: "Enviamos nuestros castings por mail. Sumate a Sivar Voces o mantené tus datos actualizados para que te tengamos en cuenta y recibas todas las oportunidades.",
+          primary: { href: "/voces/registro", label: "Sumarme a la base" },
+          secondary: { href: "/voces/actualizar-reel", label: "Actualizar mi información" },
+        }}
+      />
     </main>
   );
 }

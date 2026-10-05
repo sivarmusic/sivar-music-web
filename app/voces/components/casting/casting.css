@@ -17,7 +17,8 @@
   --danger: #b42318;
   --ok: #1f7a4d;
   --sep: #b5ac9c;
-  --placeholder: #6e685e;
+  --placeholder: #5f5a50;
+  --signal-deep: #15208a;
 
   /* Re-mapeo de los tokens de voces para componentes compartidos */
   --color-bg-base: var(--paper);
@@ -111,13 +112,17 @@
 
 /* ---------- Tipografía ---------- */
 .cs-h2 {
-  font-size: 22px;
-  line-height: 1.2;
-  font-weight: 600;
+  font-family: var(--font-display), Impact, sans-serif;
+  font-stretch: 62%;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 30px;
+  line-height: 0.95;
   color: var(--ink);
+  overflow-wrap: anywhere;
 }
 @media (min-width: 1024px) {
-  .cs-h2 { font-size: 26px; }
+  .cs-h2 { font-size: 40px; }
 }
 
 /* ---------- Estado ---------- */
@@ -140,9 +145,6 @@
 }
 .cs-dot--closed { background: var(--line); }
 
-/* ---------- Onda ---------- */
-.cs-wave { display: block; overflow: visible; }
-
 /* ---------- Timecode ---------- */
 .cs-tc {
   display: flex;
@@ -164,7 +166,7 @@
 .cs-tc-num { font-weight: 500; }
 .cs-tc-num--sec { color: var(--signal); }
 .cs-tc-label {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
   color: var(--ink-2);
   font-weight: 400;
@@ -203,7 +205,6 @@
 @media (min-width: 1024px) {
   .cs-btn { height: 60px; max-width: 380px; }
 }
-.cs-btn:hover { background: var(--signal); }
 .cs-btn:active { transform: translateY(1px); }
 .cs-btn:disabled,
 .cs-btn[aria-disabled="true"] {
@@ -263,68 +264,6 @@
 }
 .cs-btn-paper:hover { background: var(--rule); }
 
-/* ---------- Secciones ---------- */
-.cs-section { border-top: 1px solid var(--ink); padding-top: 16px; }
-.cs-section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 24px; }
-.cs-section-n { font-size: 13px; color: var(--ink-2); }
-
-/* ---------- Chips ---------- */
-.cs-chiprow { display: flex; gap: 16px; align-items: flex-start; padding-block: 8px; }
-.cs-chiprow-label { flex: 0 0 104px; font-size: 13px; color: var(--ink-2); line-height: 32px; }
-@media (min-width: 1024px) {
-  .cs-chiprow-label { flex-basis: 160px; }
-}
-.cs-chips { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0; }
-.cs-chip {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding-inline: 12px;
-  background: var(--paper-2);
-  font-size: 14px;
-}
-
-/* ---------- Banda negra ---------- */
-.cs-band {
-  background: var(--ink);
-  color: var(--paper);
-  padding: 32px 24px;
-}
-@media (min-width: 1024px) {
-  .cs-band { padding: 48px; }
-}
-
-/* ---------- Barra inferior sticky (mobile) ---------- */
-.cs-sticky {
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  z-index: 50;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-inline: 20px;
-  background: var(--ink);
-  color: var(--paper);
-}
-.cs-sticky .cs-tc { color: var(--paper); }
-.cs-sticky .cs-tc-sep { color: var(--line); }
-.cs-sticky .cs-tc-num--sec { color: #9aa6ff; }
-.cs-sticky-btn {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 44px;
-  padding-inline: 16px;
-  background: var(--paper);
-  color: var(--ink);
-  font-size: 15px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
 /* ---------- Skeleton ---------- */
 .cs-skel { background: var(--paper-2); }
 
@@ -356,18 +295,6 @@
   text-decoration: none;
 }
 .cs-backlink:hover { color: var(--signal); }
-.cs-index {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  min-height: 44px;
-  border-bottom: 1px solid var(--rule);
-  color: var(--ink);
-  text-decoration: none;
-}
-.cs-index:hover { color: var(--signal); }
-.cs-section { scroll-margin-top: 96px; }
-
 .cs-label {
   display: block;
   margin-bottom: 4px;
@@ -391,13 +318,11 @@
   outline: none;
   transition: none;
 }
-.cs-input::placeholder { color: var(--placeholder); }
+.cs-input::placeholder { color: var(--placeholder); opacity: 1; }
 .cs-input:focus { border-bottom: 2px solid var(--signal); }
 .cs-input[aria-invalid="true"] { border-bottom: 2px solid var(--danger); }
-.voces-scope [data-theme="casting"] .cs-input:focus-visible { outline: none; }
 .cs-select { position: relative; }
 .cs-select select { appearance: none; -webkit-appearance: none; padding-right: 28px; border-radius: 0; cursor: pointer; }
-.cs-select-chev { position: absolute; right: 4px; top: 16px; pointer-events: none; color: var(--ink); }
 
 .cs-seg { display: inline-grid; grid-template-columns: 1fr 1fr; width: 100%; max-width: 240px; }
 .cs-seg-cell { position: relative; display: block; cursor: pointer; }
@@ -470,15 +395,6 @@
 }
 
 /* ---------- Gracias ---------- */
-.cs-check {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: var(--ok);
-  color: var(--paper);
-}
 .cs-h1:focus { outline: none; }
 .cs-table { margin: 0; border-top: 1px solid var(--ink); }
 .cs-table-row {
@@ -504,7 +420,3 @@
   text-underline-offset: 4px;
 }
 .cs-link:hover { color: var(--signal); }
-.cs-band--bleed { padding: 48px 0; width: 100%; }
-@media (min-width: 1024px) {
-  .cs-band--bleed { padding: 64px 0; }
-}
