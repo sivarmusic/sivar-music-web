@@ -1,7 +1,7 @@
 "use client";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import Arrow from "./Arrow";
-import { RecTape, Seal } from "./Ceremony";
+import { SentStamp, Seal } from "./Ceremony";
 import PosterTitle, { fitSize } from "./PosterTitle";
 import Reveal from "./Reveal";
 import Waveform from "./Waveform";
@@ -27,6 +27,13 @@ export default function ThanksView({
     secondary: { href: string; label: string };
   };
 }) {
+  // Al llegar desde el formulario el scroll quedaba a mitad de página (el tema
+  // usa scroll-behavior: smooth y eso interrumpe el reseteo de Next): subir
+  // siempre hasta arriba, con animación salvo que el usuario pida menos movimiento.
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, left: 0, behavior: reduce ? "instant" : "smooth" });
+  }, []);
   return (
     <>
       <section className="cs-slab cs-slab--blue cs-on-blue cs-thanks">
@@ -35,7 +42,7 @@ export default function ThanksView({
             <Seal />
             <div className="cs-thanks-status">
               <p className="cs-mono text-[13px]">Postulación enviada</p>
-              <RecTape />
+              <SentStamp />
             </div>
           </div>
           <PosterTitle text={heading} size={fitSize(heading)} focusOnMount className="cs-thanks-h1" />

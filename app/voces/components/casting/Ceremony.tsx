@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useState } from "react";
+import { useId, useRef, useSyncExternalStore } from "react";
 
 /** Sello circular "RECIBIDO" con texto en círculo; gira lento (solo con motion permitido). Decorativo. */
 export function Seal() {
@@ -21,38 +21,30 @@ export function Seal() {
   );
 }
 
-const DURATION = 900;
-const FINAL_SECONDS = 7;
+const noopSubscribe = () => () => {};
 
-/** Cinta "REC 00:00:00" decorativa: cuenta hasta un valor fijo y termina en ENVIADO. aria-hidden. */
-export function RecTape() {
-  const [t, setT] = useState(0);
-  const [done, setDone] = useState(false);
-  useEffect(() => {
-    let raf = 0;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      raf = requestAnimationFrame(() => {
-        setT(FINAL_SECONDS);
-        setDone(true);
-      });
-      return () => cancelAnimationFrame(raf);
-    }
-    const t0 = performance.now();
-    const tick = (now: number) => {
-      const p = Math.min(1, (now - t0) / DURATION);
-      setT(Math.round(p * FINAL_SECONDS));
-      if (p < 1) raf = requestAnimationFrame(tick);
-      else setDone(true);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-  const s = String(t).padStart(2, "0");
+function formatNow() {
+  const d = new Date();
+  const date = d.toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" }).replace(".", "");
+  const time = d.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${date} · ${time}`;
+}
+
+/** Sello de envío: fecha y hora reales en que el postulante llegó a esta pantalla (hora local del dispositivo). */
+export function SentStamp() {
+  // La hora depende del dispositivo: en el servidor no se renderiza (snapshot
+  // null) y el cliente la fija una sola vez al montar, sin desajuste de hidratación.
+  const fixed = useRef<string | null>(null);
+  const when = useSyncExternalStore(
+    noopSubscribe,
+    () => (fixed.current ??= formatNow()),
+    () => null,
+  );
   return (
-    <p aria-hidden="true" className="cs-rec cs-mono">
-      <span className={`cs-dot cs-rec-dot${done ? " is-done" : ""}`} />
-      <span>{done ? "ENVIADO" : "REC"}</span>
-      <span className="cs-rec-tc">00:00:{s}</span>
+    <p className="cs-rec cs-mono">
+      <span className="cs-dot cs-rec-dot is-done" aria-hidden="true" />
+      <span>ENVIADO</span>
+      {when ? <span className="cs-rec-tc">{when}</span> : null}
     </p>
   );
 }
