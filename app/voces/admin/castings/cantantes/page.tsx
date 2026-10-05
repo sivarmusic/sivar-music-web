@@ -46,6 +46,11 @@ export default function AdminCantantesCastingPage() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  // Duplicar casting: datos heredados del original (video/guion se reutilizan por URL)
+  const [dupFrom, setDupFrom] = useState<{ id: string; title: string } | null>(null);
+  const [dupVideoUrl, setDupVideoUrl] = useState("");
+  const [dupScriptUrl, setDupScriptUrl] = useState("");
+
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
   const [editAttachments, setEditAttachments] = useState<AttachmentDraft[]>([]);
 
@@ -202,6 +207,51 @@ export default function AdminCantantesCastingPage() {
     } catch (e: any) { setToast(e?.message || "Error"); setTimeout(() => setToast(null), 3000); }
   }
 
+  async function openDuplicate(id: string) {
+    try {
+      const r = await fetch(`/api/voces/admin/cantantes/casting/get?id=${id}`, { cache: "no-store" });
+      const j = await r.json();
+      if (!r.ok || !j?.ok) throw new Error(j?.error || "Error");
+      const c = j.casting || {};
+      setMsg(null);
+      setTitle(c.title || "");
+      setBrief(c.brief || "");
+      setVideo(null); setScript(null); setReferenceFile(null);
+      setVideoDirectUrl(""); setScriptDirectUrl(""); setRefDirectUrl("");
+      setReferenceUrl(c.referenceUrl || "");
+      setDupVideoUrl(c.videoUrl || "");
+      setDupScriptUrl(c.scriptUrl || "");
+      setDeadline("");
+      setBudget(c.budget != null ? String(c.budget) : "");
+      setCurrency(c.currency || "");
+      setStatus("open");
+      setClient(c.client || "");
+      setMediaType(c.mediaType || "");
+      const crit = c.criteria || {};
+      setFStyles(Array.isArray(crit.styles) ? crit.styles : []);
+      setFCountry(crit.country || "");
+      setFGender(crit.gender || "");
+      setFVocalRange(crit.vocalRange || "");
+      setAttachments(
+        Array.isArray(c.attachments)
+          ? c.attachments.map((a: { label?: string; url?: string }) => ({ label: a.label || "", url: a.url || "", file: null }))
+          : []
+      );
+      setDupFrom({ id: c.id || id, title: c.title || "Sin título" });
+      setShowCreateModal(true);
+    } catch (e) { setToast(e instanceof Error ? e.message : "Error"); setTimeout(() => setToast(null), 3000); }
+  }
+
+  // Limpia el formulario de crear y los datos heredados de un duplicado
+  function resetCreateForm() {
+    setTitle(""); setBrief(""); setVideo(null); setScript(null); setReferenceFile(null); setReferenceUrl(""); setDeadline("");
+    setVideoDirectUrl(""); setScriptDirectUrl(""); setRefDirectUrl("");
+    setBudget(""); setCurrency(""); setStatus("open"); setClient(""); setMediaType("");
+    setFStyles([]); setFCountry(""); setFGender(""); setFVocalRange("");
+    setAttachments([]);
+    setDupFrom(null); setDupVideoUrl(""); setDupScriptUrl("");
+  }
+
   async function submitEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editId) return;
@@ -248,7 +298,9 @@ export default function AdminCantantesCastingPage() {
       const fd = new FormData();
       fd.append("title", title); fd.append("brief", brief);
       if (videoDirectUrl) fd.append("videoUrl", videoDirectUrl);
+      else if (dupVideoUrl && !video) fd.append("videoUrl", dupVideoUrl);
       if (scriptDirectUrl) fd.append("scriptUrl", scriptDirectUrl);
+      else if (dupScriptUrl && !script) fd.append("scriptUrl", dupScriptUrl);
       if (refDirectUrl) fd.append("referenceUrl", refDirectUrl);
       else if (referenceUrl) fd.append("referenceUrl", referenceUrl);
       if (deadline) fd.append("deadline", new Date(deadline).toISOString());
@@ -275,6 +327,7 @@ export default function AdminCantantesCastingPage() {
       setVideoDirectUrl(""); setScriptDirectUrl(""); setRefDirectUrl("");
       setFStyles([]); setFCountry(""); setFGender(""); setFVocalRange("");
       setAttachments([]);
+      setDupFrom(null); setDupVideoUrl(""); setDupScriptUrl("");
       setShowCreateModal(false);
       await refresh();
     } catch (e: any) { setMsg(e?.message || "Error"); }
@@ -298,15 +351,20 @@ export default function AdminCantantesCastingPage() {
         </div>
         <div className="flex items-center gap-2">
           <a href="/voces/admin/castings/cantantes/results" className="ds-btn-secondary text-[12px] py-1.5 px-3">Resultados</a>
-          <button type="button" onClick={() => { setMsg(null); setShowCreateModal(true); }} className="ds-btn-primary-solid text-[12px] py-1.5 px-3">
+          <button type="button" onClick={() => { setMsg(null); if (dupFrom) resetCreateForm(); setShowCreateModal(true); }} className="ds-btn-primary-solid text-[12px] py-1.5 px-3">
             + Nuevo casting
           </button>
         </div>
       </div>
 
       {/* Formulario crear — etapa 4: sale del flujo de la página, ahora es un modal */}
-      <Modal open={showCreateModal} onClose={() => setShowCreateModal(false)} title="Nuevo casting" maxWidth="720px">
+      <Modal open={showCreateModal} onClose={() => setShowCreateModal(false)} title={dupFrom ? "Duplicar casting" : "Nuevo casting"} maxWidth="720px">
         {msg && <p className="mb-3 text-[13px]" style={{ color: msg === "Casting creado" ? "#4ade80" : "var(--color-accent)" }}>{msg}</p>}
+        {dupFrom && (
+          <p className="mb-3 text-[12px]" style={{ color: "var(--color-text-secondary)" }}>
+            Duplicando «{dupFrom.title}». Se copian los datos y archivos; las postulaciones no. Definí la nueva fecha límite.
+          </p>
+        )}
         <form onSubmit={onCreate} className="space-y-3">
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título (opcional)" className="ds-input" />
           <textarea value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="Brief / instrucciones" className="ds-input h-28 resize-none" />
@@ -327,6 +385,12 @@ export default function AdminCantantesCastingPage() {
                   {uploadingField === "c-video" ? "⏳ Subiendo…" : video ? `${video.name}${videoDirectUrl ? " ✓" : " ⏳"}` : "Ningún archivo"}
                 </span>
               </div>
+              {dupVideoUrl && !video && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>Se reutiliza el video del casting original</span>
+                  <button type="button" onClick={() => setDupVideoUrl("")} className="ds-btn-secondary text-[11px] py-0.5 px-2 shrink-0">Quitar</button>
+                </div>
+              )}
             </div>
             <div>
               <div className={dsLabel} style={{ color: "var(--color-text-muted)" }}>Letra / Guion</div>
@@ -344,6 +408,12 @@ export default function AdminCantantesCastingPage() {
                   {script ? `${script.name}${scriptDirectUrl ? " ✓" : " ⏳"}` : "Ningún archivo"}
                 </span>
               </div>
+              {dupScriptUrl && !script && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>Se reutiliza el guion del casting original</span>
+                  <button type="button" onClick={() => setDupScriptUrl("")} className="ds-btn-secondary text-[11px] py-0.5 px-2 shrink-0">Quitar</button>
+                </div>
+              )}
             </div>
             <div>
               <div className={dsLabel} style={{ color: "var(--color-text-muted)" }}>Referencia</div>
@@ -510,6 +580,7 @@ export default function AdminCantantesCastingPage() {
                 <div className="mt-2.5 flex items-center gap-2">
                   <button onClick={(e) => { e.stopPropagation(); try { navigator.clipboard.writeText(`${location.origin}/voces/cc/${c.shareId}`); setToast("Copiado"); setTimeout(() => setToast(null), 2000); } catch {} }} className="ds-btn-secondary text-[11px] py-1 px-2.5">Copiar link</button>
                   <a href={`/voces/admin/castings/cantantes/candidates/${c.shareId}`} onClick={(e) => e.stopPropagation()} className="ds-btn-secondary text-[11px] py-1 px-2.5">Candidatos</a>
+                  <button type="button" aria-label={`Duplicar casting ${c.title || "Sin título"}`} onClick={(e) => { e.stopPropagation(); openDuplicate(c.id); }} className="ds-btn-secondary text-[11px] py-1 px-2.5">Duplicar</button>
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); openEditor(c.id); }} className="absolute top-3 right-10 ds-btn-secondary text-[11px] py-1 px-2.5">Editar</button>
                 <button onClick={(e) => { e.stopPropagation(); setConfirmId((p) => (p === c.id ? null : c.id)); }} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors" style={{ color: confirmId === c.id ? "var(--color-danger)" : "var(--color-text-muted)" }} title="Eliminar">
