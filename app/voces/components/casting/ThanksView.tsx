@@ -28,10 +28,11 @@ export default function ThanksView({
   };
 }) {
   // Al llegar desde el formulario el scroll quedaba a mitad de página (el tema
-  // usa scroll-behavior: smooth y eso interrumpe el reseteo de Next): arrancar
-  // siempre desde arriba, sin animación.
+  // usa scroll-behavior: smooth y eso interrumpe el reseteo de Next): subir
+  // siempre hasta arriba, con animación salvo que el usuario pida menos movimiento.
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, left: 0, behavior: reduce ? "instant" : "smooth" });
   }, []);
   return (
     <>
