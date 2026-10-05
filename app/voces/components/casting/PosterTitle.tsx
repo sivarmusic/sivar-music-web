@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 /** Tamaño que hace entrar la palabra más larga en el ancho disponible (sin cortar palabras). */
 export function fitSize(t: string, max = 210) {
   const longest = Math.max(1, ...t.split(/\s+/).map((w) => w.length));
-  return `clamp(40px, min(calc((min(100vw, 1200px) - 40px) / ${(longest * 0.5).toFixed(1)}), ${max}px), ${max}px)`;
+  return `clamp(24px, min(calc((min(100vw, 1200px) - 40px) / ${(longest * 0.5).toFixed(1)}), ${max}px), ${max}px)`;
 }
 
 /** Tamaño tipo póster según el largo del título (clamp fluido, sin saltos de breakpoint). */

@@ -1,6 +1,6 @@
 "use client";
-import type { ReactNode } from "react";
-import PosterTitle from "./PosterTitle";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
+import PosterTitle, { fitSize } from "./PosterTitle";
 import Reveal from "./Reveal";
 import Waveform from "./Waveform";
 import { useReveal } from "./useReveal";
@@ -25,40 +25,96 @@ export function ResultsHero({
           <span className="cs-mono cs-results-tag">Casting</span>
           <span aria-hidden="true" className="cs-mono cs-hero-reg">SIVAR MUSIC — RESULTADOS</span>
         </div>
-        <PosterTitle text={title} className="mt-8" />
-        {date ? <p className="cs-mono mt-6 text-[13px] text-cs-ink-2">{date}</p> : null}
+        <div
+          className={`cs-results-title${state === "loading" ? " is-loading" : ""}`}
+          style={{ fontSize: `min(${fitSize(title, 88)}, clamp(44px, 12vw, 88px))` }}
+        >
+          <PosterTitle text={title} size="1em" className="mt-6" />
+        </div>
+        <p className="cs-mono cs-results-guide">
+          {date ? <span>{date}</span> : null}
+          <span>Escuchá las voces y respondé a tu ejecutivo de Sivar con tu elección.</span>
+        </p>
       </div>
       <Waveform
         seed={title}
         scan={state === "loading"}
         error={state === "error"}
         size="hero"
-        className={`cs-hero-wave ${state === "error" ? "text-cs-danger" : "text-cs-ink"}`}
+        className={`cs-hero-wave cs-hero-wave--results ${state === "error" ? "text-cs-danger" : "text-cs-ink"}`}
       />
     </header>
   );
 }
 
-/** Grupo de fichas con numeral gigante (cantidad) y título. Se usa dentro de <section> o <details>. */
-export function ResultsHead({ n, children }: { n: number; children: ReactNode }) {
-  return (
-    <>
-      <span aria-hidden="true" className="cs-section-n">{String(n).padStart(2, "0")}</span>
-      <span className="cs-h2">{children}</span>
-    </>
-  );
+/** Título de grupo (el conteo ya va en el texto). */
+export function ResultsHead({ children }: { children: ReactNode }) {
+  return <span className="cs-h2">{children}</span>;
 }
 
-export function ResultsGroup({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+export function ResultsGroup({ title, children }: { title: string; children: ReactNode }) {
   const ref = useReveal<HTMLElement>();
   return (
     <section ref={ref} className="cs-section cs-results-group" aria-label={title}>
       <span aria-hidden="true" className="cs-rule" />
       <h2 className="cs-section-head">
-        <ResultsHead n={n}>{title}</ResultsHead>
+        <ResultsHead>{title}</ResultsHead>
       </h2>
       {children}
     </section>
+  );
+}
+
+export type GenderFilterValue = "all" | "male" | "female";
+
+/** Selector segmentado Todos / Hombres / Mujeres (radiogroup con flechas). Solo estado de UI. */
+export function GenderFilter({
+  value,
+  onChange,
+  counts,
+}: {
+  value: GenderFilterValue;
+  onChange: (v: GenderFilterValue) => void;
+  counts: { all: number; male: number; female: number };
+}) {
+  const opts: Array<{ v: GenderFilterValue; label: string; n: number }> = [
+    { v: "all", label: "Todos", n: counts.all },
+    { v: "male", label: "Hombres", n: counts.male },
+    { v: "female", label: "Mujeres", n: counts.female },
+  ];
+  const refs = useRef<Array<HTMLButtonElement | null>>([]);
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const i = opts.findIndex((o) => o.v === value);
+    let next = -1;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (i + 1) % opts.length;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (i - 1 + opts.length) % opts.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = opts.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    onChange(opts[next].v);
+    refs.current[next]?.focus();
+  };
+  return (
+    <div role="radiogroup" aria-label="Filtrar por género" className="cs-gf" onKeyDown={onKey}>
+      {opts.map((o, i) => (
+        <button
+          key={o.v}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
+          type="button"
+          role="radio"
+          aria-checked={value === o.v}
+          tabIndex={value === o.v ? 0 : -1}
+          className="cs-gf-opt"
+          onClick={() => onChange(o.v)}
+        >
+          <span>{o.label}</span>
+          <span className="cs-mono cs-gf-n">{o.n}</span>
+        </button>
+      ))}
+    </div>
   );
 }
 

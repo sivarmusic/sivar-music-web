@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import AudioPlayer from "@/app/voces/components/AudioPlayer";
-import { CandidateCard, ResultsGroup, ResultsHead, ResultsHero } from "@/app/voces/components/casting/ResultsView";
+import { CandidateCard, GenderFilter, ResultsGroup, ResultsHead, ResultsHero, type GenderFilterValue } from "@/app/voces/components/casting/ResultsView";
 import Arrow from "@/app/voces/components/casting/Arrow";
 
 // Presentación: rediseño visual (tema casting, ver components/casting/ResultsView); lógica y textos no cambiaron.
@@ -93,54 +93,97 @@ export default function PublicCastingResults() {
 
   const state = loading ? "loading" : error ? "error" : "ready";
 
+  // Filtro por género: solo estado de UI. Las postulaciones sin género solo aparecen en "Todos".
+  const [gf, setGf] = useState<GenderFilterValue>("all");
+  const males = apps.filter((a) => a.gender === "Male").length;
+  const females = apps.filter((a) => a.gender === "Female").length;
+  const showFilter = males > 0 && females > 0;
+  const gfEff: GenderFilterValue = showFilter ? gf : "all";
+  const pass = (a: (typeof apps)[number]) => gfEff === "all" || a.gender === (gfEff === "male" ? "Male" : "Female");
+  const fApps = apps.filter(pass);
+  const fShort = shortlist.filter(pass);
+  // Numeración estable: la misma persona conserva su número en Shortlist y en la lista completa.
+  const num = (a: (typeof apps)[number]) => apps.indexOf(a);
+  const emptyCat = <p className="cs-results-note">No hay postulaciones en esta categoría</p>;
+
   return (
     <main>
       <ResultsHero title={data?.casting?.title || "Resultados"} createdAt={data?.casting?.createdAt} state={state} />
 
-      <div className="cs-container cs-body">
+      <div className="cs-container cs-body cs-results-body">
         {loading ? (
-          <p role="status" className="cs-mono cs-results-note">Cargando…</p>
-        ) : error ? (
-          <p role="alert" className="cs-results-note cs-results-note--err">{error}</p>
-        ) : apps.length === 0 ? (
-          <p className="cs-results-note">Sin postulaciones aún.</p>
-        ) : shortlist.length === 0 ? (
-          /* Nadie seleccionado todavía: no hay shortlist, se muestra la lista completa. */
-          <ResultsGroup n={apps.length} title={`Postulaciones — ${apps.length}`}>
-            <div className="cs-results-grid">
-              {apps.map((a, i) => (
-                <ApplicationCard key={`all-${a.id}`} a={a} index={i} />
-              ))}
-            </div>
-          </ResultsGroup>
-        ) : (
-          <div className="space-y-16">
-            {/* Shortlist */}
-            <ResultsGroup n={shortlist.length} title={`Shortlist — ${shortlist.length}`}>
-              <div className="cs-results-grid">
-                {shortlist.map((a: any, i: number) => (
-                  <ApplicationCard key={`shortlist-${a.id}`} a={a} highlighted index={i} />
-                ))}
-              </div>
-            </ResultsGroup>
-
-            {/* Todas las postulaciones (desplegable) */}
-            <details className="cs-details group">
-              <summary className="cs-details-sum">
-                <span className="cs-section-head">
-                  <ResultsHead n={apps.length}>Ver todas las postulaciones — {apps.length}</ResultsHead>
-                </span>
-                <span aria-hidden="true" className="cs-details-chev">
-                  <Arrow />
-                </span>
-              </summary>
-              <div className="cs-results-grid mt-8">
-                {apps.map((a: any, i: number) => (
-                  <ApplicationCard key={`all-${a.id}`} a={a} highlighted={!!a.selected} index={i} />
-                ))}
-              </div>
-            </details>
+          <div>
+            <p role="status" className="cs-mono cs-results-note">Cargando…</p>
+            <p aria-hidden="true" className="cs-results-sub">Estamos preparando las voces para vos.</p>
           </div>
+        ) : error ? (
+          <div>
+            <p role="alert" className="cs-results-note cs-results-note--err">{error}</p>
+            <p className="cs-results-sub">Si creés que es un error, escribile a tu ejecutivo de Sivar.</p>
+          </div>
+        ) : apps.length === 0 ? (
+          <div>
+            <p className="cs-results-note">Sin postulaciones aún.</p>
+            <p className="cs-results-sub">Las voces van a aparecer acá apenas lleguen.</p>
+          </div>
+        ) : (
+          <>
+            {showFilter ? (
+              <GenderFilter
+                value={gfEff}
+                onChange={setGf}
+                counts={{ all: apps.length, male: males, female: females }}
+              />
+            ) : null}
+            {shortlist.length === 0 ? (
+              /* Nadie seleccionado todavía: no hay shortlist, se muestra la lista completa. */
+              fApps.length === 0 ? (
+                emptyCat
+              ) : (
+                <ResultsGroup title={`Postulaciones — ${fApps.length}`}>
+                  <div className="cs-results-grid">
+                    {fApps.map((a) => (
+                      <ApplicationCard key={`all-${a.id}`} a={a} index={num(a)} />
+                    ))}
+                  </div>
+                </ResultsGroup>
+              )
+            ) : (
+              <div className="space-y-12">
+                {/* Shortlist */}
+                {fShort.length === 0 ? (
+                  emptyCat
+                ) : (
+                  <ResultsGroup title={`Shortlist — ${fShort.length}`}>
+                    <div className="cs-results-grid">
+                      {fShort.map((a) => (
+                        <ApplicationCard key={`shortlist-${a.id}`} a={a} highlighted index={num(a)} />
+                      ))}
+                    </div>
+                  </ResultsGroup>
+                )}
+
+                {/* Todas las postulaciones (desplegable) */}
+                {fApps.length > 0 ? (
+                  <details className="cs-details group">
+                    <summary className="cs-details-sum">
+                      <span className="cs-section-head">
+                        <ResultsHead>Ver todas las postulaciones — {fApps.length}</ResultsHead>
+                      </span>
+                      <span aria-hidden="true" className="cs-details-chev">
+                        <Arrow />
+                      </span>
+                    </summary>
+                    <div className="cs-results-grid mt-8">
+                      {fApps.map((a) => (
+                        <ApplicationCard key={`all-${a.id}`} a={a} highlighted={!!a.selected} index={num(a)} />
+                      ))}
+                    </div>
+                  </details>
+                ) : null}
+              </div>
+            )}
+          </>
         )}
       </div>
     </main>
