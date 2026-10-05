@@ -13,11 +13,13 @@ import AudioPlayer from "@/app/voces/components/AudioPlayer";
 //    the convention every other ported voces-bds client page in this repo
 //    uses (e.g. app/voces/admin/casting/results/[id]/page.tsx).
 //
-// New (not in the original): split into a "Shortlist" section (selected
-// applications, always visible) and a collapsible "Todas las postulaciones"
-// section (every application, shortlisted ones included) so the public link
-// shows the process — who's under consideration and the full applicant
-// pool — instead of hiding everyone who isn't (pre)selected. "Ocultar del
+// New (not in the original): once at least one application is selected, the
+// page splits into a "Shortlist" section (selected applications, always
+// visible) and a collapsible "Todas las postulaciones" section (every
+// application, shortlisted ones included) so the public link shows the
+// process — who's under consideration and the full applicant pool — instead
+// of hiding everyone who isn't (pre)selected. While nobody is selected there
+// is no shortlist yet: the full list is shown directly. "Ocultar del
 // link" (the `hidden` flag from the admin panel) still fully excludes a
 // given application from both sections; that's unchanged and is for
 // spam/invalid entries, not for narrowing down finalists.
@@ -170,22 +172,30 @@ export default function PublicCastingResults() {
           <p className="text-[13px]" style={{ color: "var(--color-accent)" }}>{error}</p>
         ) : apps.length === 0 ? (
           <p className="text-[13px]" style={{ color: "var(--color-text-muted)" }}>Sin postulaciones aún.</p>
+        ) : shortlist.length === 0 ? (
+          /* Nadie seleccionado todavía: no hay shortlist, se muestra la lista completa. */
+          <section>
+            <div className="text-[11px] font-[600] uppercase tracking-widest mb-5" style={{ color: "var(--color-text-muted)" }}>
+              Postulaciones — {apps.length}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {apps.map((a) => (
+                <ApplicationCard key={`all-${a.id}`} a={a} keyPrefix="all" />
+              ))}
+            </div>
+          </section>
         ) : (
           <>
             {/* Shortlist */}
             <section className="mb-10">
               <div className="text-[11px] font-[600] uppercase tracking-widest mb-5" style={{ color: "var(--color-text-muted)" }}>
-                Shortlist{shortlist.length ? ` — ${shortlist.length}` : ""}
+                Shortlist — {shortlist.length}
               </div>
-              {shortlist.length ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {shortlist.map((a: any) => (
-                    <ApplicationCard key={`shortlist-${a.id}`} a={a} highlighted keyPrefix="shortlist" />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[13px]" style={{ color: "var(--color-text-muted)" }}>Aún no hay postulantes seleccionados.</p>
-              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {shortlist.map((a: any) => (
+                  <ApplicationCard key={`shortlist-${a.id}`} a={a} highlighted keyPrefix="shortlist" />
+                ))}
+              </div>
             </section>
 
             {/* Todas las postulaciones (desplegable) */}
