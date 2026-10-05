@@ -319,9 +319,9 @@ export default function AdminCantantesCastingResultDetailPage() {
                         className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-[500] transition-colors disabled:opacity-50 ${a.selected ? "border-emerald-400/60 bg-emerald-900/20 text-emerald-400" : "border-white/10 text-white/50 hover:border-emerald-400/40 hover:text-emerald-400"}`}>
                         {selectingId === a.id ? "Guardando…" : a.selected ? "✓ Cantante elegido" : "Marcar como elegido"}
                       </button>
-                      <button type="button" onClick={() => setMoveIds([a.id])} aria-label={`Mover postulación de ${a.firstName} ${a.lastName} a otro casting`}
+                      <button type="button" onClick={() => setMoveIds([a.id])} aria-label={`Copiar o mover la postulación de ${a.firstName} ${a.lastName} a otro casting`}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[12px] font-[500] text-white/50 transition-colors hover:border-white/30 hover:text-white/80">
-                        Mover
+                        Copiar / mover
                       </button>
                     </div>
 

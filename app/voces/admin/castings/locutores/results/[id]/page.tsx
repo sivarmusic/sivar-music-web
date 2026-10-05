@@ -621,11 +621,11 @@ export default function AdminCastingResultsDetailPage() {
                         <button
                           type="button"
                           onClick={() => setMoveIds([a.id])}
-                          aria-label={`Mover postulación de ${a.firstName} ${a.lastName} a otro casting`}
-                          title="Mover esta postulación a otro casting"
+                          aria-label={`Copiar o mover la postulación de ${a.firstName} ${a.lastName} a otro casting`}
+                          title="Copiar o mover esta postulación a otro casting"
                           className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-50"
                         >
-                          Mover
+                          Copiar / mover
                         </button>
                       </div>
 
