@@ -28,6 +28,24 @@ export default function PdfViewer({
   const [numPages, setNumPages] = useState<number>(0);
   const [scale] = useState<number>(initialScale);
   const [renderKey] = useState(0); // reserved for future rerenders
+  // Zoom y pantalla completa: solo cambian el ancho al que se dibujan las
+  // páginas (el contenedor scrollea en ambos ejes). No tocan la carga del PDF.
+  const ZOOM_STEPS = [1, 1.5, 2, 3];
+  const [zoomIdx, setZoomIdx] = useState(0);
+  const [full, setFull] = useState(false);
+  const zoom = ZOOM_STEPS[zoomIdx];
+
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setFull(false); };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [full]);
 
   const safeSrc = useMemo(() => src || "", [src]);
 
@@ -91,9 +109,11 @@ export default function PdfViewer({
           const viewportBase = page.getViewport({ scale: 1 });
           let effectiveScale = scale;
           if (fitToWidth) {
-            effectiveScale = (containerWidth - 16) / viewportBase.width;
+            effectiveScale = ((containerWidth - 16) / viewportBase.width) * zoom;
+          } else {
+            effectiveScale = scale * zoom;
           }
-          const viewport = page.getViewport({ scale: Math.max(0.5, Math.min(4, effectiveScale)) });
+          const viewport = page.getViewport({ scale: Math.max(0.5, Math.min(6, effectiveScale)) });
           const ctx = canvas.getContext("2d");
           if (!ctx) continue;
           // Nitidez en pantallas de alta densidad: el bitmap se dibuja a
@@ -134,13 +154,31 @@ export default function PdfViewer({
     return () => {
       cancelled = true;
     };
-  }, [safeSrc, scale, fitToWidth, renderKey]);
+  }, [safeSrc, scale, fitToWidth, renderKey, zoom, full]);
+
+  const btn = "ds-btn-secondary text-[12px] py-1.5 px-3 min-h-[44px] min-w-[44px]";
 
   return (
-    <div className={className} style={style}>
+    <div
+      className={full ? "fixed inset-0 z-[200] flex flex-col p-3 gap-2" : className}
+      style={full ? { background: "var(--color-bg-base, #fff)" } : { minWidth: 0, maxWidth: "100%", ...style }}
+    >
+      {safeSrc && !error ? (
+        <div className="flex items-center justify-end gap-2 mb-2" role="toolbar" aria-label="Controles del documento">
+          <button type="button" className={btn} aria-label="Reducir zoom" disabled={zoomIdx === 0}
+            onClick={() => setZoomIdx((i) => Math.max(0, i - 1))}>−</button>
+          <span className="text-[12px] tabular-nums min-w-[3ch] text-center" aria-live="polite">{Math.round(zoom * 100)}%</span>
+          <button type="button" className={btn} aria-label="Aumentar zoom" disabled={zoomIdx === ZOOM_STEPS.length - 1}
+            onClick={() => setZoomIdx((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))}>+</button>
+          <button type="button" className={btn} onClick={() => setFull((f) => !f)}>
+            {full ? "Cerrar" : "Pantalla completa"}
+          </button>
+        </div>
+      ) : null}
       <div
         ref={containerRef}
-        className="w-full h-[70vh] overflow-auto rounded-lg border bg-white"
+        className={`w-full overflow-auto rounded-lg border bg-white ${full ? "flex-1 min-h-0" : "h-[70vh]"}`}
+        style={{ touchAction: "pan-x pan-y pinch-zoom", minWidth: 0, maxWidth: "100%", contain: "inline-size" }}
         onContextMenu={(e) => e.preventDefault()}
       />
 
