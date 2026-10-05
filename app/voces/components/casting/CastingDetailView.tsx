@@ -97,7 +97,15 @@ export default function CastingDetailView({
   }, []);
 
   const dl = item.deadline ? formatDeadline(item.deadline) : null;
-  const today = isOpen && countdown && countdown.days === 0 && !countdown.expired;
+  // "Hoy"/"mañana" se decide por día de calendario en la zona del dispositivo
+  // (la misma que usa la fecha mostrada), no por "quedan menos de 24 h":
+  // 10 h restantes que cruzan la medianoche cierran mañana, no hoy.
+  const closeDay = (() => {
+    if (!isOpen || !item.deadline || !countdown || countdown.expired) return null;
+    const midnight = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const diff = Math.round((midnight(new Date(item.deadline)) - midnight(new Date())) / 86400000);
+    return diff === 0 ? "Cierra hoy" : diff === 1 ? "Cierra mañana" : null;
+  })();
   const timerLabel = dl ? `${isOpen ? "Cierra" : "Cerró"} el ${dl.date}, ${dl.time} hs` : "Sin fecha de cierre";
 
   let n = 0;
@@ -136,7 +144,7 @@ export default function CastingDetailView({
             {dl ? (
               <p className="cs-mono cs-slab-date">
                 {isOpen ? "Cierra el" : "Cerró el"} {dl.date} · <span className="cs-nowrap">{dl.time}</span>
-                {today ? <strong className="ml-2">Cierra hoy</strong> : null}
+                {closeDay ? <strong className="ml-2">{closeDay}</strong> : null}
               </p>
             ) : null}
             {dl ? <Timecode countdown={countdown} closed={!isOpen} size="lg" label={timerLabel} /> : null}
