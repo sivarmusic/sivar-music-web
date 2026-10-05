@@ -2,7 +2,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import AudioPlayer from "@/app/voces/components/AudioPlayer";
+import { CandidateCard, ResultsGroup, ResultsHead, ResultsHero } from "@/app/voces/components/casting/ResultsView";
+import Arrow from "@/app/voces/components/casting/Arrow";
 
+// Presentación: rediseño visual (tema casting, ver components/casting/ResultsView); lógica y textos no cambiaron.
 // Ported from voces-bds's app/r/[id]/page.tsx: public "casting results" view
 // for a locutor casting (title kept as-is: the original names this route /r/,
 // but it's the same results page as /cr/ for cantantes). No auth: /voces/r/
@@ -34,81 +37,32 @@ function isExternalLink(url: string | null | undefined): boolean {
   return url.startsWith("http") && !url.includes("supabase.co") && !url.startsWith("/api/");
 }
 
-function ApplicationCard({ a, highlighted, keyPrefix }: { a: any; highlighted?: boolean; keyPrefix: string }) {
+function ApplicationCard({ a, highlighted, index }: { a: any; highlighted?: boolean; index: number }) {
   return (
-    <article
-      key={`${keyPrefix}-${a.id}`}
-      className="rounded-[16px] p-5"
-      style={{
-        background: "var(--color-bg-card)",
-        border: highlighted ? "1px solid var(--color-accent)" : "0.5px solid var(--color-border-default)",
-      }}
+    <CandidateCard
+      index={index}
+      highlighted={highlighted}
+      name={`${a.firstName} ${a.lastName}`}
+      meta={
+        <>
+          {a.country ? <span className="cs-card-fact">{a.country}</span> : null}
+          {a.homeStudio ? <span className="cs-card-fact">Home studio</span> : null}
+          {a.onlineSessions ? <span className="cs-card-fact">Sesiones online</span> : null}
+        </>
+      }
     >
-      {/* Nombre */}
-      <div className="flex items-center gap-2 mb-2">
-        <div className="text-[15px] font-[600]" style={{ color: "var(--color-text-primary)" }}>
-          {a.firstName} {a.lastName}
-        </div>
-        {highlighted ? (
-          <span
-            className="text-[10px] font-[600] uppercase tracking-wide rounded-full px-2 py-0.5"
-            style={{ background: "var(--color-accent-bg)", color: "var(--color-accent)" }}
-          >
-            Shortlist
-          </span>
-        ) : null}
-      </div>
-
-      {/* Info de perfil */}
-      <div className="flex flex-wrap gap-x-3 gap-y-1 mb-4">
-        {a.country ? (
-          <span className="inline-flex items-center gap-1 text-[12px]" style={{ color: "var(--color-text-muted)" }}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
-              <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-2.099 3.468-4.698 3.468-8.157C19.75 6.199 16.163 2.75 12 2.75S4.25 6.199 4.25 9.17c0 3.459 1.524 6.058 3.468 8.157a19.58 19.58 0 002.683 2.282 16.975 16.975 0 001.144.742zM12 12.25a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-            </svg>
-            {a.country}
-          </span>
-        ) : null}
-        {a.homeStudio ? (
-          <span className="inline-flex items-center gap-1 text-[12px]" style={{ color: "var(--color-text-muted)" }}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
-              <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
-              <path d="M6 10.5a.75.75 0 01.75.75v1.5a4.5 4.5 0 009 0v-1.5a.75.75 0 011.5 0v1.5a6 6 0 01-5.25 5.954V21h2.25a.75.75 0 010 1.5h-6a.75.75 0 010-1.5H10.5v-2.796A6 6 0 015.25 12.75v-1.5A.75.75 0 016 10.5z" />
-            </svg>
-            Home studio
-          </span>
-        ) : null}
-        {a.onlineSessions ? (
-          <span className="inline-flex items-center gap-1 text-[12px]" style={{ color: "var(--color-text-muted)" }}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
-              <path fillRule="evenodd" d="M2.25 5.25a3 3 0 013-3h13.5a3 3 0 013 3V15a3 3 0 01-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 01-.53 1.28h-9a.75.75 0 01-.53-1.28l.621-.622a2.25 2.25 0 00.659-1.59V18h-3a3 3 0 01-3-3V5.25zm1.5 0v9.5c0 .414.336.75.75.75h16.5a.75.75 0 00.75-.75v-9.5a.75.75 0 00-.75-.75H4.5a.75.75 0 00-.75.75z" clipRule="evenodd" />
-            </svg>
-            Sesiones online
-          </span>
-        ) : null}
-      </div>
-
       {/* Audio / Link */}
       {isUploadedAudio(a.audioUrl) ? (
         <AudioPlayer src={a.audioUrl} ariaLabel={`Audio de ${a.firstName} ${a.lastName}`} />
       ) : isExternalLink(a.audioUrl) ? (
-        <a
-          href={a.audioUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-[13px] underline"
-          style={{ color: "var(--color-accent)" }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0">
-            <path d="M15.75 2.25H21a.75.75 0 01.75.75v5.25a.75.75 0 01-1.5 0V4.81L8.03 17.03a.75.75 0 01-1.06-1.06L19.19 3.75h-3.44a.75.75 0 010-1.5z" />
-            <path d="M3 7.5A.75.75 0 013.75 6.75h6a.75.75 0 010 1.5H4.5v12h12V13.5a.75.75 0 011.5 0v6.75A.75.75 0 0117.25 21H3.75A.75.75 0 013 20.25V7.5z" />
-          </svg>
-          Escuchar / Ver demo
+        <a href={a.audioUrl} target="_blank" rel="noopener noreferrer" className="cs-ref">
+          <span aria-hidden="true" className="cs-ref-play">▶</span>
+          <span>Escuchar / Ver demo</span>
         </a>
       ) : (
-        <p className="text-[12px]" style={{ color: "var(--color-text-muted)" }}>Sin audio</p>
+        <p className="cs-mono cs-card-none">Sin audio</p>
       )}
-    </article>
+    </CandidateCard>
   );
 }
 
@@ -137,88 +91,56 @@ export default function PublicCastingResults() {
   const apps: any[] = data?.applications || [];
   const shortlist = apps.filter((a) => a.selected);
 
+  const state = loading ? "loading" : error ? "error" : "ready";
+
   return (
-    <main style={{ background: "var(--color-bg-base)", minHeight: "100vh" }} className="px-4 py-10">
-      <div className="max-w-5xl mx-auto">
+    <main>
+      <ResultsHero title={data?.casting?.title || "Resultados"} createdAt={data?.casting?.createdAt} state={state} />
 
-        {/* Header */}
-        <div className="mb-8">
-          <span className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-4"
-            style={{ background: "var(--color-accent-bg)", border: "0.5px solid var(--color-accent-border)" }}>
-            <span className="text-[11px] font-[600] tracking-widest uppercase" style={{ color: "var(--color-accent)" }}>Casting</span>
-          </span>
-          <h1
-            className="text-[32px] md:text-[40px] leading-none tracking-[-0.02em] mb-2"
-            style={{ fontFamily: "var(--font-dm-serif, serif)", fontWeight: 400, color: "var(--color-text-primary)" }}
-          >
-            {data?.casting?.title || "Resultados"}
-          </h1>
-          {data?.casting?.createdAt ? (
-            <div className="text-[12px]" style={{ color: "var(--color-text-muted)" }}>
-              {new Date(data.casting.createdAt).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}
-            </div>
-          ) : null}
-        </div>
-
+      <div className="cs-container cs-body">
         {loading ? (
-          <div className="flex items-center gap-3 py-16" style={{ color: "var(--color-text-muted)" }}>
-            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-            </svg>
-            <span className="text-[13px]">Cargando…</span>
-          </div>
+          <p role="status" className="cs-mono cs-results-note">Cargando…</p>
         ) : error ? (
-          <p className="text-[13px]" style={{ color: "var(--color-accent)" }}>{error}</p>
+          <p role="alert" className="cs-results-note cs-results-note--err">{error}</p>
         ) : apps.length === 0 ? (
-          <p className="text-[13px]" style={{ color: "var(--color-text-muted)" }}>Sin postulaciones aún.</p>
+          <p className="cs-results-note">Sin postulaciones aún.</p>
         ) : shortlist.length === 0 ? (
           /* Nadie seleccionado todavía: no hay shortlist, se muestra la lista completa. */
-          <section>
-            <div className="text-[11px] font-[600] uppercase tracking-widest mb-5" style={{ color: "var(--color-text-muted)" }}>
-              Postulaciones — {apps.length}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {apps.map((a) => (
-                <ApplicationCard key={`all-${a.id}`} a={a} keyPrefix="all" />
+          <ResultsGroup n={apps.length} title={`Postulaciones — ${apps.length}`}>
+            <div className="cs-results-grid">
+              {apps.map((a, i) => (
+                <ApplicationCard key={`all-${a.id}`} a={a} index={i} />
               ))}
             </div>
-          </section>
+          </ResultsGroup>
         ) : (
-          <>
+          <div className="space-y-16">
             {/* Shortlist */}
-            <section className="mb-10">
-              <div className="text-[11px] font-[600] uppercase tracking-widest mb-5" style={{ color: "var(--color-text-muted)" }}>
-                Shortlist — {shortlist.length}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {shortlist.map((a: any) => (
-                  <ApplicationCard key={`shortlist-${a.id}`} a={a} highlighted keyPrefix="shortlist" />
+            <ResultsGroup n={shortlist.length} title={`Shortlist — ${shortlist.length}`}>
+              <div className="cs-results-grid">
+                {shortlist.map((a: any, i: number) => (
+                  <ApplicationCard key={`shortlist-${a.id}`} a={a} highlighted index={i} />
                 ))}
               </div>
-            </section>
+            </ResultsGroup>
 
             {/* Todas las postulaciones (desplegable) */}
-            <details className="group">
-              <summary
-                className="cursor-pointer list-none inline-flex items-center gap-2 text-[11px] font-[600] uppercase tracking-widest mb-5"
-                style={{ color: "var(--color-text-muted)" }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                  className="w-3.5 h-3.5 transition-transform duration-150 group-open:rotate-90"
-                >
-                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                </svg>
-                Ver todas las postulaciones — {apps.length}
+            <details className="cs-details group">
+              <summary className="cs-details-sum">
+                <span className="cs-section-head">
+                  <ResultsHead n={apps.length}>Ver todas las postulaciones — {apps.length}</ResultsHead>
+                </span>
+                <span aria-hidden="true" className="cs-details-chev">
+                  <Arrow />
+                </span>
               </summary>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
-                {apps.map((a: any) => (
-                  <ApplicationCard key={`all-${a.id}`} a={a} highlighted={!!a.selected} keyPrefix="all" />
+              <div className="cs-results-grid mt-8">
+                {apps.map((a: any, i: number) => (
+                  <ApplicationCard key={`all-${a.id}`} a={a} highlighted={!!a.selected} index={i} />
                 ))}
               </div>
             </details>
-          </>
+          </div>
         )}
       </div>
     </main>

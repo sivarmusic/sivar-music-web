@@ -43,7 +43,7 @@ export default function PosterTitle({
       ref={ref}
       tabIndex={focusOnMount ? -1 : undefined}
       className={`cs-display cs-poster cs-h1 ${muted ? "cs-poster--muted" : ""} ${className}`.trim()}
-      style={{ fontSize: size ?? posterSize(text) }}
+      style={{ fontSize: size ?? `min(${posterSize(text)}, ${fitSize(text, 400)})` }}
     >
       {words.map((w, i) => {
         const outline = words.length > 1 && i === words.length - 1 && /^\d{2,4}$/.test(w);
