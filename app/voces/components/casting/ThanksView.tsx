@@ -1,5 +1,5 @@
 "use client";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import Arrow from "./Arrow";
 import { RecTape, Seal } from "./Ceremony";
 import PosterTitle, { fitSize } from "./PosterTitle";
@@ -27,6 +27,12 @@ export default function ThanksView({
     secondary: { href: string; label: string };
   };
 }) {
+  // Al llegar desde el formulario el scroll quedaba a mitad de página (el tema
+  // usa scroll-behavior: smooth y eso interrumpe el reseteo de Next): arrancar
+  // siempre desde arriba, sin animación.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, []);
   return (
     <>
       <section className="cs-slab cs-slab--blue cs-on-blue cs-thanks">
