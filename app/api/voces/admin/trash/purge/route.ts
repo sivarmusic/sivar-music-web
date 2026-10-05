@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { getAdmin } from "@/lib/voces-session";
+import { referencedUrls } from "@/lib/voces-audio-refs";
 
 // Ported from voces-bds's app/api/admin/trash/purge/route.ts:
 //  - readStore()/writeStore() -> voces_trash table.
@@ -45,14 +46,18 @@ export async function POST(req: NextRequest) {
 
   try {
     if (item.type === "casting") {
+      // No borrar archivos que otra postulación (copia) o ítem de papelera aún usa.
+      const used = await referencedUrls(Array.isArray(item.files) ? item.files : [], { excludeTrashId: id });
       const paths = (Array.isArray(item.files) ? item.files : [])
+        .filter((f: string) => !used.has(f))
         .map((f: string) => storagePathFromPublicUrl(f))
         .filter((p: string | null): p is string => !!p);
       if (paths.length) await supabase.storage.from(BUCKET).remove(paths).catch(() => {});
     } else if (item.type === "application") {
       const url = (item.application as any)?.audioUrl as string | undefined;
       const path = url ? storagePathFromPublicUrl(url) : null;
-      if (path) await supabase.storage.from(BUCKET).remove([path]).catch(() => {});
+      const stillUsed = url ? (await referencedUrls([url], { excludeTrashId: id })).has(url) : true;
+      if (path && !stillUsed) await supabase.storage.from(BUCKET).remove([path]).catch(() => {});
     }
   } catch {
     // Best-effort cleanup; never block the purge on a storage error.

@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { supabase } from "@/lib/supabase";
+import { moveApplicationsInTable, type MoveResult, type MoveTarget } from "@/lib/voces-move-applications";
 
 // Ported from voces-bds's lib/castings.ts: locutor castings.
 //  - supabaseAdmin -> supabase (this repo's single shared client, per
@@ -316,4 +317,12 @@ export async function applicationExists(shareId: string, email: string): Promise
     .eq("email", email.toLowerCase())
     .maybeSingle();
   return !!data;
+}
+
+export async function moveApplications(
+  ids: string[],
+  target: MoveTarget,
+  keepOriginal = true,
+): Promise<MoveResult> {
+  return moveApplicationsInTable("voces_casting_applications", ids, target, { keepOriginal, idPrefix: "cap" });
 }
