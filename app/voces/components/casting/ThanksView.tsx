@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, type ReactNode } from "react";
 import Arrow from "./Arrow";
-import { RecTape, Seal } from "./Ceremony";
+import { SentStamp, Seal } from "./Ceremony";
 import PosterTitle, { fitSize } from "./PosterTitle";
 import Reveal from "./Reveal";
 import Waveform from "./Waveform";
@@ -41,7 +41,7 @@ export default function ThanksView({
             <Seal />
             <div className="cs-thanks-status">
               <p className="cs-mono text-[13px]">Postulación enviada</p>
-              <RecTape />
+              <SentStamp />
             </div>
           </div>
           <PosterTitle text={heading} size={fitSize(heading)} focusOnMount className="cs-thanks-h1" />
