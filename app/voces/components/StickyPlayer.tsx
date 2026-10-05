@@ -17,6 +17,7 @@ export default function StickyPlayer() {
 
   return (
     <div
+      data-sticky-player=""
       className="fixed left-0 right-0 z-40 px-3 sm:px-4"
       style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 64px)" }}
     >

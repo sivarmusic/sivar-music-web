@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 /** Tamaño que hace entrar la palabra más larga en el ancho disponible (sin cortar palabras). */
 export function fitSize(t: string, max = 210) {
   const longest = Math.max(1, ...t.split(/\s+/).map((w) => w.length));
-  return `clamp(40px, min(calc((min(100vw, 1200px) - 40px) / ${(longest * 0.5).toFixed(1)}), ${max}px), ${max}px)`;
+  return `clamp(24px, min(calc((min(100vw, 1200px) - 40px) / ${(longest * 0.5).toFixed(1)}), ${max}px), ${max}px)`;
 }
 
 /** Tamaño tipo póster según el largo del título (clamp fluido, sin saltos de breakpoint). */
@@ -43,7 +43,7 @@ export default function PosterTitle({
       ref={ref}
       tabIndex={focusOnMount ? -1 : undefined}
       className={`cs-display cs-poster cs-h1 ${muted ? "cs-poster--muted" : ""} ${className}`.trim()}
-      style={{ fontSize: size ?? posterSize(text) }}
+      style={{ fontSize: size ?? `min(${posterSize(text)}, ${fitSize(text, 400)})` }}
     >
       {words.map((w, i) => {
         const outline = words.length > 1 && i === words.length - 1 && /^\d{2,4}$/.test(w);
