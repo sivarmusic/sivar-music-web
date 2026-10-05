@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/voces/components/AuthContext";
 import AudioPlayer from "@/app/voces/components/AudioPlayer";
+import MoveApplicationsModal from "@/app/voces/components/admin/MoveApplicationsModal";
 
 // Ported from voces-bds's app/admin/cantantes/casting/results/[id]/page.tsx.
 //  - Auth: /api/auth/me -> useAuth(), same convention as the sibling pages
@@ -55,6 +56,8 @@ export default function AdminCantantesCastingResultDetailPage() {
   const [addAudioLink, setAddAudioLink] = useState("");
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [checked, setChecked] = useState<string[]>([]);
+  const [moveIds, setMoveIds] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) router.replace("/voces/login");
@@ -67,20 +70,35 @@ export default function AdminCantantesCastingResultDetailPage() {
     return () => document.removeEventListener("click", fn);
   }, [confirmId]);
 
+  const loadResults = useCallback(async (initial: boolean) => {
+    try {
+      if (initial) setLoading(true);
+      const r = await fetch(`/api/voces/admin/cantantes/casting/results/${id}`, { cache: "no-store" });
+      const j = await r.json().catch(() => ({ ok: false, error: `HTTP ${r.status}` }));
+      if (!r.ok || !j?.ok) throw new Error(j?.error || "Error");
+      setCasting(j.casting);
+      setApps(j.applications || []);
+      setChecked((p) => p.filter((cid) => (j.applications || []).some((a: { id: string }) => a.id === cid)));
+    } catch (e: any) { setError(e?.message || "Error"); }
+    finally { if (initial) setLoading(false); }
+  }, [id]);
+
   useEffect(() => {
     if (!isAdmin) return;
-    (async () => {
-      try {
-        setLoading(true);
-        const r = await fetch(`/api/voces/admin/cantantes/casting/results/${id}`, { cache: "no-store" });
-        const j = await r.json().catch(() => ({ ok: false, error: `HTTP ${r.status}` }));
-        if (!r.ok || !j?.ok) throw new Error(j?.error || "Error");
-        setCasting(j.casting);
-        setApps(j.applications || []);
-      } catch (e: any) { setError(e?.message || "Error"); }
-      finally { setLoading(false); }
-    })();
-  }, [id, isAdmin]);
+    loadResults(true);
+  }, [isAdmin, loadResults]);
+
+  function toggleChecked(appId: string) {
+    setChecked((p) => (p.includes(appId) ? p.filter((x) => x !== appId) : [...p, appId]));
+  }
+
+  async function onMoved(message: string) {
+    setMoveIds(null);
+    setChecked([]);
+    await loadResults(false);
+    setToast(message);
+    setTimeout(() => setToast(null), 6000);
+  }
 
   async function onToggleSelected(app: any) {
     const newSel = !app.selected;
@@ -222,6 +240,18 @@ export default function AdminCantantesCastingResultDetailPage() {
             {apps.length === 0 ? (
               <p className="text-[13px]" style={{ color: "var(--color-text-muted)" }}>Sin postulaciones aún.</p>
             ) : (
+              <>
+              {checked.length > 0 && (
+                <div role="region" aria-label="Acciones masivas" className="sticky top-[72px] z-20 mb-4 flex flex-wrap items-center gap-3 rounded-[12px] px-4 py-2.5" style={{ background: "var(--color-bg-card)", border: "0.5px solid var(--color-border-default)" }}>
+                  <span aria-live="polite" className="text-[12px] font-[500]" style={{ color: "var(--color-text-primary)" }}>
+                    {checked.length} {checked.length === 1 ? "seleccionada" : "seleccionadas"}
+                  </span>
+                  <span aria-hidden="true" style={{ color: "var(--color-text-muted)" }}>·</span>
+                  <button type="button" onClick={() => setMoveIds(checked)} className="ds-btn-secondary text-[12px] py-1.5 px-3">Mover a otro casting</button>
+                  <span aria-hidden="true" style={{ color: "var(--color-text-muted)" }}>·</span>
+                  <button type="button" onClick={() => setChecked([])} className="text-[12px] underline" style={{ color: "var(--color-text-muted)" }}>Limpiar</button>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {apps.map((a) => (
                   <article key={a.id} className={`relative rounded-[14px] p-4 transition-colors ${a.selected ? "ring-1 ring-emerald-400/60" : ""}`}
@@ -229,6 +259,7 @@ export default function AdminCantantesCastingResultDetailPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-2">
+                          <input type="checkbox" checked={checked.includes(a.id)} onChange={() => toggleChecked(a.id)} aria-label={`Marcar postulación de ${a.firstName} ${a.lastName} para mover`} className="w-4 h-4 accent-[var(--color-accent)]" />
                           <span className="font-[500] text-[14px]" style={{ color: "var(--color-text-primary)" }}>{a.firstName} {a.lastName}</span>
                           {a.selected && <span className="inline-flex items-center gap-1 text-[10px] font-[600] rounded-full px-2 py-0.5" style={{ background: "rgba(74,222,128,0.10)", color: "#4ade80" }}>✓ Elegido</span>}
                         </div>
@@ -283,10 +314,14 @@ export default function AdminCantantesCastingResultDetailPage() {
                     </div>
 
                     {/* Seleccionar */}
-                    <div className="mt-3">
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button onClick={() => onToggleSelected(a)} disabled={selectingId === a.id}
                         className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-[500] transition-colors disabled:opacity-50 ${a.selected ? "border-emerald-400/60 bg-emerald-900/20 text-emerald-400" : "border-white/10 text-white/50 hover:border-emerald-400/40 hover:text-emerald-400"}`}>
                         {selectingId === a.id ? "Guardando…" : a.selected ? "✓ Cantante elegido" : "Marcar como elegido"}
+                      </button>
+                      <button type="button" onClick={() => setMoveIds([a.id])} aria-label={`Copiar o mover la postulación de ${a.firstName} ${a.lastName} a otro casting`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[12px] font-[500] text-white/50 transition-colors hover:border-white/30 hover:text-white/80">
+                        Copiar / mover
                       </button>
                     </div>
 
@@ -318,11 +353,22 @@ export default function AdminCantantesCastingResultDetailPage() {
                   </article>
                 ))}
               </div>
+              </>
             )}
           </section>
         )}
       </div>
     </main>
+
+    <MoveApplicationsModal
+      open={!!moveIds}
+      onClose={() => setMoveIds(null)}
+      kind="cantante"
+      ids={moveIds ?? []}
+      currentCastingId={casting?.id}
+      currentShareId={id}
+      onDone={onMoved}
+    />
 
     {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black text-white text-sm px-3 py-2 rounded-md shadow-lg z-[120]">{toast}</div>}
 

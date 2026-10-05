@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdmin } from "@/lib/voces-session";
 import { supabase } from "@/lib/supabase";
 import { deleteApplication } from "@/lib/voces-castings";
+import { referencedUrls } from "@/lib/voces-audio-refs";
 
 // Ported from voces-bds's app/api/admin/casting/application/delete/route.ts.
 //  - Drive dependency removed: the original's `purgeRemote` branch called
@@ -45,7 +46,11 @@ export async function POST(req: NextRequest) {
 
     if (purgeRemote && audioUrl) {
       const path = storagePathFromPublicUrl(audioUrl);
-      if (path) await supabase.storage.from(BUCKET).remove([path]).catch(() => {});
+      // Las copias de postulaciones (mover/copiar entre castings) comparten la
+      // misma URL de audio: solo se purga el archivo si ninguna otra
+      // postulación (ni ítem de papelera) lo sigue referenciando.
+      const stillUsed = path ? (await referencedUrls([audioUrl])).has(audioUrl) : true;
+      if (path && !stillUsed) await supabase.storage.from(BUCKET).remove([path]).catch(() => {});
     }
 
     return NextResponse.json({ ok: true, id });

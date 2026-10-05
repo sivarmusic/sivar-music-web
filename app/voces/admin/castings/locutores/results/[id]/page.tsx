@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/voces/components/AuthContext";
 import AudioPlayer from "@/app/voces/components/AudioPlayer";
 import Breadcrumbs from "@/app/voces/components/Breadcrumbs";
+import MoveApplicationsModal from "@/app/voces/components/admin/MoveApplicationsModal";
 
 // Ported from voces-bds's app/admin/casting/results/[id]/page.tsx.
 //  - Auth: /api/auth/me -> useAuth().
@@ -56,28 +57,45 @@ export default function AdminCastingResultsDetailPage() {
   const [addAudioLink, setAddAudioLink] = useState("");
   const [addSubmitting, setAddSubmitting] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [checked, setChecked] = useState<string[]>([]);
+  const [moveIds, setMoveIds] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) router.replace("/voces/login");
   }, [authLoading, isAdmin, router]);
 
+  const loadResults = useCallback(async (initial: boolean) => {
+    try {
+      const r = await fetch(`/api/voces/admin/casting/results/${id}`, { cache: "no-store" });
+      let j: any = null;
+      try { j = await r.json(); } catch { j = { ok: false, error: `HTTP ${r.status}` }; }
+      if (!r.ok || !j?.ok) throw new Error(j?.error || "Error");
+      setCasting(j.casting);
+      setApps(j.applications || []);
+      setChecked((prev) => prev.filter((cid) => (j.applications || []).some((a: { id: string }) => a.id === cid)));
+    } catch (e: any) {
+      setError(e?.message || "Error");
+    } finally {
+      if (initial) setLoading(false);
+    }
+  }, [id]);
+
   useEffect(() => {
     if (!isAdmin) return;
-    (async () => {
-      try {
-        const r = await fetch(`/api/voces/admin/casting/results/${id}`, { cache: "no-store" });
-        let j: any = null;
-        try { j = await r.json(); } catch { j = { ok: false, error: `HTTP ${r.status}` }; }
-        if (!r.ok || !j?.ok) throw new Error(j?.error || "Error");
-        setCasting(j.casting);
-        setApps(j.applications || []);
-      } catch (e: any) {
-        setError(e?.message || "Error");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [id, isAdmin]);
+    loadResults(true);
+  }, [isAdmin, loadResults]);
+
+  function toggleChecked(appId: string) {
+    setChecked((prev) => (prev.includes(appId) ? prev.filter((x) => x !== appId) : [...prev, appId]));
+  }
+
+  async function onMoved(message: string) {
+    setMoveIds(null);
+    setChecked([]);
+    await loadResults(false);
+    setToast(message);
+    setTimeout(() => setToast(null), 6000);
+  }
 
   useEffect(() => {
     if (!confirmId) return;
@@ -274,9 +292,9 @@ export default function AdminCastingResultsDetailPage() {
             ]}
             className="text-blue-700 mb-2 px-1"
           />
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-xl font-bold text-gray-900">{casting?.title || "Resultados"}</h1>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setShowAddModal(true)}
                 className="rounded border border-blue-300 bg-blue-50 px-3 py-1 text-xs text-blue-700 hover:bg-blue-100"
@@ -360,12 +378,25 @@ export default function AdminCastingResultsDetailPage() {
                 ) : null}
               </div>
               {apps.length ? (
+                <>
+                {checked.length > 0 && (
+                  <div role="region" aria-label="Acciones masivas" className="sticky top-[72px] z-20 mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-gray-300 bg-white px-4 py-2.5 shadow-md">
+                    <span aria-live="polite" className="text-xs font-medium text-gray-900">
+                      {checked.length} {checked.length === 1 ? "seleccionada" : "seleccionadas"}
+                    </span>
+                    <span aria-hidden="true" className="text-gray-400">·</span>
+                    <button type="button" onClick={() => setMoveIds(checked)} className="rounded border border-blue-300 bg-blue-50 px-3 py-1 text-xs text-blue-700 hover:bg-blue-100">Mover a otro casting</button>
+                    <span aria-hidden="true" className="text-gray-400">·</span>
+                    <button type="button" onClick={() => setChecked([])} className="text-xs text-gray-600 underline hover:text-gray-900">Limpiar</button>
+                  </div>
+                )}
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                   {apps.map((a) => (
                     <article key={a.id} className={`relative rounded-2xl border p-4 shadow-sm transition-colors ${a.hidden ? "border-dashed border-gray-300 bg-gray-100/70" : a.selected ? "border-emerald-400 bg-emerald-50/40 ring-1 ring-emerald-300" : "border-gray-200 bg-white"}`}>
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2">
+                            <input type="checkbox" checked={checked.includes(a.id)} onChange={() => toggleChecked(a.id)} aria-label={`Marcar postulación de ${a.firstName} ${a.lastName} para mover`} className="w-4 h-4" />
                             <span className="font-semibold text-gray-900">{a.firstName} {a.lastName}</span>
                             {a.selected && (
                               <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5">
@@ -586,6 +617,16 @@ export default function AdminCastingResultsDetailPage() {
                             </>
                           )}
                         </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setMoveIds([a.id])}
+                          aria-label={`Copiar o mover la postulación de ${a.firstName} ${a.lastName} a otro casting`}
+                          title="Copiar o mover esta postulación a otro casting"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-50"
+                        >
+                          Copiar / mover
+                        </button>
                       </div>
 
                       <div className="mt-3 flex items-center gap-2">
@@ -645,6 +686,7 @@ export default function AdminCastingResultsDetailPage() {
                     </article>
                   ))}
                 </div>
+                </>
               ) : (
                 <p className="mt-3 text-sm text-gray-600">Sin postulaciones aún.</p>
               )}
@@ -652,6 +694,15 @@ export default function AdminCastingResultsDetailPage() {
           )}
         </div>
       </main>
+      <MoveApplicationsModal
+        open={!!moveIds}
+        onClose={() => setMoveIds(null)}
+        kind="locutor"
+        ids={moveIds ?? []}
+        currentCastingId={casting?.id}
+        currentShareId={id}
+        onDone={onMoved}
+      />
       {toast ? (<div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black text-white text-sm px-3 py-2 rounded-md shadow-lg z-[120]">{toast}</div>) : null}
 
       {showAddModal && (

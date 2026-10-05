@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { supabase } from "@/lib/supabase";
+import { moveApplicationsInTable, type MoveResult, type MoveTarget } from "@/lib/voces-move-applications";
 import type { VocesCastingStatus, VocesCastingCurrency } from "@/lib/voces-castings";
 
 // Ported from voces-bds's lib/cantantes-castings.ts: mismo patrón que
@@ -334,4 +335,12 @@ export async function cantanteApplicationExists(
     .eq("email", email.toLowerCase())
     .maybeSingle();
   return !!data;
+}
+
+export async function moveCantanteApplications(
+  ids: string[],
+  target: MoveTarget,
+  keepOriginal = true,
+): Promise<MoveResult> {
+  return moveApplicationsInTable("voces_casting_cantante_applications", ids, target, { keepOriginal, idPrefix: "cca" });
 }
