@@ -96,9 +96,26 @@ export default function PdfViewer({
           const viewport = page.getViewport({ scale: Math.max(0.5, Math.min(4, effectiveScale)) });
           const ctx = canvas.getContext("2d");
           if (!ctx) continue;
-          canvas.width = Math.floor(viewport.width);
-          canvas.height = Math.floor(viewport.height);
-          const renderTask = page.render({ canvasContext: ctx, viewport });
+          // Nitidez en pantallas de alta densidad: el bitmap se dibuja a
+          // resolución de dispositivo (DPR) y se muestra al tamaño CSS. Sin
+          // esto el navegador estira un bitmap de baja resolución y se ve
+          // borroso en móvil. Se limita el DPR y el total de píxeles para no
+          // pasar el máximo de canvas de iOS Safari (~16.7M px).
+          const MAX_CANVAS_PIXELS = 16_000_000;
+          let outputScale = Math.min(window.devicePixelRatio || 1, 3);
+          const cssPixels = viewport.width * viewport.height;
+          if (cssPixels * outputScale * outputScale > MAX_CANVAS_PIXELS) {
+            outputScale = Math.max(1, Math.sqrt(MAX_CANVAS_PIXELS / cssPixels));
+          }
+          canvas.width = Math.floor(viewport.width * outputScale);
+          canvas.height = Math.floor(viewport.height * outputScale);
+          canvas.style.width = `${Math.floor(viewport.width)}px`;
+          canvas.style.height = `${Math.floor(viewport.height)}px`;
+          const renderTask = page.render({
+            canvasContext: ctx,
+            viewport,
+            transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : undefined,
+          });
           const taskWrap = { cancel: () => { try { (renderTask as any).cancel?.(); } catch {} } };
           pageRenderTasks.push(taskWrap);
           await renderTask.promise.catch(() => {});
