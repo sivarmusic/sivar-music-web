@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
       // navegador las resuelve contra "/", así que se redirigen a su carpeta.
       { source: '/img/:path*', destination: '/ruidosa/img/:path*' },
       { source: '/audio/:path*', destination: '/ruidosa/audio/:path*' },
+      // La misma página, bajo el perfil de la artista. Servida en
+      // /artists/vanessa-garcia/fyc-ruidosa, las rutas relativas se resuelven
+      // contra /artists/vanessa-garcia/, así que también se redirigen.
+      { source: '/artists/vanessa-garcia/fyc-ruidosa', destination: '/ruidosa/index.html' },
+      { source: '/artists/vanessa-garcia/img/:path*', destination: '/ruidosa/img/:path*' },
+      { source: '/artists/vanessa-garcia/audio/:path*', destination: '/ruidosa/audio/:path*' },
     ];
   },
 };
