@@ -85,6 +85,21 @@ export default async function ArtistDetailPage({ params }: ArtistPageProps) {
             <p className="max-w-2xl text-base leading-relaxed text-white/80 md:text-lg">
               {artist.summary}
             </p>
+            {artist.slug === "vanessa-garcia" ? (
+              // <a> y no <Link>: /ruidosa es un HTML estático servido por rewrite,
+              // y una navegación suave de Next no lo resuelve; así carga completo.
+              <a
+                href="/ruidosa"
+                className="group inline-flex w-fit items-center gap-3 rounded-full bg-[#F472B6] px-6 py-3 text-xs font-bold uppercase tracking-[0.22em] text-black shadow-[0_12px_30px_rgba(244,114,182,0.28)] transition hover:bg-[#f78cc4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white sm:text-sm"
+              >
+                <span>FYC</span>
+                <span aria-hidden className="h-4 w-px bg-black/35" />
+                <span>Ruidosa</span>
+                <span aria-hidden className="transition-transform duration-200 group-hover:translate-x-1">
+                  →
+                </span>
+              </a>
+            ) : null}
           </div>
 
           <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-[0_18px_48px_rgba(0,0,0,0.35)]">
