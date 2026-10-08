@@ -10,6 +10,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      { source: '/ruidosa', destination: '/ruidosa/index.html' },
+      // El HTML de /ruidosa referencia sus archivos con rutas relativas
+      // ("img/...", "audio/..."). Servido en /ruidosa (sin barra final), el
+      // navegador las resuelve contra "/", así que se redirigen a su carpeta.
+      { source: '/img/:path*', destination: '/ruidosa/img/:path*' },
+      { source: '/audio/:path*', destination: '/ruidosa/audio/:path*' },
+    ];
+  },
 };
 
 export default nextConfig;
