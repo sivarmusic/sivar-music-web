@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyStaffSession } from '@/lib/staff-auth'
+import { checkEventCapacity } from '@/lib/eventCapacity'
 import { sendOrderConfirmation, sendAdminNewOrderRequest } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
   // Verificar que el evento existe y está visible
   const { data: event } = await supabase
     .from('events')
-    .select('id, nombre, slug, precio, visible')
+    .select('id, nombre, slug, precio, visible, max_entradas')
     .eq('id', event_id)
     .single()
 
@@ -47,6 +48,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ order: existing, recovered: true })
   }
 
+  const cantidadFinal = Math.max(1, Math.min(20, Number(cantidad) || 1))
+
+  // Aforo: el servidor es la fuente de verdad. No atómico (ver eventCapacity.ts).
+  const capacity = await checkEventCapacity(supabase, event_id, event.max_entradas, cantidadFinal)
+  if (!capacity.ok) {
+    return NextResponse.json({ error: capacity.message, remaining: capacity.remaining }, { status: 409 })
+  }
+
   // Guardar/actualizar perfil
   await supabase.from('attendee_profiles').upsert({
     id: user.id,
@@ -62,7 +71,7 @@ export async function POST(req: NextRequest) {
       nombre: nombre.trim(),
       telefono: telefono.trim(),
       email,
-      cantidad: Math.max(1, Math.min(20, Number(cantidad) || 1)),
+      cantidad: cantidadFinal,
     })
     .select()
     .single()

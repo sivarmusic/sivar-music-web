@@ -60,12 +60,32 @@ export async function PATCH(
 
   const order = ticket.event_orders as unknown as { status: string }
   if (order.status !== 'confirmado') return NextResponse.json({ error: 'Entrada no confirmada' }, { status: 400 })
-  if (ticket.check_in_at) return NextResponse.json({ error: 'Ya ingresó', alreadyUsed: true }, { status: 409 })
+  if (ticket.check_in_at) {
+    return NextResponse.json({ error: 'Ya ingresó', alreadyUsed: true, check_in_at: ticket.check_in_at }, { status: 409 })
+  }
 
-  await supabase
+  // Check-in atómico: UPDATE condicional. Si dos escáneres coinciden, solo uno
+  // recibe fila de vuelta; el otro cae en "ya ingresó".
+  const { data: updated, error: updateError } = await supabase
     .from('event_tickets')
     .update({ check_in_at: new Date().toISOString() })
     .eq('id', ticket.id)
+    .is('check_in_at', null)
+    .select('id')
+
+  if (updateError) return NextResponse.json({ error: 'No se pudo registrar el ingreso' }, { status: 500 })
+
+  if (!updated || updated.length === 0) {
+    const { data: current } = await supabase
+      .from('event_tickets')
+      .select('check_in_at')
+      .eq('id', ticket.id)
+      .maybeSingle()
+    return NextResponse.json(
+      { error: 'Ya ingresó', alreadyUsed: true, check_in_at: current?.check_in_at ?? null },
+      { status: 409 },
+    )
+  }
 
   return NextResponse.json({ success: true })
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession, verifyStaffSession } from '@/lib/staff-auth'
 import { sendTicketConfirmed } from '@/lib/email'
-import { buildTicketRows } from '@/lib/eventTickets'
+import { ensureEventTickets } from '@/lib/eventTickets'
 
 export async function PATCH(
   req: NextRequest,
@@ -28,13 +28,10 @@ export async function PATCH(
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   if (status === 'confirmado') {
-    const { count } = await supabase
-      .from('event_tickets')
-      .select('id', { count: 'exact', head: true })
-      .eq('order_id', id)
-
-    if (!count) {
-      await supabase.from('event_tickets').insert(buildTicketRows(id, data.order_code, data.cantidad))
+    // Idempotente: confirmar dos veces o reintentar no duplica entradas.
+    const { error: ticketsError } = await ensureEventTickets(supabase, id, data.order_code, data.cantidad)
+    if (ticketsError) {
+      return NextResponse.json({ error: 'No se pudieron generar las entradas. Reintentá confirmar.' }, { status: 500 })
     }
 
     // Enviar email de confirmación al comprador

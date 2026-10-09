@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/staff-auth'
 import { buildTicketRows } from '@/lib/eventTickets'
+import { checkEventCapacity } from '@/lib/eventCapacity'
 import { sendTicketConfirmed } from '@/lib/email'
 
 const CATEGORIAS = ['staff', 'organizacion', 'vip', 'musicos'] as const
@@ -20,11 +21,16 @@ export async function POST(req: NextRequest) {
 
   const { data: event } = await supabase
     .from('events')
-    .select('id, nombre, slug, venue, fecha')
+    .select('id, nombre, slug, venue, fecha, max_entradas')
     .eq('id', event_id)
     .single()
 
   if (!event) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
+
+  const capacity = await checkEventCapacity(supabase, event_id, event.max_entradas, cantidadFinal)
+  if (!capacity.ok) {
+    return NextResponse.json({ error: capacity.message, remaining: capacity.remaining }, { status: 409 })
+  }
 
   const { data: order, error } = await supabase
     .from('event_orders')
