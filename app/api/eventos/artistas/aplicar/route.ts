@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { sendSafely } from '@/lib/email-safe'
 import { sendAdminNewArtistApplication } from '@/lib/email'
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     otro_link: otroLink?.trim() || null,
   })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/artistas/aplicar', error)
 
   void sendSafely('admin_artist_application', 'aplicacion', () => sendAdminNewArtistApplication({
     nombreArtistico: nombreArtistico.trim(),

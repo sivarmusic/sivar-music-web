@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyStaffSession } from '@/lib/staff-auth'
 
@@ -14,7 +15,7 @@ export async function GET(
     .eq('qr_token', token)
     .maybeSingle()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/verify/[token]', error)
   if (!ticket) return NextResponse.json({ error: 'Entrada no válida' }, { status: 404 })
 
   const order = ticket.event_orders as unknown as {

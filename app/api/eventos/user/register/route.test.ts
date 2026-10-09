@@ -51,7 +51,7 @@ describe('POST /api/eventos/user/register', () => {
     })
 
     const res = await POST(
-      makeRequest({ email: 'ana@example.com', password: 'secret1', nombre: 'Ana López' }),
+      makeRequest({ email: 'ana@example.com', password: 'secret12', nombre: 'Ana López' }),
     )
 
     expect(res.status).toBe(200)
@@ -62,7 +62,7 @@ describe('POST /api/eventos/user/register', () => {
     expect(mocks.createUser).toHaveBeenCalledWith(
       expect.objectContaining({
         email: 'ana@example.com',
-        password: 'secret1',
+        password: 'secret12',
         email_confirm: true,
       }),
     )
@@ -83,7 +83,7 @@ describe('POST /api/eventos/user/register', () => {
     await POST(
       makeRequest({
         email: 'jose@example.com',
-        password: 'secret1',
+        password: 'secret12',
         nombre: 'José Pérez',
         telefono: '+50370000000',
       }),
@@ -107,7 +107,7 @@ describe('POST /api/eventos/user/register', () => {
     mocks.sendWelcome.mockRejectedValueOnce(new Error('resend down'))
 
     const res = await POST(
-      makeRequest({ email: 'ana@example.com', password: 'secret1', nombre: 'Ana' }),
+      makeRequest({ email: 'ana@example.com', password: 'secret12', nombre: 'Ana' }),
     )
 
     expect(res.status).toBe(200)
@@ -123,7 +123,7 @@ describe('POST /api/eventos/user/register', () => {
     })
 
     const res = await POST(
-      makeRequest({ email: 'dup@example.com', password: 'secret1', nombre: 'Dup' }),
+      makeRequest({ email: 'dup@example.com', password: 'secret12', nombre: 'Dup' }),
     )
 
     expect(res.status).toBe(409)
@@ -139,7 +139,7 @@ describe('POST /api/eventos/user/register', () => {
     })
 
     const res = await POST(
-      makeRequest({ email: 'fail@example.com', password: 'secret1', nombre: 'Fail' }),
+      makeRequest({ email: 'fail@example.com', password: 'secret12', nombre: 'Fail' }),
     )
 
     expect(res.status).toBe(500)
@@ -153,7 +153,7 @@ describe('POST /api/eventos/user/register', () => {
 
   it('returns 400 "Faltan campos" when any required field is missing', async () => {
     const res = await POST(
-      makeRequest({ email: 'a@b.com', password: 'secret1' }),
+      makeRequest({ email: 'a@b.com', password: 'secret12' }),
     )
     expect(res.status).toBe(400)
     const body = await res.json()
@@ -161,13 +161,30 @@ describe('POST /api/eventos/user/register', () => {
     expect(mocks.createUser).not.toHaveBeenCalled()
   })
 
-  it('returns 400 "al menos 6" when the password is too short', async () => {
+  it('returns 400 "al menos 8" when the password is too short', async () => {
     const res = await POST(
-      makeRequest({ email: 'a@b.com', password: '12345', nombre: 'Ana' }),
+      makeRequest({ email: 'a@b.com', password: '1234567', nombre: 'Ana' }),
     )
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toMatch(/al menos 6/)
+    expect(body.error).toMatch(/al menos 8/)
     expect(mocks.createUser).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 for an invalid email format', async () => {
+    const res = await POST(makeRequest({ email: 'no-es-correo', password: 'secret12', nombre: 'Ana' }))
+    expect(res.status).toBe(400)
+    expect(mocks.createUser).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 when nombre is too long', async () => {
+    const res = await POST(makeRequest({ email: 'a@b.com', password: 'secret12', nombre: 'x'.repeat(101) }))
+    expect(res.status).toBe(400)
+  })
+
+  it('normalizes the email (trim + lowercase) before creating the user', async () => {
+    mocks.createUser.mockResolvedValueOnce({ data: { user: { id: 'u-2' } }, error: null })
+    await POST(makeRequest({ email: '  Ana@Example.COM ', password: 'secret12', nombre: 'Ana' }))
+    expect(mocks.createUser).toHaveBeenCalledWith(expect.objectContaining({ email: 'ana@example.com' }))
   })
 })

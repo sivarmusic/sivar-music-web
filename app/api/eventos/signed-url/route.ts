@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyStaffSession } from '@/lib/staff-auth'
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
     .from('comprobantes')
     .createSignedUrl(path, 3600)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/signed-url', error)
 
   return NextResponse.json({ url: data.signedUrl })
 }

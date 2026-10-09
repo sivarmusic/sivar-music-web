@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/staff-auth'
 
@@ -12,6 +13,6 @@ export async function GET() {
     .select('*')
     .order('nombre_artistico', { ascending: true })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/artistas/perfiles', error)
   return NextResponse.json({ profiles: data })
 }

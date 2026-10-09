@@ -157,7 +157,7 @@ function LoginForm() {
             </div>
             <div>
               <label className="block text-gray-500 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('login.password')}</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder={t('login.passwordMinPh')} minLength={6} className={INPUT} />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder={t('login.passwordMinPh')} minLength={8} className={INPUT} />
             </div>
             {error && <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-center">{error}</p>}
             <button type="submit" disabled={loading}

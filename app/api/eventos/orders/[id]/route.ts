@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession, verifyStaffSession } from '@/lib/staff-auth'
 import { sendSafely } from '@/lib/email-safe'
@@ -26,7 +27,7 @@ export async function PATCH(
     .select('*, events(nombre, slug, venue, fecha)')
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/orders/[id]', error)
 
   let emailSent: boolean | undefined
 
@@ -76,6 +77,6 @@ export async function DELETE(
   }
 
   const { error } = await supabase.from('event_orders').delete().eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/orders/[id]', error)
   return NextResponse.json({ success: true })
 }
