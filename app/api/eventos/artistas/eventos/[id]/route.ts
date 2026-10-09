@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
+import { validateEventFields } from '@/lib/eventValidation'
 import { verifyAdminSession } from '@/lib/staff-auth'
 
 const EDITABLE_FIELDS = [
@@ -16,10 +17,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params
   const body = await req.json()
 
-  const update: Record<string, unknown> = {}
-  for (const field of EDITABLE_FIELDS) {
-    if (field in body) update[field] = body[field]
-  }
+  const parsed = validateEventFields(body ?? {}, EDITABLE_FIELDS)
+  if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
+  const update: Record<string, unknown> = { ...parsed.values }
   if ('status' in body) {
     if (!['aprobado', 'rechazado', 'pendiente'].includes(body.status)) {
       return NextResponse.json({ error: 'Estado inválido' }, { status: 400 })

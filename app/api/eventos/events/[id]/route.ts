@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
+import { validateEventFields } from '@/lib/eventValidation'
 import { verifyAdminSession } from '@/lib/staff-auth'
+
+// Allowlist: nunca se pasa el body completo a update().
+const EDITABLE_FIELDS = [
+  'nombre', 'slug', 'descripcion', 'fecha', 'venue', 'direccion', 'lat', 'lng',
+  'precio', 'artistas', 'max_entradas', 'visible', 'imagen_url',
+] as const
 
 export async function GET(
   _req: NextRequest,
@@ -28,11 +35,21 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id } = await params
-  const body = await req.json()
+  const body = await req.json().catch(() => null)
+  if (!body || typeof body !== 'object') return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
+
+  const parsed = validateEventFields(body, EDITABLE_FIELDS)
+  if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
+  // Columnas NOT NULL: nunca escribir null.
+  if ('direccion' in parsed.values && parsed.values.direccion === null) parsed.values.direccion = ''
+  if (parsed.values.precio === null) delete parsed.values.precio
+  if (Object.keys(parsed.values).length === 0) {
+    return NextResponse.json({ error: 'Nada para actualizar' }, { status: 400 })
+  }
 
   const { data, error } = await supabase
     .from('events')
-    .update(body)
+    .update(parsed.values)
     .eq('id', id)
     .select()
     .single()
