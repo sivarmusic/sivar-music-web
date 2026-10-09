@@ -59,12 +59,15 @@ export default function EventosAdminPage() {
   useEffect(() => { fetchData() }, [fetchData])
   async function setStatus(orderId: string, status: 'confirmado' | 'rechazado') {
     setActionId(orderId)
-    await fetch(`/api/eventos/orders/${orderId}`, {
+    const res = await fetch(`/api/eventos/orders/${orderId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
     })
+    const data = await res.json().catch(() => ({}))
     await fetchData()
     setActionId(null)
+    if (!res.ok) window.alert(data.error || 'No se pudo actualizar la orden')
+    else if (data.emailSent === false) window.alert('Orden confirmada, pero el correo no pudo enviarse')
   }
 
   async function deleteOrder(orderId: string) {
@@ -83,6 +86,8 @@ export default function EventosAdminPage() {
     if (res.ok) {
       setResentId(orderId)
       setTimeout(() => setResentId(null), 4000)
+    } else {
+      window.alert('No se pudo enviar el correo. Intentá de nuevo más tarde.')
     }
   }
 

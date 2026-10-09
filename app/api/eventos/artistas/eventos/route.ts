@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/staff-auth'
+import { sendSafely } from '@/lib/email-safe'
 import { sendAdminNewArtistEvent } from '@/lib/email'
 
 // GET admin — lista todos los eventos de artistas (pendientes primero)
@@ -56,12 +57,12 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  sendAdminNewArtistEvent({
+  void sendSafely('admin_artist_event', data.id, () => sendAdminNewArtistEvent({
     nombreArtistico: artist.nombre_artistico,
     nombreEvento: data.nombre,
     fecha: data.fecha,
     venue: data.venue,
-  }).catch(() => {})
+  }))
 
   return NextResponse.json({ event: data })
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/staff-auth'
+import { sendSafely } from '@/lib/email-safe'
 import { sendAbandonedCartReminder } from '@/lib/email'
 
 // Recordar compras que quedaron sin comprobante después de este tiempo
@@ -32,14 +33,13 @@ export async function GET(req: NextRequest) {
     const ev = order.events as unknown as { nombre: string; slug: string } | null
     if (!ev) continue
     const pagoUrl = `https://sivarmusic.com/eventos/${ev.slug}/pago/${order.id}`
-    try {
-      await sendAbandonedCartReminder({
-        to: order.email, nombre: order.nombre, orderCode: order.order_code,
-        eventName: ev.nombre, pagoUrl,
-      })
-      await supabase.from('event_orders').update({ reminder_sent_at: new Date().toISOString() }).eq('id', order.id)
-      sent++
-    } catch { /* seguir con las demás */ }
+    const ok = await sendSafely('abandoned_cart', order.order_code, () => sendAbandonedCartReminder({
+      to: order.email, nombre: order.nombre, orderCode: order.order_code,
+      eventName: ev.nombre, pagoUrl,
+    }))
+    if (!ok) continue
+    await supabase.from('event_orders').update({ reminder_sent_at: new Date().toISOString() }).eq('id', order.id)
+    sent++
   }
 
   return NextResponse.json({ sent })

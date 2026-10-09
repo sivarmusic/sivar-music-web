@@ -9,6 +9,16 @@ const FROM = 'Sivar Music <no-reply@sivarmusic.com>'
 const FROM_DEV = 'Sivar Music <onboarding@resend.dev>'
 const from = process.env.NODE_ENV === 'production' ? FROM : FROM_DEV
 
+// Escapa HTML de valores que vienen de usuarios antes de interpolarlos en el correo.
+export function esc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export async function sendOrderConfirmation({
   to, nombre, orderCode, eventName, cantidad, total, pagoUrl,
 }: {
@@ -22,16 +32,16 @@ export async function sendOrderConfirmation({
     html: `
       <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px">
         <h2 style="color:#F472B6;margin:0 0 8px">Sivar Music</h2>
-        <h3 style="margin:0 0 24px;color:#111">¡Hola ${nombre.split(' ')[0]}! Recibimos tu solicitud</h3>
+        <h3 style="margin:0 0 24px;color:#111">¡Hola ${esc(nombre.split(' ')[0])}! Recibimos tu solicitud</h3>
         <div style="background:#fdf2f8;border:1px solid #fbcfe8;border-radius:12px;padding:20px;margin-bottom:20px;text-align:center">
           <p style="margin:0 0 4px;font-size:12px;color:#9f1239;font-weight:bold;letter-spacing:2px;text-transform:uppercase">Tu código de orden</p>
-          <p style="margin:0;font-size:32px;font-weight:bold;color:#be185d;letter-spacing:4px">${orderCode}</p>
+          <p style="margin:0;font-size:32px;font-weight:bold;color:#be185d;letter-spacing:4px">${esc(orderCode)}</p>
           <p style="margin:8px 0 0;font-size:12px;color:#6b7280">Incluí este código como concepto en tu transferencia</p>
         </div>
-        <p style="color:#374151"><strong>Evento:</strong> ${eventName}</p>
-        <p style="color:#374151"><strong>Entradas:</strong> ${cantidad} × $10 = <strong>$${total}.00</strong></p>
+        <p style="color:#374151"><strong>Evento:</strong> ${esc(eventName)}</p>
+        <p style="color:#374151"><strong>Entradas:</strong> ${esc(cantidad)} × $10 = <strong>$${esc(total)}.00</strong></p>
         <div style="margin:24px 0">
-          <a href="${pagoUrl}" style="background:#F472B6;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">
+          <a href="${esc(pagoUrl)}" style="background:#F472B6;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">
             Ver datos de pago →
           </a>
         </div>
@@ -57,12 +67,12 @@ export async function sendAdminNewOrderRequest({
     html: `
       <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px">
         <h2 style="color:#F472B6;margin:0 0 8px">Sivar Music — Nueva solicitud</h2>
-        <p style="color:#374151"><strong>Evento:</strong> ${eventName}</p>
-        <p style="color:#374151"><strong>Código de orden:</strong> ${orderCode}</p>
-        <p style="color:#374151"><strong>Nombre:</strong> ${nombre}</p>
-        <p style="color:#374151"><strong>Teléfono:</strong> ${telefono}</p>
-        <p style="color:#374151"><strong>Email:</strong> ${email}</p>
-        <p style="color:#374151"><strong>Entradas:</strong> ${cantidad} × total <strong>$${total}.00</strong></p>
+        <p style="color:#374151"><strong>Evento:</strong> ${esc(eventName)}</p>
+        <p style="color:#374151"><strong>Código de orden:</strong> ${esc(orderCode)}</p>
+        <p style="color:#374151"><strong>Nombre:</strong> ${esc(nombre)}</p>
+        <p style="color:#374151"><strong>Teléfono:</strong> ${esc(telefono)}</p>
+        <p style="color:#374151"><strong>Email:</strong> ${esc(email)}</p>
+        <p style="color:#374151"><strong>Entradas:</strong> ${esc(cantidad)} × total <strong>$${esc(total)}.00</strong></p>
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
         <p style="color:#9ca3af;font-size:12px;text-align:center">Revisá el panel admin para confirmar el comprobante cuando llegue.</p>
       </div>
@@ -83,12 +93,12 @@ export async function sendAdminNewArtistApplication({
     html: `
       <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px">
         <h2 style="color:#F472B6;margin:0 0 8px">Sivar Events for Artists</h2>
-        <p style="color:#374151"><strong>Nombre artístico:</strong> ${nombreArtistico}</p>
-        <p style="color:#374151"><strong>Contacto:</strong> ${nombreContacto}</p>
-        <p style="color:#374151"><strong>Email:</strong> ${email}</p>
-        <p style="color:#374151"><strong>Teléfono:</strong> ${telefono || '—'}</p>
-        <p style="color:#374151"><strong>Género:</strong> ${genero || '—'}</p>
-        <p style="color:#374151"><strong>Bio:</strong> ${bio || '—'}</p>
+        <p style="color:#374151"><strong>Nombre artístico:</strong> ${esc(nombreArtistico)}</p>
+        <p style="color:#374151"><strong>Contacto:</strong> ${esc(nombreContacto)}</p>
+        <p style="color:#374151"><strong>Email:</strong> ${esc(email)}</p>
+        <p style="color:#374151"><strong>Teléfono:</strong> ${esc(telefono || '—')}</p>
+        <p style="color:#374151"><strong>Género:</strong> ${esc(genero || '—')}</p>
+        <p style="color:#374151"><strong>Bio:</strong> ${esc(bio || '—')}</p>
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
         <p style="color:#9ca3af;font-size:12px;text-align:center">Revisá y aprobá la solicitud en el panel de admin.</p>
       </div>
@@ -108,10 +118,10 @@ export async function sendAdminNewArtistEvent({
     html: `
       <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px">
         <h2 style="color:#F472B6;margin:0 0 8px">Sivar Events for Artists</h2>
-        <p style="color:#374151"><strong>Artista:</strong> ${nombreArtistico}</p>
-        <p style="color:#374151"><strong>Evento:</strong> ${nombreEvento}</p>
-        <p style="color:#374151"><strong>Fecha:</strong> ${new Date(fecha).toLocaleString('es-SV')}</p>
-        <p style="color:#374151"><strong>Venue:</strong> ${venue}</p>
+        <p style="color:#374151"><strong>Artista:</strong> ${esc(nombreArtistico)}</p>
+        <p style="color:#374151"><strong>Evento:</strong> ${esc(nombreEvento)}</p>
+        <p style="color:#374151"><strong>Fecha:</strong> ${esc(new Date(fecha).toLocaleString('es-SV'))}</p>
+        <p style="color:#374151"><strong>Venue:</strong> ${esc(venue)}</p>
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
         <p style="color:#9ca3af;font-size:12px;text-align:center">Revisá y confirmá el evento en el panel de admin antes de que se publique.</p>
       </div>
@@ -142,20 +152,20 @@ export async function sendTicketConfirmed({
       <p style="font-size:40px;margin:0 0 16px;">🎉</p>
       <h2 style="color:#ffffff;font-size:20px;font-weight:700;margin:0 0 8px;">¡Tu entrada está confirmada!</h2>
       <p style="color:rgba(255,255,255,0.5);font-size:14px;margin:0 0 24px;line-height:1.6;">
-        Hola ${nombre.split(' ')[0]}, tus entradas para <strong style="color:#ffffff;">${eventName}</strong> están listas.
+        Hola ${esc(nombre.split(' ')[0])}, tus entradas para <strong style="color:#ffffff;">${esc(eventName)}</strong> están listas.
       </p>
 
       <div style="background-color:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.25);border-radius:12px;padding:14px 20px;margin-bottom:20px;">
         <p style="color:rgba(255,255,255,0.4);font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;margin:0 0 4px;">Código de orden</p>
-        <p style="color:#F472B6;font-size:26px;font-weight:700;letter-spacing:0.12em;margin:0;">${orderCode}</p>
+        <p style="color:#F472B6;font-size:26px;font-weight:700;letter-spacing:0.12em;margin:0;">${esc(orderCode)}</p>
       </div>
 
       <div style="text-align:left;border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;margin-bottom:24px;">
-        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 8px;">📅 ${eventDate}</p>
-        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0;">📍 ${eventVenue}</p>
+        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 8px;">📅 ${esc(eventDate)}</p>
+        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0;">📍 ${esc(eventVenue)}</p>
       </div>
 
-      <a href="${verUrl}" style="display:inline-block;background-color:#F472B6;color:#ffffff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;text-decoration:none;padding:14px 32px;border-radius:14px;">
+      <a href="${esc(verUrl)}" style="display:inline-block;background-color:#F472B6;color:#ffffff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;text-decoration:none;padding:14px 32px;border-radius:14px;">
         Ver mis entradas y QR →
       </a>
     </div>
@@ -188,14 +198,14 @@ export async function sendAbandonedCartReminder({
     html: `
       <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px">
         <h2 style="color:#F472B6;margin:0 0 8px">Sivar Music</h2>
-        <h3 style="margin:0 0 24px;color:#111">¡Hola ${nombre.split(' ')[0]}! Tenés una compra pendiente</h3>
-        <p style="color:#374151">Iniciaste la compra de tu entrada para <strong>${eventName}</strong> pero todavía no subiste el comprobante de pago, así que no pudimos confirmarla.</p>
+        <h3 style="margin:0 0 24px;color:#111">¡Hola ${esc(nombre.split(' ')[0])}! Tenés una compra pendiente</h3>
+        <p style="color:#374151">Iniciaste la compra de tu entrada para <strong>${esc(eventName)}</strong> pero todavía no subiste el comprobante de pago, así que no pudimos confirmarla.</p>
         <div style="background:#fdf2f8;border:1px solid #fbcfe8;border-radius:12px;padding:20px;margin:20px 0;text-align:center">
           <p style="margin:0 0 4px;font-size:12px;color:#9f1239;font-weight:bold;letter-spacing:2px;text-transform:uppercase">Tu código de orden</p>
-          <p style="margin:0;font-size:32px;font-weight:bold;color:#be185d;letter-spacing:4px">${orderCode}</p>
+          <p style="margin:0;font-size:32px;font-weight:bold;color:#be185d;letter-spacing:4px">${esc(orderCode)}</p>
         </div>
         <div style="margin:24px 0">
-          <a href="${pagoUrl}" style="background:#F472B6;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">
+          <a href="${esc(pagoUrl)}" style="background:#F472B6;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">
             Completar mi compra →
           </a>
         </div>
@@ -219,7 +229,7 @@ export async function sendWelcome({
     html: `
       <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px">
         <h2 style="color:#F472B6;margin:0 0 8px">Sivar Music</h2>
-        <h3 style="color:#111">¡Hola ${nombre.split(' ')[0]}!</h3>
+        <h3 style="color:#111">¡Hola ${esc(nombre.split(' ')[0])}!</h3>
         <p style="color:#374151">Tu cuenta en Sivar Music fue creada. Podés iniciar sesión para ver tus entradas a cualquier evento.</p>
         <a href="https://sivarmusic.com/eventos/mi-cuenta" style="background:#F472B6;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;margin:16px 0">
           Ver mis entradas →

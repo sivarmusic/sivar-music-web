@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession, verifyStaffSession } from '@/lib/staff-auth'
+import { sendSafely } from '@/lib/email-safe'
 import { sendTicketConfirmed } from '@/lib/email'
 import { ensureEventTickets } from '@/lib/eventTickets'
 
@@ -27,6 +28,8 @@ export async function PATCH(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  let emailSent: boolean | undefined
+
   if (status === 'confirmado') {
     // Idempotente: confirmar dos veces o reintentar no duplica entradas.
     const { error: ticketsError } = await ensureEventTickets(supabase, id, data.order_code, data.cantidad)
@@ -38,7 +41,7 @@ export async function PATCH(
     const ev = data.events as { nombre: string; slug: string; venue: string; fecha: string } | null
     if (ev) {
       const verUrl = `https://sivarmusic.com/eventos/mi-cuenta`
-      sendTicketConfirmed({
+      emailSent = await sendSafely('ticket_confirmed', data.order_code, () => sendTicketConfirmed({
         to: data.email,
         nombre: data.nombre,
         orderCode: data.order_code,
@@ -46,11 +49,11 @@ export async function PATCH(
         eventDate: new Date(ev.fecha).toLocaleString('es-SV', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }),
         eventVenue: ev.venue,
         verUrl,
-      }).catch(() => {})
+      }))
     }
   }
 
-  return NextResponse.json({ order: data })
+  return NextResponse.json({ order: data, ...(emailSent !== undefined ? { emailSent } : {}) })
 }
 
 export async function DELETE(
