@@ -1,8 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+const EXT_BY_MIME: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'application/pdf': 'pdf',
+}
 const MAX_BYTES = 5 * 1024 * 1024
+
+// Solo se puede subir o reemplazar el comprobante mientras la orden no esté confirmada.
+const UPLOADABLE_STATUSES = ['pendiente_comprobante', 'en_revision', 'rechazado']
+
+// Verifica los primeros bytes: el file.type lo declara el cliente.
+function matchesMime(bytes: Uint8Array, mime: string): boolean {
+  const startsWith = (...sig: number[]) => sig.every((b, i) => bytes[i] === b)
+  switch (mime) {
+    case 'image/jpeg': return startsWith(0xff, 0xd8, 0xff)
+    case 'image/png': return startsWith(0x89, 0x50, 0x4e, 0x47)
+    case 'image/webp': return startsWith(0x52, 0x49, 0x46, 0x46) && bytes[8] === 0x57 && bytes[9] === 0x45
+    case 'application/pdf': return startsWith(0x25, 0x50, 0x44, 0x46)
+    default: return false
+  }
+}
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData()
@@ -10,37 +30,52 @@ export async function POST(req: NextRequest) {
   const file = formData.get('file') as File
 
   if (!orderId || !file) return NextResponse.json({ error: 'Faltan datos' }, { status: 400 })
-  if (!ALLOWED.includes(file.type)) return NextResponse.json({ error: 'Formato no permitido' }, { status: 400 })
+  if (!(file.type in EXT_BY_MIME)) return NextResponse.json({ error: 'Formato no permitido' }, { status: 400 })
   if (file.size > MAX_BYTES) return NextResponse.json({ error: 'El archivo supera los 5MB' }, { status: 400 })
 
   const { data: order, error: fetchError } = await supabase
     .from('event_orders')
-    .select('order_code, comprobante_path')
+    .select('order_code, comprobante_path, status')
     .eq('id', orderId)
     .single()
 
   if (fetchError || !order) return NextResponse.json({ error: 'Orden no encontrada' }, { status: 404 })
 
+  if (!UPLOADABLE_STATUSES.includes(order.status)) {
+    return NextResponse.json({ error: 'Esta orden ya fue confirmada' }, { status: 409 })
+  }
+
+  const bytes = await file.arrayBuffer()
+  if (!matchesMime(new Uint8Array(bytes.slice(0, 12)), file.type)) {
+    return NextResponse.json({ error: 'El archivo no coincide con su formato' }, { status: 400 })
+  }
+
   if (order.comprobante_path) {
     await supabase.storage.from('comprobantes').remove([order.comprobante_path])
   }
 
-  const ext = file.name.split('.').pop() ?? 'jpg'
-  const path = `eventos/${order.order_code}/comprobante.${ext}`
-  const bytes = await file.arrayBuffer()
+  // La extensión sale del tipo validado, no del nombre que manda el cliente.
+  const path = `eventos/${order.order_code}/comprobante.${EXT_BY_MIME[file.type]}`
 
   const { error: uploadError } = await supabase.storage
     .from('comprobantes')
     .upload(path, bytes, { contentType: file.type, upsert: true })
 
-  if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 500 })
+  if (uploadError) {
+    console.error('[eventos/upload] fallo al subir comprobante', { orderId, message: uploadError.message })
+    return NextResponse.json({ error: 'No se pudo subir el comprobante. Intentá de nuevo.' }, { status: 500 })
+  }
 
   const { error: updateError } = await supabase
     .from('event_orders')
     .update({ comprobante_path: path, status: 'en_revision' })
     .eq('id', orderId)
+    .in('status', UPLOADABLE_STATUSES)
 
-  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
+  if (updateError) {
+    console.error('[eventos/upload] fallo al actualizar orden', { orderId, message: updateError.message })
+    return NextResponse.json({ error: 'No se pudo registrar el comprobante. Intentá de nuevo.' }, { status: 500 })
+  }
 
   return NextResponse.json({ success: true })
 }
