@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    // Pink Fest ya no existe como módulo: los links viejos van al listado.
+    return [
+      { source: '/pinkfest/:path*', destination: '/eventos', permanent: false },
+    ];
+  },
   async rewrites() {
     return [
       { source: '/ruidosa', destination: '/ruidosa/index.html' },
