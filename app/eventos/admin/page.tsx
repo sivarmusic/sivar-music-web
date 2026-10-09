@@ -37,10 +37,9 @@ export default function EventosAdminPage() {
   const [resentId, setResentId] = useState<string | null>(null)
   const [sendingReminders, setSendingReminders] = useState(false)
   const [remindersResult, setRemindersResult] = useState<number | null>(null)
-  const [pinkfestVenue, setPinkfestVenue] = useState('Beerhaus')
 
   const fetchData = useCallback(async () => {
-    const sessionRes = await fetch('/api/pinkfest/auth/session')
+    const sessionRes = await fetch('/api/staff/auth/session')
     if (sessionRes.status === 401) { router.push('/eventos/admin/login'); return }
     const session = await sessionRes.json()
     const currentRole = (session.role as 'admin' | 'verificador' | undefined) ?? null
@@ -58,10 +57,6 @@ export default function EventosAdminPage() {
   }, [router])
 
   useEffect(() => { fetchData() }, [fetchData])
-  useEffect(() => {
-    fetch('/api/pinkfest/settings').then(r => r.json()).then(data => setPinkfestVenue(data.venue)).catch(() => {})
-  }, [])
-
   async function setStatus(orderId: string, status: 'confirmado' | 'rechazado') {
     setActionId(orderId)
     await fetch(`/api/eventos/orders/${orderId}`, {
@@ -141,45 +136,9 @@ export default function EventosAdminPage() {
           )}
         </div>
 
-        {!isAdmin && (
-          <Link href="/pinkfest/admin"
-            className="block rounded-2xl border border-[#F472B6]/20 bg-[#F472B6]/5 px-4 py-3 text-sm text-white/70 hover:text-[#F472B6] transition">
-            Ver solicitudes de Pink Fest →
-          </Link>
-        )}
-
         {/* Eventos — solo admin */}
         {isAdmin && (
           <div className="space-y-3">
-            {/* Pink Fest — tarjeta fija */}
-            <div className="rounded-2xl border border-[#F472B6]/20 bg-[#F472B6]/5 p-4 flex items-center gap-4">
-              <div className="h-14 w-14 flex-none rounded-xl bg-[#F472B6]/15 flex items-center justify-center text-2xl">🎀</div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-white font-semibold text-sm">Pink Fest</p>
-                  <span className="text-[10px] text-[#F472B6] font-bold bg-[#F472B6]/10 px-2 py-0.5 rounded-full">Independiente</span>
-                  <span className="text-xs px-2.5 py-1 rounded-xl font-semibold bg-green-400/15 text-green-400">Visible</span>
-                </div>
-                <p className="text-white/35 text-xs mt-1">sáb. 12 jul · $10 · {pinkfestVenue}</p>
-              </div>
-              <div className="flex items-center gap-2 flex-none flex-wrap justify-end">
-                <Link href="/pinkfest/admin/reporte"
-                  className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
-                  Reporte
-                </Link>
-                <Link href="/pinkfest/admin/editar"
-                  className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
-                  Editar
-                </Link>
-                <Link href="/pinkfest/admin"
-                  className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
-                  Gestionar
-                </Link>
-                <a href="/pinkfest" target="_blank" rel="noopener noreferrer"
-                  className="text-white/25 hover:text-white text-xs transition">↗</a>
-              </div>
-            </div>
-
             {events.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center">
                 <p className="text-white/25 text-sm">No hay otros eventos creados.</p>
@@ -316,11 +275,15 @@ export default function EventosAdminPage() {
                       <div className="border-t border-white/8 px-4 py-4 space-y-3">
                         {/* Comprobante */}
                         {order.comprobante_path && (
-                          <a href={`/api/pinkfest/comprobante/${order.comprobante_path.split('/').pop()}`}
-                            target="_blank" rel="noopener noreferrer"
-                            className="block text-center text-[#F472B6] text-xs underline underline-offset-2">
+                          <button type="button"
+                            onClick={async () => {
+                              const r = await fetch(`/api/eventos/signed-url?path=${encodeURIComponent(order.comprobante_path!)}`)
+                              const d = await r.json()
+                              if (d.url) window.open(d.url, '_blank', 'noopener,noreferrer')
+                            }}
+                            className="block w-full text-center text-[#F472B6] text-xs underline underline-offset-2">
                             Ver comprobante ↗
-                          </a>
+                          </button>
                         )}
 
                         {/* Tickets */}

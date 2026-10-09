@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSessionRole } from '@/lib/pinkfest-auth'
+import { getSessionRole } from '@/lib/staff-auth'
 
 export async function GET() {
   const session = await getSessionRole()

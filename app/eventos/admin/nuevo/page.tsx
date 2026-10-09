@@ -106,7 +106,7 @@ export default function NuevoEventoPage() {
 
         {/* Nombre */}
         <Field label="Nombre del evento" required>
-          <input type="text" value={form.nombre} required placeholder="Pink Fest 2025"
+          <input type="text" value={form.nombre} required placeholder="Nombre del evento"
             onChange={e => { set('nombre', e.target.value); if (!form.slug) set('slug', slugify(e.target.value)) }}
             className={INPUT} />
         </Field>

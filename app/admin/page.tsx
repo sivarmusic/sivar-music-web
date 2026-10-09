@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { verifyAdminSession } from "@/lib/pinkfest-auth";
+import { verifyAdminSession } from "@/lib/staff-auth";
 import LogoutButton from "./components/LogoutButton";
 
 export const metadata: Metadata = {
@@ -23,11 +23,6 @@ const AVAILABLE: AdminCard[] = [
     href: "/eventos/admin",
     label: "Eventos",
     description: "Dashboard multi-evento: órdenes, cortesías, verificación.",
-  },
-  {
-    href: "/pinkfest/admin",
-    label: "Pink Fest",
-    description: "Panel del evento flagship.",
   },
   {
     href: "/voces/admin/clientes",

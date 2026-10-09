@@ -6,7 +6,7 @@ export default function LogoutButton() {
   const router = useRouter();
 
   async function handleLogout() {
-    await fetch("/api/pinkfest/auth/logout", { method: "POST" });
+    await fetch("/api/staff/auth/logout", { method: "POST" });
     router.push("/admin/login");
   }
 

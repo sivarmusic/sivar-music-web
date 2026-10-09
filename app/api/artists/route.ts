@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { verifyAdminSession } from "@/lib/pinkfest-auth";
+import { verifyAdminSession } from "@/lib/staff-auth";
 
 const SELECT_COLUMNS =
   "id, slug, name, genre, summary, profile_paragraphs, profile_highlights, visible, sort_order";

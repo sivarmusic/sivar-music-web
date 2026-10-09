@@ -20,10 +20,7 @@ interface CortesiaOrder {
   order_type: string; created_at: string
   events: { id: string; nombre: string } | null
   event_tickets: Ticket[]
-  source: 'eventos' | 'pinkfest'
 }
-
-const PINKFEST_OPTION: EventOption = { id: 'pinkfest', nombre: 'Pink Fest' }
 
 const CATEGORIAS = [
   { value: 'staff', label: 'Staff' },
@@ -55,26 +52,18 @@ export default function CortesiasPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const fetchData = useCallback(async () => {
-    const [evRes, ordRes, pfRes] = await Promise.all([
+    const [evRes, ordRes] = await Promise.all([
       fetch('/api/eventos/events?admin=1'),
       fetch('/api/eventos/orders'),
-      fetch('/api/pinkfest/orders'),
     ])
-    if (evRes.status === 401 || ordRes.status === 401 || pfRes.status === 401) { router.push('/eventos/admin/login'); return }
-    const [evData, ordData, pfData] = await Promise.all([evRes.json(), ordRes.json(), pfRes.json()])
-    setEvents([PINKFEST_OPTION, ...(evData.events ?? [])])
+    if (evRes.status === 401 || ordRes.status === 401) { router.push('/eventos/admin/login'); return }
+    const [evData, ordData] = await Promise.all([evRes.json(), ordRes.json()])
+    setEvents(evData.events ?? [])
 
-    const eventosCortesias = (ordData.orders ?? [])
+    const cortesias = (ordData.orders ?? [])
       .filter((o: CortesiaOrder) => o.order_type === 'cortesia')
-      .map((o: CortesiaOrder) => ({ ...o, source: 'eventos' as const }))
 
-    const pinkfestCortesias = (pfData.orders ?? [])
-      .filter((o: { order_type?: string }) => o.order_type === 'cortesia')
-      .map((o: Omit<CortesiaOrder, 'events' | 'source' | 'event_tickets'> & { pinkfest_tickets: Ticket[] }) => ({
-        ...o, events: PINKFEST_OPTION, event_tickets: o.pinkfest_tickets, source: 'pinkfest' as const,
-      }))
-
-    setOrders([...eventosCortesias, ...pinkfestCortesias])
+    setOrders(cortesias)
     setLoading(false)
   }, [router])
 
@@ -100,7 +89,6 @@ export default function CortesiasPage() {
       const event = events.find(e => e.id === eventId)
       setLastIssued({
         ...data.order, events: event ?? null, event_tickets: data.tickets,
-        source: eventId === 'pinkfest' ? 'pinkfest' : 'eventos',
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo generar la cortesía')
@@ -109,11 +97,10 @@ export default function CortesiasPage() {
     }
   }
 
-  async function deleteOrder(orderId: string, source: 'eventos' | 'pinkfest') {
+  async function deleteOrder(orderId: string) {
     if (!window.confirm('¿Eliminar esta cortesía? Esta acción no se puede deshacer.')) return
     setDeletingId(orderId)
-    const base = source === 'pinkfest' ? '/api/pinkfest/orders' : '/api/eventos/orders'
-    await fetch(`${base}/${orderId}`, { method: 'DELETE' })
+    await fetch(`/api/eventos/orders/${orderId}`, { method: 'DELETE' })
     await fetchData()
     setDeletingId(null)
   }
@@ -262,7 +249,7 @@ export default function CortesiasPage() {
                                 </p>
                               </div>
                               <button
-                                onClick={() => deleteOrder(order.id, order.source)}
+                                onClick={() => deleteOrder(order.id)}
                                 disabled={deletingId === order.id}
                                 className="text-xs px-2 py-1.5 rounded-xl font-semibold bg-red-500/10 text-red-400/50 hover:bg-red-500/20 hover:text-red-400 transition disabled:opacity-40 flex-none"
                               >

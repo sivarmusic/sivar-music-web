@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { verifyAdminSession } from '@/lib/pinkfest-auth'
+import { verifyAdminSession } from '@/lib/staff-auth'
 import { sendAdminNewArtistEvent } from '@/lib/email'
 
 // GET admin — lista todos los eventos de artistas (pendientes primero)

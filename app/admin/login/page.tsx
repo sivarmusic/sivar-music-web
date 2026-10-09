@@ -17,7 +17,7 @@ function LoginForm() {
     setError('')
     setLoading(true)
     try {
-      const res = await fetch('/api/pinkfest/auth/login', {
+      const res = await fetch('/api/staff/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -25,7 +25,7 @@ function LoginForm() {
       if (res.ok) {
         // El login federado acepta admin y verificador; confirmamos acá que el rol
         // sea admin antes de redirigir, para no rebotar silenciosamente en el guard SSR.
-        const sessionRes = await fetch('/api/pinkfest/auth/session')
+        const sessionRes = await fetch('/api/staff/auth/session')
         const session = sessionRes.ok ? await sessionRes.json() : null
         if (session?.role === 'admin') {
           router.push(redirect)

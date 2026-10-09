@@ -12,9 +12,6 @@ interface Event {
   kind: 'ticket' | 'info'; artistSlug?: string | null
 }
 
-const PINKFEST_DATE = new Date('2026-07-12T20:00:00')
-const PINKFEST_TERMS = 'pink fest beerhaus san salvador sivar'
-
 type TimeFilter = '24h' | '7d' | '30d' | null
 const TIME_MS: Record<string, number> = { '24h': 86_400_000, '7d': 604_800_000, '30d': 2_592_000_000 }
 
@@ -41,9 +38,6 @@ export default function EventosPage() {
 
   const q = search.toLowerCase()
 
-  const showPinkFest = withinWindow(PINKFEST_DATE) &&
-    (!q || PINKFEST_TERMS.includes(q))
-
   const filteredEvents = events.filter(ev => {
     if (!withinWindow(new Date(ev.fecha))) return false
     if (!q) return true
@@ -52,7 +46,7 @@ export default function EventosPage() {
       (ev.artistas?.some(a => a.toLowerCase().includes(q)) ?? false)
   })
 
-  const hasResults = showPinkFest || filteredEvents.length > 0
+  const hasResults = filteredEvents.length > 0
 
   return (
     <div className="min-h-screen bg-[#0a0008] text-white">
@@ -158,24 +152,6 @@ export default function EventosPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {/* Pink Fest */}
-            {showPinkFest && (
-              <Link href="/pinkfest" className="group block">
-                <div className="bg-white/4 border border-white/10 group-hover:border-[#F472B6]/30 rounded-2xl overflow-hidden transition h-full">
-                  <div className="relative w-full aspect-[4/3]">
-                    <Image src="/pinkfest/poster.jpg" alt="Pink Fest" fill className="object-cover" />
-                  </div>
-                  <div className="p-3 sm:p-4">
-                    <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1">Sivar Music</p>
-                    <h2 className="text-white font-bold text-sm leading-tight">Pink Fest</h2>
-                    <p className="text-white/50 text-xs mt-1">sáb. 12 jul · 8:00 PM</p>
-                    <p className="text-white/40 text-xs">Beerhaus · San Salvador</p>
-                    <p className="text-[#F472B6] font-bold text-sm mt-2">$10</p>
-                  </div>
-                </div>
-              </Link>
-            )}
-
             {/* Eventos normales */}
             {filteredEvents.map(event => {
               const fecha = new Date(event.fecha)

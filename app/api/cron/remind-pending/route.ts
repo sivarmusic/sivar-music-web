@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { verifyAdminSession } from '@/lib/pinkfest-auth'
+import { verifyAdminSession } from '@/lib/staff-auth'
 import { sendAbandonedCartReminder } from '@/lib/email'
 
 // Recordar compras que quedaron sin comprobante después de este tiempo
@@ -38,26 +38,6 @@ export async function GET(req: NextRequest) {
         eventName: ev.nombre, pagoUrl,
       })
       await supabase.from('event_orders').update({ reminder_sent_at: new Date().toISOString() }).eq('id', order.id)
-      sent++
-    } catch { /* seguir con las demás */ }
-  }
-
-  // Pink Fest
-  const { data: pinkfestOrders } = await supabase
-    .from('pinkfest_orders')
-    .select('id, order_code, nombre, email, created_at')
-    .eq('status', 'pendiente_comprobante')
-    .is('reminder_sent_at', null)
-    .lt('created_at', cutoff)
-
-  for (const order of pinkfestOrders ?? []) {
-    const pagoUrl = `https://sivarmusic.com/pinkfest/pago/${order.id}`
-    try {
-      await sendAbandonedCartReminder({
-        to: order.email, nombre: order.nombre, orderCode: order.order_code,
-        eventName: 'Pink Fest', pagoUrl,
-      })
-      await supabase.from('pinkfest_orders').update({ reminder_sent_at: new Date().toISOString() }).eq('id', order.id)
       sent++
     } catch { /* seguir con las demás */ }
   }
