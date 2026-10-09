@@ -10,6 +10,21 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async headers() {
+    // Headers de seguridad globales. Sin CSP enforcing. La cámara queda
+    // permitida en el mismo origen: el escáner de QR del admin la necesita.
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
+        ],
+      },
+    ];
+  },
   async redirects() {
     // Pink Fest ya no existe como módulo: los links viejos van al listado.
     return [
