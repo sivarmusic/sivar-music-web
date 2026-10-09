@@ -18,6 +18,8 @@ export async function POST(req: NextRequest) {
   }
 
   const res = NextResponse.json({ ok: true })
+  // Evitar que quede un refresh token de otra cuenta de staff emparejado con esta sesión.
+  res.cookies.delete('pf_admin_refresh')
   res.cookies.set('pf_admin_token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

@@ -3,20 +3,69 @@ import { createClient } from '@supabase/supabase-js'
 
 export type StaffRole = 'admin' | 'verificador'
 
-async function getSessionUser() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('pf_admin_token')?.value
-  if (!token) return null
+export const ACCESS_COOKIE = 'pf_admin_token'
+export const REFRESH_COOKIE = 'pf_admin_refresh'
+export const STAFF_SESSION_MAX_AGE = 60 * 60 * 8
 
-  const client = createClient(
+function anonClient() {
+  return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { auth: { persistSession: false } }
   )
+}
 
-  const { data: { user }, error } = await client.auth.getUser(token)
-  if (error || !user) return null
-  return user
+// Renueva la sesión con el refresh token cuando el access token venció.
+// Solo se intenta si podemos persistir las cookies nuevas (route handlers):
+// el refresh token rota, y rotarlo sin guardarlo dejaría la sesión inservible.
+async function tryRefresh(cookieStore: Awaited<ReturnType<typeof cookies>>) {
+  const refreshToken = cookieStore.get(REFRESH_COOKIE)?.value
+  if (!refreshToken) return null
+
+  // En Server Components cookies().set lanza: ahí no refrescamos (devuelve null como antes).
+  try {
+    cookieStore.set(REFRESH_COOKIE, refreshToken, refreshCookieOptions())
+  } catch {
+    return null
+  }
+
+  const { data, error } = await anonClient().auth.refreshSession({ refresh_token: refreshToken })
+  if (error || !data.session || !data.user) {
+    try { cookieStore.delete(REFRESH_COOKIE) } catch { /* noop */ }
+    return null
+  }
+
+  try {
+    cookieStore.set(ACCESS_COOKIE, data.session.access_token, accessCookieOptions())
+    cookieStore.set(REFRESH_COOKIE, data.session.refresh_token, refreshCookieOptions())
+  } catch { /* noop */ }
+  return data.user
+}
+
+export function accessCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+    maxAge: STAFF_SESSION_MAX_AGE,
+    path: '/',
+  }
+}
+
+export function refreshCookieOptions() {
+  return { ...accessCookieOptions(), sameSite: 'strict' as const }
+}
+
+async function getSessionUser() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get(ACCESS_COOKIE)?.value
+
+  if (token) {
+    const { data: { user }, error } = await anonClient().auth.getUser(token)
+    if (!error && user) return user
+  }
+
+  return tryRefresh(cookieStore)
 }
 
 function getRole(user: { app_metadata?: Record<string, unknown> }): StaffRole | null {
