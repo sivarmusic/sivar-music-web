@@ -9,20 +9,25 @@ export async function GET(req: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token)
   if (authError || !user) return NextResponse.json({ error: 'Sesión inválida' }, { status: 401 })
 
+  // Solo se cruza por email si el correo está verificado; sin eso, solo por user_id.
+  const emailVerified = !!user.email_confirmed_at && !!user.email
+
   const [eventRes, pfRes] = await Promise.all([
     // Órdenes de eventos normales — por user_id o email
     supabase
       .from('event_orders')
       .select('*, events(nombre, slug, fecha, venue, imagen_url), event_tickets(id, ticket_number, qr_token, check_in_at)')
-      .or(`user_id.eq.${user.id},email.eq.${user.email}`)
+      .or(emailVerified ? `user_id.eq.${user.id},email.eq.${user.email}` : `user_id.eq.${user.id}`)
       .order('created_at', { ascending: false }),
 
     // Órdenes de Pink Fest — siempre por email
-    supabase
-      .from('pinkfest_orders')
-      .select('*, pinkfest_tickets(id, ticket_number, qr_token, check_in_at)')
-      .eq('email', user.email)
-      .order('created_at', { ascending: false }),
+    emailVerified
+      ? supabase
+          .from('pinkfest_orders')
+          .select('*, pinkfest_tickets(id, ticket_number, qr_token, check_in_at)')
+          .eq('email', user.email!)
+          .order('created_at', { ascending: false })
+      : Promise.resolve({ data: [] as never[] }),
   ])
 
   const eventOrders = eventRes.data ?? []
@@ -41,7 +46,7 @@ export async function GET(req: NextRequest) {
   }))
 
   // Auto-vincular órdenes de eventos sin user_id
-  const unlinked = eventOrders.filter(o => !o.user_id)
+  const unlinked = emailVerified ? eventOrders.filter(o => !o.user_id) : []
   if (unlinked.length > 0) {
     await supabase
       .from('event_orders')

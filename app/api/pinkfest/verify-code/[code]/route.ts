@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { verifyStaffSession } from '@/lib/pinkfest-auth'
 
-// GET — buscar una orden por su código (ej: PF-0024) para verificación manual
+// GET (solo staff) — buscar una orden por su código (ej: PF-0024) para verificación manual
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const user = await verifyStaffSession()
+  if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
   const { code } = await params
   const orderCode = decodeURIComponent(code).trim().toUpperCase()
 
