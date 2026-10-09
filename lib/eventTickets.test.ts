@@ -34,3 +34,38 @@ describe('buildTicketRows', () => {
     expect(buildTicketRows('order-1', 'ABC123', 0)).toEqual([])
   })
 })
+
+import { vi } from 'vitest'
+import { ensureEventTickets } from './eventTickets'
+
+describe('ensureEventTickets', () => {
+  function fakeDb(existing: number[]) {
+    const insert = vi.fn().mockResolvedValue({ error: null })
+    const db = {
+      from: () => ({
+        select: () => ({ eq: () => Promise.resolve({ data: existing.map(n => ({ ticket_number: n })), error: null }) }),
+        insert,
+      }),
+    }
+    return { db, insert }
+  }
+
+  it('crea todos los tickets cuando no existe ninguno', async () => {
+    const { db, insert } = fakeDb([])
+    await ensureEventTickets(db, 'o1', 'SM-1', 3)
+    expect(insert.mock.calls[0][0].map((r: { ticket_number: number }) => r.ticket_number)).toEqual([1, 2, 3])
+  })
+
+  it('no inserta nada si ya existen (confirmar dos veces)', async () => {
+    const { db, insert } = fakeDb([1, 2, 3])
+    const res = await ensureEventTickets(db, 'o1', 'SM-1', 3)
+    expect(res.error).toBeNull()
+    expect(insert).not.toHaveBeenCalled()
+  })
+
+  it('completa solo los números faltantes', async () => {
+    const { db, insert } = fakeDb([1])
+    await ensureEventTickets(db, 'o1', 'SM-1', 3)
+    expect(insert.mock.calls[0][0].map((r: { ticket_number: number }) => r.ticket_number)).toEqual([2, 3])
+  })
+})
