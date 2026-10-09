@@ -1,28 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { EXT_BY_MIME, matchesMime } from '@/lib/imageUpload'
 
-const EXT_BY_MIME: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'application/pdf': 'pdf',
-}
 const MAX_BYTES = 5 * 1024 * 1024
 
 // Solo se puede subir o reemplazar el comprobante mientras la orden no esté confirmada.
 const UPLOADABLE_STATUSES = ['pendiente_comprobante', 'en_revision', 'rechazado']
-
-// Verifica los primeros bytes: el file.type lo declara el cliente.
-function matchesMime(bytes: Uint8Array, mime: string): boolean {
-  const startsWith = (...sig: number[]) => sig.every((b, i) => bytes[i] === b)
-  switch (mime) {
-    case 'image/jpeg': return startsWith(0xff, 0xd8, 0xff)
-    case 'image/png': return startsWith(0x89, 0x50, 0x4e, 0x47)
-    case 'image/webp': return startsWith(0x52, 0x49, 0x46, 0x46) && bytes[8] === 0x57 && bytes[9] === 0x45
-    case 'application/pdf': return startsWith(0x25, 0x50, 0x44, 0x46)
-    default: return false
-  }
-}
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData()
