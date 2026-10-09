@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyStaffSession } from '@/lib/staff-auth'
 import { sendSafely } from '@/lib/email-safe'
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
         .maybeSingle()
       if (race) return NextResponse.json({ order: race, recovered: true })
     }
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return serverError('eventos/orders', error)
   }
 
   const pagoUrl = `https://sivarmusic.com/eventos/${event.slug}/pago/${order.id}`
@@ -131,6 +132,6 @@ export async function GET(req: NextRequest) {
   if (eventId) query = query.eq('event_id', eventId)
 
   const { data: orders, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/orders', error)
   return NextResponse.json({ orders })
 }

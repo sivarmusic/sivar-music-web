@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/staff-auth'
 
@@ -36,7 +37,7 @@ export async function PATCH(
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/events/[id]', error)
   return NextResponse.json({ event: data })
 }
 
@@ -49,6 +50,6 @@ export async function DELETE(
 
   const { id } = await params
   const { error } = await supabase.from('events').delete().eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/events/[id]', error)
   return NextResponse.json({ success: true })
 }

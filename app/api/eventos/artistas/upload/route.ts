@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 
 const FOLDERS: Record<string, string> = { perfil: 'perfil', galeria: 'galeria', evento: 'eventos' }
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     .from('event-images')
     .upload(path, bytes, { contentType: file.type, upsert: true })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/artistas/upload', error)
 
   const { data } = supabase.storage.from('event-images').getPublicUrl(path)
   return NextResponse.json({ url: data.publicUrl })

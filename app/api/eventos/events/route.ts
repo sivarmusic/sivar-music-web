@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/staff-auth'
 
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
   if (!isAdmin) query = query.eq('visible', true)
 
   const { data, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/events', error)
 
   const ticketEvents = (data ?? []).map(ev => ({ ...ev, kind: 'ticket' as const }))
 
@@ -67,6 +68,6 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/events', error)
   return NextResponse.json({ event: data })
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/staff-auth'
 import { buildTicketRows } from '@/lib/eventTickets'
@@ -48,14 +49,14 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/orders/cortesia', error)
 
   const { data: tickets, error: ticketsError } = await supabase
     .from('event_tickets')
     .insert(buildTicketRows(order.id, order.order_code, cantidadFinal))
     .select()
 
-  if (ticketsError) return NextResponse.json({ error: ticketsError.message }, { status: 500 })
+  if (ticketsError) return serverError('eventos/orders/cortesia', ticketsError)
 
   void sendSafely('ticket_confirmed_cortesia', order.order_code, () => sendTicketConfirmed({
     to: order.email,

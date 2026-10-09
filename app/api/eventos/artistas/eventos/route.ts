@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/staff-auth'
 import { sendSafely } from '@/lib/email-safe'
@@ -15,7 +16,7 @@ export async function GET() {
     .order('status', { ascending: true })
     .order('fecha', { ascending: true })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/artistas/eventos', error)
   return NextResponse.json({ events: data })
 }
 
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
     status: 'pendiente',
   }).select().single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/artistas/eventos', error)
 
   void sendSafely('admin_artist_event', data.id, () => sendAdminNewArtistEvent({
     nombreArtistico: artist.nombre_artistico,

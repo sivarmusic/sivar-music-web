@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/staff-auth'
 import { slugify } from '@/lib/slug'
@@ -38,7 +39,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       redirectTo: 'https://sivarmusic.com/eventos/artistas/nueva-contrasena',
     })
     if (inviteErr || !invited.user) {
-      return NextResponse.json({ error: inviteErr?.message || 'No se pudo invitar al artista' }, { status: 500 })
+      console.error('[eventos/artistas/aplicaciones] invitación fallida', { message: inviteErr?.message })
+      return NextResponse.json({ error: 'No se pudo invitar al artista. Puede que ese correo ya tenga una cuenta.' }, { status: 500 })
     }
 
     const slug = await uniqueSlug(application.nombre_artistico)
@@ -55,7 +57,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       youtube: application.youtube,
       otro_link: application.otro_link,
     })
-    if (profileErr) return NextResponse.json({ error: profileErr.message }, { status: 500 })
+    if (profileErr) return serverError('eventos/artistas/aplicaciones', profileErr)
   }
 
   const { error: updateErr } = await supabase
@@ -63,6 +65,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .update({ status, reviewed_at: new Date().toISOString() })
     .eq('id', id)
 
-  if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
+  if (updateErr) return serverError('eventos/artistas/aplicaciones', updateErr)
   return NextResponse.json({ success: true })
 }

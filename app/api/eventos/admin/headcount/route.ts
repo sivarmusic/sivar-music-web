@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyStaffSession } from '@/lib/staff-auth'
 
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     .eq('event_key', eventKey)
     .maybeSingle()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/admin/headcount', error)
   return NextResponse.json({ count: data?.count ?? 0 })
 }
 
@@ -41,6 +42,6 @@ export async function PATCH(req: NextRequest) {
     .select('count')
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return serverError('eventos/admin/headcount', error)
   return NextResponse.json({ count: data.count })
 }
