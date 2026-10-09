@@ -5,7 +5,7 @@
 
 CREATE TABLE IF NOT EXISTS headcounts (
   id         uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  event_key  text UNIQUE NOT NULL, -- 'pinkfest' o el id del evento en "events"
+  event_key  text UNIQUE NOT NULL, -- id del evento en "events"
   count      int NOT NULL DEFAULT 0 CHECK (count >= 0),
   updated_at timestamptz DEFAULT now()
 );
