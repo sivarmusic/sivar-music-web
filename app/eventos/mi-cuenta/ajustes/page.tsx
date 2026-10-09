@@ -60,7 +60,7 @@ export default function AjustesPage() {
     e.preventDefault()
     setPasswordMsg('')
     if (password !== confirm) { setPasswordMsg(t('resetPw.errorMismatch')); return }
-    if (password.length < 6) { setPasswordMsg(t('resetPw.errorMinLength')); return }
+    if (password.length < 8) { setPasswordMsg(t('resetPw.errorMinLength')); return }
     setSavingPassword(true)
     const { error } = await supabaseBrowser.auth.updateUser({ password })
     setPasswordMsg(error ? error.message : t('settings.saved'))
@@ -133,7 +133,7 @@ export default function AjustesPage() {
             <form onSubmit={handleChangePassword} className="space-y-3">
               <div>
                 <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('resetPw.newPassword')}</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={6} placeholder={t('login.passwordMinPh')} className={INPUT} />
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={8} placeholder={t('login.passwordMinPh')} className={INPUT} />
               </div>
               <div>
                 <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('resetPw.confirmPassword')}</label>

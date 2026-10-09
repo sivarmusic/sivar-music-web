@@ -28,7 +28,7 @@ export default function NuevaContrasenaPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setError('')
     if (password !== confirm) { setError(t('resetPw.errorMismatch')); return }
-    if (password.length < 6) { setError(t('resetPw.errorMinLength')); return }
+    if (password.length < 8) { setError(t('resetPw.errorMinLength')); return }
     setLoading(true)
     try {
       const { error: err } = await supabase.auth.updateUser({ password })
@@ -51,7 +51,7 @@ export default function NuevaContrasenaPage() {
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('resetPw.newPassword')}</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8}
               placeholder={t('login.passwordMinPh')}
               className="w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition" />
           </div>
