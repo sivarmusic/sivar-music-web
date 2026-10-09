@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { verifyAdminSession } from '@/lib/pinkfest-auth'
+import { verifyAdminSession } from '@/lib/staff-auth'
 
 // GET admin — lista todos los perfiles de artistas aprobados
 export async function GET() {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { verifyAdminSession } from '@/lib/pinkfest-auth'
+import { verifyAdminSession } from '@/lib/staff-auth'
 
 const EDITABLE_FIELDS = [
   'nombre_artistico', 'slug', 'genero', 'bio', 'foto_url',

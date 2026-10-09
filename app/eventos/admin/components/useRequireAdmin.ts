@@ -8,7 +8,7 @@ export function useRequireAdmin() {
   const router = useRouter()
 
   useEffect(() => {
-    fetch('/api/pinkfest/auth/session')
+    fetch('/api/staff/auth/session')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) { router.push('/eventos/admin/login'); return }

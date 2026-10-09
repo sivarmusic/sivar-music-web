@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { verifyAdminSession } from "@/lib/pinkfest-auth";
+import { verifyAdminSession } from "@/lib/staff-auth";
 import GateToggle from "./GateToggle";
 import VideoManager from "./VideoManager";
 
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export default async function SoundForFilmsAdminPage() {
   const user = await verifyAdminSession();
   if (!user) {
-    redirect("/pinkfest/admin/login");
+    redirect("/admin/login");
   }
 
   const { data } = await supabase

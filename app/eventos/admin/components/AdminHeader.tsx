@@ -23,7 +23,7 @@ export default function AdminHeader() {
   const [role, setRole] = useState<'admin' | 'verificador' | null>(null)
 
   useEffect(() => {
-    fetch('/api/pinkfest/auth/session')
+    fetch('/api/staff/auth/session')
       .then(r => r.ok ? r.json() : null)
       .then(data => setRole(data?.role ?? null))
   }, [])
@@ -31,7 +31,7 @@ export default function AdminHeader() {
   const tabs = role === 'verificador' ? VERIFICADOR_TABS : ADMIN_TABS
 
   async function logout() {
-    await fetch('/api/pinkfest/auth/logout', { method: 'POST' })
+    await fetch('/api/staff/auth/logout', { method: 'POST' })
     router.push('/eventos/admin/login')
   }
 

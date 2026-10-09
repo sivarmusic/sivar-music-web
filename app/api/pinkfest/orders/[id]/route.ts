@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { verifyAdminSession, verifyStaffSession } from '@/lib/pinkfest-auth'
+import { verifyAdminSession, verifyStaffSession } from '@/lib/staff-auth'
 import { sendTicketConfirmed } from '@/lib/email'
 import crypto from 'crypto'
 

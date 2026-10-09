@@ -5,8 +5,6 @@ import AdminHeader from '../components/AdminHeader'
 
 interface EventOption { key: string; nombre: string }
 
-const PINKFEST_OPTION: EventOption = { key: 'pinkfest', nombre: 'Pink Fest' }
-
 export default function ContadorPage() {
   const router = useRouter()
   const [events, setEvents] = useState<EventOption[]>([])
@@ -24,9 +22,9 @@ export default function ContadorPage() {
         const ticketEvents = (data?.events ?? [])
           .filter((e: { kind: string }) => e.kind === 'ticket')
           .map((e: { id: string; nombre: string }) => ({ key: e.id, nombre: e.nombre }))
-        const opts = [PINKFEST_OPTION, ...ticketEvents]
+        const opts: EventOption[] = ticketEvents
         setEvents(opts)
-        setEventKey(prev => prev || opts[0].key)
+        setEventKey(prev => prev || opts[0]?.key || '')
       })
   }, [])
 

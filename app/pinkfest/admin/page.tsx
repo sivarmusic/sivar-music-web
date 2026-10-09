@@ -91,7 +91,7 @@ export default function PinkFestAdmin() {
   }, [])
 
   const fetchRole = useCallback(async () => {
-    const res = await fetch('/api/pinkfest/auth/session')
+    const res = await fetch('/api/staff/auth/session')
     if (res.ok) {
       const data = await res.json()
       setRole(data.role ?? null)

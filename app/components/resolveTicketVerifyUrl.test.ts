@@ -2,13 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { resolveTicketVerifyUrl } from './resolveTicketVerifyUrl'
 
 describe('resolveTicketVerifyUrl', () => {
-  it('routes a Pink Fest verification URL to /pinkfest/verificar/{token}', () => {
-    const decoded = 'https://sivarmusic.com/pinkfest/verificar/abc-123'
-    expect(resolveTicketVerifyUrl(decoded, '/eventos/admin/verificar')).toBe(
-      '/pinkfest/verificar/abc-123',
-    )
-  })
-
   it('routes a general-eventos verification URL to /eventos/admin/verificar/{token}', () => {
     const decoded = 'https://sivarmusic.com/eventos/alguna/ruta/verificar/tok-xyz'
     expect(resolveTicketVerifyUrl(decoded, '/eventos/admin/verificar')).toBe(

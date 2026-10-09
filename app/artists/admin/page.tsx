@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { verifyAdminSession } from "@/lib/pinkfest-auth";
+import { verifyAdminSession } from "@/lib/staff-auth";
 import ArtistManager from "./ArtistManager";
 
 export const metadata: Metadata = {

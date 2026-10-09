@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { verifyStaffSession } from '@/lib/pinkfest-auth'
+import { verifyStaffSession } from '@/lib/staff-auth'
 
 // GET (solo staff) — buscar una orden por su código (ej: PF-0024) para verificación manual
 export async function GET(

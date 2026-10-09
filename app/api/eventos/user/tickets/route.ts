@@ -12,38 +12,14 @@ export async function GET(req: NextRequest) {
   // Solo se cruza por email si el correo está verificado; sin eso, solo por user_id.
   const emailVerified = !!user.email_confirmed_at && !!user.email
 
-  const [eventRes, pfRes] = await Promise.all([
-    // Órdenes de eventos normales — por user_id o email
-    supabase
-      .from('event_orders')
-      .select('*, events(nombre, slug, fecha, venue, imagen_url), event_tickets(id, ticket_number, qr_token, check_in_at)')
-      .or(emailVerified ? `user_id.eq.${user.id},email.eq.${user.email}` : `user_id.eq.${user.id}`)
-      .order('created_at', { ascending: false }),
+  // Órdenes de eventos — por user_id, o también por email si el correo está verificado
+  const { data } = await supabase
+    .from('event_orders')
+    .select('*, events(nombre, slug, fecha, venue, imagen_url), event_tickets(id, ticket_number, qr_token, check_in_at)')
+    .or(emailVerified ? `user_id.eq.${user.id},email.eq.${user.email}` : `user_id.eq.${user.id}`)
+    .order('created_at', { ascending: false })
 
-    // Órdenes de Pink Fest — siempre por email
-    emailVerified
-      ? supabase
-          .from('pinkfest_orders')
-          .select('*, pinkfest_tickets(id, ticket_number, qr_token, check_in_at)')
-          .eq('email', user.email!)
-          .order('created_at', { ascending: false })
-      : Promise.resolve({ data: [] as never[] }),
-  ])
-
-  const eventOrders = eventRes.data ?? []
-
-  // Normalizar órdenes de Pink Fest al mismo formato
-  const pfOrders = (pfRes.data ?? []).map(o => ({
-    ...o,
-    events: {
-      nombre: 'Pink Fest',
-      fecha: '2026-07-12T20:00:00',
-      venue: 'Beerhaus · San Salvador',
-      slug: null,
-      imagen_url: '/pinkfest/poster.jpg',
-    },
-    event_tickets: o.pinkfest_tickets ?? [],
-  }))
+  const eventOrders = data ?? []
 
   // Auto-vincular órdenes de eventos sin user_id
   const unlinked = emailVerified ? eventOrders.filter(o => !o.user_id) : []
@@ -54,8 +30,5 @@ export async function GET(req: NextRequest) {
       .in('id', unlinked.map(o => o.id))
   }
 
-  const orders = [...eventOrders, ...pfOrders]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-  return NextResponse.json({ orders })
+  return NextResponse.json({ orders: eventOrders })
 }

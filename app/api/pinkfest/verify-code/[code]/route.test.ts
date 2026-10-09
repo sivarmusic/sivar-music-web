@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ verifyStaffSession: vi.fn(), maybeSingle: vi.fn() }))
 
-vi.mock('@/lib/pinkfest-auth', () => ({ verifyStaffSession: mocks.verifyStaffSession }))
+vi.mock('@/lib/staff-auth', () => ({ verifyStaffSession: mocks.verifyStaffSession }))
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: mocks.maybeSingle }) }) }),

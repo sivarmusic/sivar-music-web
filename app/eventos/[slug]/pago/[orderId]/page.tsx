@@ -134,7 +134,7 @@ export default function EventoPagoPage() {
         {/* QR banco */}
         <div className="rounded-2xl bg-white p-5 flex flex-col items-center gap-3">
           <p className="text-[#BE185D] text-[10px] font-bold tracking-[0.22em] uppercase text-center">{t('pago.scanQr')}</p>
-          <Image src="/pinkfest/qr-banco.png" alt="QR Banco Agrícola" width={190} height={190} className="rounded-xl" />
+          <Image src="/eventos/qr-banco.png" alt="QR Banco Agrícola" width={190} height={190} className="rounded-xl" />
           <div className="text-center">
             <p className="text-gray-800 text-sm font-bold">Andrea Vanessa Garcia Garcia</p>
             <p className="text-gray-500 text-xs">{t('pago.bankSavings')}</p>

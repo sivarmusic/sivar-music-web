@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { verifyStaffSession } from '@/lib/pinkfest-auth'
+import { verifyStaffSession } from '@/lib/staff-auth'
 
 export async function POST(req: NextRequest) {
   const { nombre, telefono, email, cantidad } = await req.json()

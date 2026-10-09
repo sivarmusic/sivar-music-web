@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { verifyAdminSession } from '@/lib/pinkfest-auth'
+import { verifyAdminSession } from '@/lib/staff-auth'
 
 // GET — público lista visibles + eventos informativos de artistas; con ?admin=1 y sesión admin lista todos los eventos con venta
 export async function GET(req: NextRequest) {
