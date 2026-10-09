@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyStaffSession } from '@/lib/staff-auth'
+import { sendSafely } from '@/lib/email-safe'
 import { sendTicketConfirmed } from '@/lib/email'
 
 export async function POST(
@@ -24,7 +25,7 @@ export async function POST(
   const ev = order.events as { nombre: string; slug: string; venue: string; fecha: string } | null
   if (!ev) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
 
-  await sendTicketConfirmed({
+  const sent = await sendSafely('ticket_resend', order.order_code, () => sendTicketConfirmed({
     to: order.email,
     nombre: order.nombre,
     orderCode: order.order_code,
@@ -34,7 +35,9 @@ export async function POST(
     }),
     eventVenue: ev.venue,
     verUrl: 'https://sivarmusic.com/eventos/mi-cuenta',
-  })
+  }))
+
+  if (!sent) return NextResponse.json({ error: 'No se pudo enviar el correo. Intentá de nuevo más tarde.' }, { status: 502 })
 
   return NextResponse.json({ success: true })
 }

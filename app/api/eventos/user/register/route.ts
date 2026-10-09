@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { sendSafely } from '@/lib/email-safe'
 import { sendWelcome } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
       nombre: nombre.trim(),
       telefono: telefono?.trim() || null,
     })
-    await sendWelcome({ to: email.trim(), nombre: nombre.trim() }).catch(() => {})
+    await sendSafely('welcome', data.user.id, () => sendWelcome({ to: email.trim(), nombre: nombre.trim() }))
   }
 
   return NextResponse.json({ success: true })

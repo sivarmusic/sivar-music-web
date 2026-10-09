@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { verifyStaffSession } from '@/lib/staff-auth'
+import { sendSafely } from '@/lib/email-safe'
 import { checkEventCapacity } from '@/lib/eventCapacity'
 import { sendOrderConfirmation, sendAdminNewOrderRequest } from '@/lib/email'
 
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
 
   const pagoUrl = `https://sivarmusic.com/eventos/${event.slug}/pago/${order.id}`
   const total = order.cantidad * Number(event.precio)
-  sendOrderConfirmation({
+  void sendSafely('order_confirmation', order.order_code, () => sendOrderConfirmation({
     to: email,
     nombre: nombre.trim(),
     orderCode: order.order_code,
@@ -100,9 +101,9 @@ export async function POST(req: NextRequest) {
     cantidad: order.cantidad,
     total,
     pagoUrl,
-  }).catch(() => {})
+  }))
 
-  sendAdminNewOrderRequest({
+  void sendSafely('admin_new_order', order.order_code, () => sendAdminNewOrderRequest({
     orderCode: order.order_code,
     eventName: event.nombre,
     nombre: nombre.trim(),
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
     email,
     cantidad: order.cantidad,
     total,
-  }).catch(() => {})
+  }))
 
   return NextResponse.json({ order })
 }

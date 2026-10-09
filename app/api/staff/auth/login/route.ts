@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { ACCESS_COOKIE, REFRESH_COOKIE, accessCookieOptions, refreshCookieOptions } from '@/lib/staff-auth'
 
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json()
@@ -26,13 +27,9 @@ export async function POST(req: NextRequest) {
   }
 
   const res = NextResponse.json({ ok: true })
-  res.cookies.set('pf_admin_token', data.session.access_token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 8,
-    path: '/',
-  })
+  res.cookies.set(ACCESS_COOKIE, data.session.access_token, accessCookieOptions())
+  // El refresh token permite renovar el acceso sin pedir contraseña durante el turno.
+  res.cookies.set(REFRESH_COOKIE, data.session.refresh_token, refreshCookieOptions())
 
   return res
 }

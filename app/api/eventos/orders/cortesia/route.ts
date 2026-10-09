@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/staff-auth'
 import { buildTicketRows } from '@/lib/eventTickets'
 import { checkEventCapacity } from '@/lib/eventCapacity'
+import { sendSafely } from '@/lib/email-safe'
 import { sendTicketConfirmed } from '@/lib/email'
 
 const CATEGORIAS = ['staff', 'organizacion', 'vip', 'musicos'] as const
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
 
   if (ticketsError) return NextResponse.json({ error: ticketsError.message }, { status: 500 })
 
-  sendTicketConfirmed({
+  void sendSafely('ticket_confirmed_cortesia', order.order_code, () => sendTicketConfirmed({
     to: order.email,
     nombre: order.nombre,
     orderCode: order.order_code,
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
     eventDate: new Date(event.fecha).toLocaleString('es-SV', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }),
     eventVenue: event.venue,
     verUrl: 'https://sivarmusic.com/eventos/mi-cuenta',
-  }).catch(() => {})
+  }))
 
   return NextResponse.json({ order, tickets })
 }

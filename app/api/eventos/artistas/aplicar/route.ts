@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { sendSafely } from '@/lib/email-safe'
 import { sendAdminNewArtistApplication } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
@@ -26,14 +27,14 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  sendAdminNewArtistApplication({
+  void sendSafely('admin_artist_application', 'aplicacion', () => sendAdminNewArtistApplication({
     nombreArtistico: nombreArtistico.trim(),
     nombreContacto: nombreContacto.trim(),
     email: email.trim(),
     telefono: telefono?.trim() ?? '',
     genero: genero?.trim() ?? '',
     bio: bio?.trim() ?? '',
-  }).catch(() => {})
+  }))
 
   return NextResponse.json({ success: true })
 }
