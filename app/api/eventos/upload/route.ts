@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { enforceRateLimit } from '@/lib/rate-limit'
 import { supabase } from '@/lib/supabase'
 import { EXT_BY_MIME, matchesMime } from '@/lib/imageUpload'
+import { checkEventCapacity, holdsCapacity } from '@/lib/eventCapacity'
 
 // 4 MB: Vercel rechaza cuerpos > 4.5 MB antes de llegar a la función (413 HTML).
 const MAX_BYTES = 4 * 1024 * 1024
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   const { data: order, error: fetchError } = await supabase
     .from('event_orders')
-    .select('order_code, comprobante_path, status')
+    .select('order_code, comprobante_path, status, cantidad, event_id, created_at, events(max_entradas)')
     .eq('id', orderId)
     .single()
 
@@ -31,6 +32,17 @@ export async function POST(req: NextRequest) {
 
   if (!UPLOADABLE_STATUSES.includes(order.status)) {
     return NextResponse.json({ error: 'Esta orden ya fue confirmada' }, { status: 409 })
+  }
+
+  // Una orden rechazada (o con la reserva vencida) que sube comprobante vuelve a
+  // ocupar cupo al pasar a en_revision: se re-chequea antes de aceptarlo.
+  const needsCapacity = order.status === 'rechazado' || !holdsCapacity(order)
+  if (needsCapacity && order.event_id) {
+    const ev = order.events as unknown as { max_entradas: number | null } | null
+    const capacity = await checkEventCapacity(supabase, order.event_id, ev?.max_entradas, Number(order.cantidad) || 1)
+    if (!capacity.ok) {
+      return NextResponse.json({ error: capacity.message, remaining: capacity.remaining }, { status: 409 })
+    }
   }
 
   const bytes = await file.arrayBuffer()

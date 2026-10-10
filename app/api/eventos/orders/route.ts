@@ -41,24 +41,29 @@ export async function POST(req: NextRequest) {
   }
 
   // Verificar que el evento existe y está visible
-  const { data: event } = await supabase
+  const { data: event, error: eventError } = await supabase
     .from('events')
     .select('id, nombre, slug, precio, visible, max_entradas')
     .eq('id', event_id)
-    .single()
+    .maybeSingle()
 
+  // Un fallo de Supabase no es "evento no disponible": se informa como error interno.
+  if (eventError) return serverError('eventos/orders', eventError)
   if (!event || !event.visible) {
     return NextResponse.json({ error: 'Evento no disponible' }, { status: 404 })
   }
 
   // Recuperar orden activa existente del mismo usuario
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('event_orders')
     .select('*')
     .eq('event_id', event_id)
     .eq('user_id', user.id)
     .in('status', ['pendiente_comprobante', 'en_revision'])
     .maybeSingle()
+
+  // Si la consulta falla NO se asume "no existe": se podría crear una orden duplicada.
+  if (existingError) return serverError('eventos/orders', existingError)
 
   if (existing) {
     return NextResponse.json({ order: existing, recovered: true })
@@ -71,11 +76,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Guardar/actualizar perfil
-  await supabase.from('attendee_profiles').upsert({
+  // Best-effort: el perfil es de conveniencia, no debe impedir la compra.
+  const { error: profileError } = await supabase.from('attendee_profiles').upsert({
     id: user.id,
     nombre: nombre.trim(),
     telefono: telefono.trim(),
   })
+  if (profileError) console.error('[eventos/orders] no se pudo guardar el perfil', { code: profileError.code, message: profileError.message })
 
   const { data: order, error } = await supabase
     .from('event_orders')
@@ -92,13 +99,14 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     if (error.code === '23505') {
-      const { data: race } = await supabase
+      const { data: race, error: raceError } = await supabase
         .from('event_orders')
         .select('*')
         .eq('event_id', event_id)
         .eq('user_id', user.id)
         .in('status', ['pendiente_comprobante', 'en_revision'])
         .maybeSingle()
+      if (raceError) return serverError('eventos/orders', raceError)
       if (race) return NextResponse.json({ order: race, recovered: true })
       // Otra cuenta ya tiene una solicitud activa con este teléfono para este evento.
       return NextResponse.json({

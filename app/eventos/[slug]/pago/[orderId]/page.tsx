@@ -84,7 +84,8 @@ export default function EventoPagoPage() {
       // Una respuesta no-JSON (p. ej. 413 de la plataforma) no debe romper el flujo.
       const data = await res.json().catch(() => ({} as { error?: string }))
       if (res.status === 413) throw new Error(t('pago.errorSize'))
-      if (res.status === 409) { setAlreadyConfirmed(true); return }
+      // 409 con `remaining` = sin cupo; 409 sin él = la orden ya fue confirmada.
+      if (res.status === 409 && typeof (data as { remaining?: number }).remaining !== 'number') { setAlreadyConfirmed(true); return }
       if (!res.ok) throw new Error(data.error || t('pago.errorUpload'))
       setDone(true)
       try { localStorage.removeItem(STORAGE_KEY) } catch {}

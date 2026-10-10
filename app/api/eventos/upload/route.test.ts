@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const m = vi.hoisted(() => ({
-  status: 'pendiente_comprobante', uploadError: null as null | { message: string },
-  upload: vi.fn(), remove: vi.fn(), update: vi.fn(),
+  status: 'pendiente_comprobante', createdAt: new Date().toISOString(), uploadError: null as null | { message: string },
+  upload: vi.fn(), remove: vi.fn(), update: vi.fn(), capacity: vi.fn(),
+}))
+
+vi.mock('@/lib/eventCapacity', async importActual => ({
+  ...(await importActual<typeof import('@/lib/eventCapacity')>()),
+  checkEventCapacity: m.capacity,
 }))
 
 vi.mock('@/lib/rate-limit', () => ({ enforceRateLimit: async () => null }))
@@ -10,7 +15,7 @@ vi.mock('@/lib/supabase', () => ({
   supabase: {
     storage: { from: () => ({ upload: (...a: unknown[]) => { m.upload(...a); return Promise.resolve({ error: m.uploadError }) }, remove: m.remove }) },
     from: () => ({
-      select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: { order_code: 'SM-1', comprobante_path: 'old', status: m.status }, error: null }) }) }),
+      select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: { order_code: 'SM-1', comprobante_path: 'old', status: m.status, event_id: 'e1', cantidad: 2, created_at: m.createdAt, events: { max_entradas: 10 } }, error: null }) }) }),
       update: (row: unknown) => { m.update(row); return { eq: () => ({ in: () => Promise.resolve({ error: null }) }) } },
     }),
   },
@@ -29,7 +34,8 @@ function req(bytes: Uint8Array = PNG, type = 'image/png', name = 'x.png') {
 }
 
 beforeEach(() => {
-  m.status = 'pendiente_comprobante'; m.uploadError = null
+  m.status = 'pendiente_comprobante'; m.uploadError = null; m.createdAt = new Date().toISOString()
+  m.capacity.mockReset(); m.capacity.mockResolvedValue({ ok: true })
   m.upload.mockReset(); m.remove.mockReset(); m.update.mockReset()
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
@@ -42,6 +48,23 @@ describe('POST /api/eventos/upload', () => {
     expect(m.remove).not.toHaveBeenCalled()
     expect(m.upload).not.toHaveBeenCalled()
     expect(m.update).not.toHaveBeenCalled()
+  })
+
+  it('rechazada: re-chequea cupo y responde 409 sin subir si ya no hay', async () => {
+    m.status = 'rechazado'
+    m.capacity.mockResolvedValueOnce({ ok: false, remaining: 0, message: 'No quedan entradas disponibles' })
+    const res = await POST(req())
+    expect(res.status).toBe(409)
+    expect(m.upload).not.toHaveBeenCalled()
+    expect(m.update).not.toHaveBeenCalled()
+  })
+
+  it('pendiente reciente no consulta cupo (ya lo ocupa); vencida sí', async () => {
+    expect((await POST(req())).status).toBe(200)
+    expect(m.capacity).not.toHaveBeenCalled()
+    m.createdAt = new Date(Date.now() - 100 * 3600 * 1000).toISOString()
+    expect((await POST(req())).status).toBe(200)
+    expect(m.capacity).toHaveBeenCalledTimes(1)
   })
 
   it('éxito con orden pendiente; la extensión sale del MIME, no del nombre', async () => {
