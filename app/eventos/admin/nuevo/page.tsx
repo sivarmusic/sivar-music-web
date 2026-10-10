@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import AdminHeader from '../components/AdminHeader'
+import EventFormView from '../components/EventFormView'
 import { useRequireAdmin } from '../components/useRequireAdmin'
 
 interface FormState {
@@ -81,132 +81,25 @@ export default function NuevoEventoPage() {
     } finally { setLoading(false) }
   }
 
+  function change(field: keyof FormState, value: string | boolean) {
+    set(field, value)
+    if (field === 'nombre' && !form.slug) set('slug', slugify(String(value)))
+  }
+
   return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      <AdminHeader />
-      <div className="px-5 pt-5 max-w-lg mx-auto flex items-center justify-between">
-        <h1 className="text-white text-lg font-bold">Nuevo evento</h1>
-        <a href="/eventos/admin" className="text-white/35 hover:text-white text-xs transition">← Volver</a>
-      </div>
-
-      <form onSubmit={handleSubmit} className="px-5 py-6 max-w-lg mx-auto space-y-4">
-        {/* Imagen */}
-        <div>
-          <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Foto del evento</label>
-          <div
-            onClick={() => document.getElementById('img-input')?.click()}
-            className="rounded-2xl border-2 border-dashed border-white/15 hover:border-[#F472B6]/50 bg-white/3 cursor-pointer transition overflow-hidden"
-          >
-            {imagePreview
-              ? <img src={imagePreview} alt="Preview" className="w-full h-44 object-cover" />
-              : <div className="h-32 flex flex-col items-center justify-center gap-2"><span className="text-3xl">🖼</span><span className="text-white/35 text-sm">Seleccionar imagen</span></div>}
-          </div>
-          <input id="img-input" type="file" accept="image/*" onChange={handleImage} className="hidden" />
-        </div>
-
-        {/* Nombre */}
-        <Field label="Nombre del evento" required>
-          <input type="text" value={form.nombre} required placeholder="Nombre del evento"
-            onChange={e => { set('nombre', e.target.value); if (!form.slug) set('slug', slugify(e.target.value)) }}
-            className={INPUT} />
-        </Field>
-
-        {/* Slug */}
-        <Field label="Slug (URL)">
-          <input type="text" value={form.slug} placeholder="pink-fest-2025"
-            onChange={e => set('slug', e.target.value)}
-            className={INPUT} />
-          <p className="text-white/25 text-xs mt-1">sivarmusic.com/eventos/<strong>{form.slug || slugify(form.nombre) || '...'}</strong></p>
-        </Field>
-
-        {/* Descripción */}
-        <Field label="Descripción">
-          <textarea value={form.descripcion} rows={3} placeholder="Descripción del evento..."
-            onChange={e => set('descripcion', e.target.value)}
-            className={INPUT + ' resize-none'} />
-        </Field>
-
-        {/* Fecha */}
-        <Field label="Fecha y hora" required>
-          <input type="datetime-local" value={form.fecha} required
-            onChange={e => set('fecha', e.target.value)}
-            className={INPUT + ' [color-scheme:dark]'} />
-        </Field>
-
-        {/* Venue */}
-        <Field label="Venue / Lugar" required>
-          <input type="text" value={form.venue} required placeholder="Teatro Nacional"
-            onChange={e => set('venue', e.target.value)}
-            className={INPUT} />
-        </Field>
-
-        {/* Dirección */}
-        <Field label="Dirección">
-          <input type="text" value={form.direccion} placeholder="1a Calle Ote. y 2a Av. Sur, San Salvador"
-            onChange={e => set('direccion', e.target.value)}
-            className={INPUT} />
-        </Field>
-
-        {/* Coordenadas */}
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Latitud">
-            <input type="number" step="any" value={form.lat} placeholder="13.6929"
-              onChange={e => set('lat', e.target.value)} className={INPUT} />
-          </Field>
-          <Field label="Longitud">
-            <input type="number" step="any" value={form.lng} placeholder="-89.2182"
-              onChange={e => set('lng', e.target.value)} className={INPUT} />
-          </Field>
-        </div>
-        <p className="text-white/20 text-xs -mt-2">Abrí Google Maps, buscá el lugar, y copiá las coordenadas del link.</p>
-
-        {/* Artistas */}
-        <Field label="Artistas (separados por coma)">
-          <input type="text" value={form.artistas} placeholder="Artista 1, Artista 2"
-            onChange={e => set('artistas', e.target.value)} className={INPUT} />
-        </Field>
-
-        {/* Precio */}
-        <Field label="Precio por entrada (USD)" required>
-          <input type="number" step="0.01" min="0" value={form.precio} required placeholder="10.00"
-            onChange={e => set('precio', e.target.value)} className={INPUT} />
-        </Field>
-
-        {/* Máximo de entradas */}
-        <Field label="Máximo de entradas (opcional)">
-          <input type="number" min="1" value={form.max_entradas} placeholder="Sin límite"
-            onChange={e => set('max_entradas', e.target.value)} className={INPUT} />
-        </Field>
-
-        {/* Visible */}
-        <label className="flex items-center gap-3 cursor-pointer py-1">
-          <div onClick={() => set('visible', !form.visible)}
-            className={`w-10 h-6 rounded-full transition-colors flex-none ${form.visible ? 'bg-[#F472B6]' : 'bg-white/15'}`}>
-            <div className={`w-5 h-5 bg-white rounded-full shadow mt-0.5 transition-transform ${form.visible ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
-          </div>
-          <span className="text-white/55 text-sm">Publicar evento (visible en /eventos)</span>
-        </label>
-
-        {error && <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-center">{error}</p>}
-
-        <button type="submit" disabled={loading}
-          className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-          {loading ? 'Creando...' : 'Crear evento'}
-        </button>
-      </form>
-    </div>
-  )
-}
-
-const INPUT = 'w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition'
-
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">
-        {label}{required && <span className="text-[#F472B6] ml-1">*</span>}
-      </label>
-      {children}
-    </div>
+    <EventFormView
+      title="Nuevo evento"
+      values={form}
+      slugPreview={form.slug || slugify(form.nombre)}
+      onChange={change}
+      imageSrc={imagePreview}
+      imageChosen={!!imageFile}
+      onImage={handleImage}
+      error={error}
+      loading={loading}
+      submitLabel="Crear evento"
+      loadingLabel="Creando…"
+      onSubmit={handleSubmit}
+    />
   )
 }

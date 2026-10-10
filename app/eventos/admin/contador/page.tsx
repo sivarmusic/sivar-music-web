@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import AdminHeader from '../components/AdminHeader'
+import Link from 'next/link'
+import { Icon } from '../../components/icons'
 
 interface EventOption { key: string; nombre: string }
 
@@ -84,80 +85,71 @@ export default function ContadorPage() {
   const currentEvent = events.find(e => e.key === eventKey)
 
   return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      <AdminHeader />
+    <main id="main" className="ev-door">
+      <header className="ev-door__top">
+        <Link className="ev-icon-btn ev-icon-btn--boxed ev-door__top-btn" href="/eventos/admin" aria-label="Volver al panel">
+          <Icon name="arrow-left" size="lg" />
+        </Link>
+        <p className="ev-door__event">
+          Contador<br /><span style={{ fontSize: '1rem' }}>{currentEvent?.nombre ?? 'Evento'}</span>
+        </p>
+      </header>
 
-      <div className="px-5 py-6 max-w-lg mx-auto space-y-6">
-        <div>
-          <h1 className="text-white text-lg font-bold">Contador de personas</h1>
-          <p className="text-white/35 text-xs mt-1">Llevá la cuenta de quiénes van entrando al evento.</p>
-        </div>
-
-        <div>
-          <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Evento</label>
-          {events.length === 0 ? (
-            <p className="text-white/30 text-xs">Cargando eventos...</p>
-          ) : (
-            <select value={eventKey} onChange={e => setEventKey(e.target.value)}
-              className="w-full bg-white/6 border border-white/10 text-white rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition">
-              {events.map(ev => <option key={ev.key} value={ev.key}>{ev.nombre}</option>)}
-            </select>
-          )}
-        </div>
-
-        {/* Tarjeta del contador */}
-        <div className="rounded-3xl border border-white/10 overflow-hidden">
-          <div className="bg-[#F472B6]/20 px-6 py-3 flex items-center justify-between">
-            <p className="text-white font-semibold text-sm truncate">{currentEvent?.nombre ?? 'Evento'}</p>
-            <div className="flex items-center gap-3 flex-none">
-              <button onClick={resetCount} disabled={busy} title="Reiniciar a 0"
-                className="text-white/60 hover:text-white transition disabled:opacity-40">
-                ↻
-              </button>
-              <button onClick={startEditing} disabled={busy} title="Editar manualmente"
-                className="text-white/60 hover:text-white transition disabled:opacity-40">
-                ✎
-              </button>
-            </div>
-          </div>
-          <div className="bg-white/4 px-6 py-10 flex flex-col items-center justify-center">
-            {editing ? (
-              <form onSubmit={saveEdit} className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={0}
-                  autoFocus
-                  value={editValue}
-                  onChange={e => setEditValue(e.target.value)}
-                  onBlur={saveEdit}
-                  className="w-32 bg-white/8 border border-[#F472B6]/40 text-white text-5xl font-bold text-center rounded-2xl py-2 focus:outline-none"
-                />
-              </form>
+      <div className="ev-door__stage ev-door__stage--col">
+        <div className="ev-counter" style={{ width: '100%', maxWidth: 480 }}>
+          <div className="ev-door-field" style={{ width: '100%' }}>
+            <label htmlFor="cnt-ev">Evento</label>
+            {events.length === 0 ? (
+              <p role="status">Cargando eventos…</p>
             ) : (
-              <p className="text-white text-7xl font-bold tabular-nums">{loading ? '—' : count}</p>
+              <div className="ev-field__control ev-field__control--select">
+                <select id="cnt-ev" className="ev-select ev-door__select" value={eventKey} onChange={e => setEventKey(e.target.value)}>
+                  {events.map(ev => <option key={ev.key} value={ev.key}>{ev.nombre}</option>)}
+                </select>
+              </div>
             )}
-            <p className="text-white/25 text-xs mt-2">personas ingresadas</p>
+          </div>
+
+          <p className="ev-eyebrow" style={{ color: '#000', fontSize: '.875rem' }}>Personas adentro</p>
+          {editing ? (
+            <form onSubmit={saveEdit}>
+              <label className="ev-visually-hidden" htmlFor="cnt-edit">Cantidad de personas</label>
+              <input
+                id="cnt-edit" className="ev-counter__edit" type="number" min={0} autoFocus
+                value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={saveEdit}
+              />
+            </form>
+          ) : (
+            <p className="ev-counter__value" aria-live="polite" aria-atomic="true">{loading ? '—' : count}</p>
+          )}
+
+          <div className="ev-counter__tools">
+            <button type="button" className="ev-counter__tool" onClick={resetCount} disabled={busy}>
+              <Icon name="refresh" />Reiniciar
+            </button>
+            <button type="button" className="ev-counter__tool" onClick={startEditing} disabled={busy}>
+              <Icon name="edit" />Editar
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Botones grandes +/- */}
-        <div className="grid grid-cols-2 gap-3">
+      <div className="ev-door__actions">
+        <div className="ev-counter__btns">
           <button
-            onClick={() => adjust(-1)}
-            disabled={loading || (count ?? 0) <= 0}
-            className="bg-[#e0a83c] hover:bg-[#d19a2f] active:scale-[0.98] disabled:opacity-40 text-white text-6xl font-bold rounded-3xl py-10 transition-all"
+            type="button" className="ev-counter__btn" onClick={() => adjust(-1)}
+            disabled={loading || (count ?? 0) <= 0} aria-label="Restar una persona (salió)"
           >
-            −
+            <Icon name="minus" /><span style={{ fontSize: '1.25rem' }}>Salió</span>
           </button>
           <button
-            onClick={() => adjust(1)}
-            disabled={loading}
-            className="bg-[#5fb3b3] hover:bg-[#4fa3a3] active:scale-[0.98] disabled:opacity-40 text-white text-6xl font-bold rounded-3xl py-10 transition-all"
+            type="button" className="ev-counter__btn ev-counter__btn--in" onClick={() => adjust(1)}
+            disabled={loading} aria-label="Sumar una persona (entró)"
           >
-            +
+            <Icon name="plus" /><span style={{ fontSize: '1.5rem' }}>Entró</span>
           </button>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { safeInternalPath } from '@/lib/safe-redirect'
+import { Icon } from '../../components/icons'
 
 function AdminLoginForm() {
   const router = useRouter()
@@ -12,6 +13,7 @@ function AdminLoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPass, setShowPass] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setError(''); setLoading(true)
@@ -29,25 +31,59 @@ function AdminLoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0008] flex items-center justify-center px-5">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase mb-2">Sivar Music</p>
-          <h1 className="text-white text-2xl font-bold">Panel de administrador</h1>
+    <main
+      id="main"
+      style={{
+        minHeight: '100dvh', display: 'grid', placeItems: 'center',
+        padding: 'var(--ev-space-8) var(--ev-gutter)',
+        background: 'repeating-linear-gradient(-12deg, transparent 0 22px, rgb(244 114 182 / .05) 22px 24px), var(--ev-color-bg)',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: 400 }} className="ev-stack ev-stack--lg">
+        <div className="ev-stack ev-stack--sm">
+          <span className="ev-wordmark ev-wordmark--lg" aria-hidden="true">Sivar<br />Eventos</span>
+          <p className="ev-eyebrow">Panel de eventos</p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="Correo o usuario" required autoComplete="username"
-            className="w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition" />
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Contraseña" required autoComplete="current-password"
-            className="w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition" />
-          {error && <p className="text-red-400 text-sm text-center bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3">{error}</p>}
-          <button type="submit" disabled={loading}
-            className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-            {loading ? 'Entrando...' : 'Entrar'}
+        <form onSubmit={handleSubmit} className="ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-5)' }} aria-busy={loading}>
+          <h1 className="ev-display ev-display--md">Ingresar</h1>
+          {error && (
+            <div className="ev-banner ev-banner--error" role="alert">
+              <Icon name="lock" />
+              <div><p className="ev-banner__title">{error}</p></div>
+            </div>
+          )}
+          <div className="ev-field">
+            <label className="ev-field__label" htmlFor="adm-email">Correo o usuario</label>
+            <div className="ev-field__control">
+              <Icon name="mail" />
+              <input
+                className="ev-input" id="adm-email" type="text" value={email} onChange={e => setEmail(e.target.value)}
+                required autoComplete="username" disabled={loading} aria-invalid={error ? true : undefined}
+              />
+            </div>
+          </div>
+          <div className="ev-field">
+            <label className="ev-field__label" htmlFor="adm-pass">Contraseña</label>
+            <div className="ev-field__control">
+              <Icon name="lock" />
+              <input
+                className="ev-input" id="adm-pass" type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
+                required autoComplete="current-password" disabled={loading} aria-invalid={error ? true : undefined}
+              />
+              <button
+                type="button" className="ev-icon-btn ev-field__suffix" aria-pressed={showPass}
+                aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setShowPass(s => !s)}
+              >
+                <Icon name={showPass ? 'eye-off' : 'eye'} />
+              </button>
+            </div>
+          </div>
+          <button className={`ev-btn ev-btn--primary ev-btn--lg ev-btn--block${loading ? ' is-loading' : ''}`} type="submit" disabled={loading} aria-disabled={loading}>
+            {loading ? 'Ingresando' : 'Ingresar'}
           </button>
         </form>
       </div>
-    </div>
+    </main>
   )
 }
 
