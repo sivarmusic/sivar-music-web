@@ -9,7 +9,7 @@ const MAX_BYTES = 5 * 1024 * 1024
 const UPLOADABLE_STATUSES = ['pendiente_comprobante', 'en_revision', 'rechazado']
 
 export async function POST(req: NextRequest) {
-  const limited = await enforceRateLimit(req, 'upload-comprobante', { limit: 20, windowSeconds: 3600 })
+  const limited = await enforceRateLimit(req, 'upload-comprobante', { limit: 40, windowSeconds: 3600 })
   if (limited) return limited
 
   const formData = await req.formData()

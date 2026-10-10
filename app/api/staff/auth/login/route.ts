@@ -4,7 +4,7 @@ import { enforceRateLimit } from '@/lib/rate-limit'
 import { ACCESS_COOKIE, REFRESH_COOKIE, accessCookieOptions, refreshCookieOptions } from '@/lib/staff-auth'
 
 export async function POST(req: NextRequest) {
-  const limited = await enforceRateLimit(req, 'staff-login', { limit: 10, windowSeconds: 15 * 60 })
+  const limited = await enforceRateLimit(req, 'staff-login', { limit: 40, windowSeconds: 15 * 60 })
   if (limited) return limited
 
   const body = await req.json().catch(() => null)

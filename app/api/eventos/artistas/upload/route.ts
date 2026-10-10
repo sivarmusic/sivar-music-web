@@ -7,7 +7,7 @@ import { validateImage } from '@/lib/imageUpload'
 const FOLDERS: Record<string, string> = { perfil: 'perfil', galeria: 'galeria', evento: 'eventos' }
 
 export async function POST(req: NextRequest) {
-  const limited = await enforceRateLimit(req, 'upload-artist', { limit: 20, windowSeconds: 3600 })
+  const limited = await enforceRateLimit(req, 'upload-artist', { limit: 30, windowSeconds: 3600 })
   if (limited) return limited
 
   const authHeader = req.headers.get('authorization')

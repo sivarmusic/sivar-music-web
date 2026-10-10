@@ -7,7 +7,7 @@ import { sendWelcome } from '@/lib/email'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 export async function POST(req: NextRequest) {
-  const limited = await enforceRateLimit(req, 'register', { limit: 10, windowSeconds: 3600 })
+  const limited = await enforceRateLimit(req, 'register', { limit: 20, windowSeconds: 3600 })
   if (limited) return limited
 
   const body = await req.json().catch(() => null)

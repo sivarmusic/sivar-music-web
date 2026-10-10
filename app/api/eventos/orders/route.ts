@@ -8,7 +8,7 @@ import { checkEventCapacity } from '@/lib/eventCapacity'
 import { sendOrderConfirmation, sendAdminNewOrderRequest } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
-  const limited = await enforceRateLimit(req, 'orders', { limit: 30, windowSeconds: 3600 })
+  const limited = await enforceRateLimit(req, 'orders', { limit: 60, windowSeconds: 3600 })
   if (limited) return limited
 
   // Autenticación requerida via Bearer token
