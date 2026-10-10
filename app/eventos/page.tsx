@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useLanguage } from '@/lib/i18n'
+import { formatMoney } from '@/lib/format'
 import LanguageSwitcher from './components/LanguageSwitcher'
 import UserMenu from './components/UserMenu'
 
@@ -187,7 +188,7 @@ export default function EventosPage() {
                         {fecha.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
                       </p>
                       <p className="text-white/40 text-xs">{event.venue}</p>
-                      {event.kind === 'ticket' && <p className="text-[#F472B6] font-bold text-sm mt-2">${event.precio}</p>}
+                      {event.kind === 'ticket' && event.precio != null && <p className="text-[#F472B6] font-bold text-sm mt-2">{formatMoney(event.precio)}</p>}
                     </div>
                   </div>
                 </Link>

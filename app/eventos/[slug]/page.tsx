@@ -2,9 +2,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import EventMap from '../components/EventMap'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
+import { formatMoney, orderTotal } from '@/lib/format'
 
 interface Event {
   id: string; slug: string; nombre: string; descripcion: string
@@ -45,7 +47,7 @@ export default function EventPage() {
       <div className="min-h-screen bg-[#0a0008] flex items-center justify-center">
         <div className="text-center">
           <p className="text-white/50 text-sm mb-4">{t('detail.notFound')}</p>
-          <a href="/eventos" className="text-[#F472B6] text-sm">{t('detail.backToAll')}</a>
+          <Link href="/eventos" className="text-[#F472B6] text-sm">{t('detail.backToAll')}</Link>
         </div>
       </div>
     )
@@ -56,7 +58,7 @@ export default function EventPage() {
   }
 
   const fecha = new Date(event.fecha)
-  const total = cantidad * event.precio
+  const total = orderTotal(cantidad, event.precio)
 
   return (
     <div className="min-h-screen bg-[#0a0008] text-white">
@@ -70,7 +72,7 @@ export default function EventPage() {
 
       <div className="px-5 pb-16 max-w-lg mx-auto -mt-10 relative z-10 space-y-6">
         {/* Volver */}
-        <a href="/eventos" className="text-white/35 hover:text-white text-xs transition">{t('detail.back')}</a>
+        <Link href="/eventos" className="inline-flex items-center min-h-[44px] text-white/60 hover:text-white text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6] rounded-lg">{t('detail.back')}</Link>
 
         {/* Info del evento */}
         <div>
@@ -112,17 +114,23 @@ export default function EventPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-white font-semibold text-sm">{t('detail.general')}</p>
-                <p className="text-[#F472B6] font-bold text-sm">${event.precio} {t('detail.perTicket')}</p>
+                <p className="text-[#F472B6] font-bold text-sm">{formatMoney(event.precio)} {t('detail.perTicket')}</p>
               </div>
               <div className="flex items-center gap-3">
                 <button
+                  type="button"
+                  aria-label="−"
+                  disabled={cantidad <= 1}
                   onClick={() => setCantidad(c => Math.max(1, c - 1))}
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xl transition flex items-center justify-center leading-none"
+                  className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-40 text-white font-bold text-xl transition flex items-center justify-center leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6]"
                 >−</button>
-                <span className="text-white font-bold text-lg w-5 text-center tabular-nums">{cantidad}</span>
+                <span aria-live="polite" className="text-white font-bold text-lg w-6 text-center tabular-nums">{cantidad}</span>
                 <button
+                  type="button"
+                  aria-label="+"
+                  disabled={cantidad >= 10}
                   onClick={() => setCantidad(c => Math.min(10, c + 1))}
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xl transition flex items-center justify-center leading-none"
+                  className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-40 text-white font-bold text-xl transition flex items-center justify-center leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6]"
                 >+</button>
               </div>
             </div>
@@ -131,18 +139,18 @@ export default function EventPage() {
 
             <div className="flex items-center justify-between">
               <span className="text-white/40 text-sm">{cantidad} {cantidad > 1 ? t('detail.tickets') : t('detail.ticket')}</span>
-              <span className="text-white font-bold">${total}</span>
+              <span className="text-white font-bold">{formatMoney(total)}</span>
             </div>
           </div>
 
           <button
             onClick={handleComprar}
             disabled={busy}
-            className="w-full bg-[#F472B6] hover:bg-[#ec4899] active:scale-[0.98] disabled:opacity-60 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all"
+            className="w-full bg-[#F472B6] hover:bg-[#ec4899] active:scale-[0.98] disabled:opacity-60 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-white transition-all"
           >
-            {busy ? t('detail.loading') : `${t('detail.buy')} → $${total}`}
+            {busy ? t('detail.loading') : `${t('detail.buy')} → ${formatMoney(total)}`}
           </button>
-          <p className="text-center text-white/20 text-[11px] mt-2">{t('detail.bankTransfer')}</p>
+          <p className="text-center text-white/50 text-xs mt-2">{t('detail.bankTransfer')}</p>
         </div>
       </div>
     </div>

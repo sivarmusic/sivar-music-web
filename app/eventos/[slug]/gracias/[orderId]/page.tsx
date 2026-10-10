@@ -41,7 +41,7 @@ export default function EventoGraciasPage() {
             {order.status === 'confirmado' ? t('gracias.confirmedTitle') : t('gracias.pendingTitle')}
           </h1>
           <p className={`text-sm font-semibold ${statusInfo.color} mb-3`}>{statusInfo.label}</p>
-          <p className="text-white/50 text-sm leading-relaxed">{statusInfo.desc}</p>
+          <p className="text-white/70 text-sm leading-relaxed">{statusInfo.desc}</p>
         </div>
 
         {/* Orden */}
@@ -54,7 +54,7 @@ export default function EventoGraciasPage() {
             fecha ? { label: t('gracias.date'), value: fecha.toLocaleDateString(dateLocale, { weekday: 'short', day: 'numeric', month: 'long' }) } : null,
           ].filter(Boolean).map(item => item && (
             <div key={item.label} className="flex items-center justify-between px-4 py-3">
-              <span className="text-white/40 text-sm">{item.label}</span>
+              <span className="text-white/60 text-sm">{item.label}</span>
               <span className={`text-sm font-semibold ${item.pink ? 'text-[#F472B6]' : 'text-white'}`}>{item.value}</span>
             </div>
           ))}
@@ -65,11 +65,11 @@ export default function EventoGraciasPage() {
           {order.status === 'confirmado' ? t('gracias.seeMyTickets') : t('gracias.seeMyAccount')}
         </Link>
 
-        <Link href="/eventos" className="text-white/30 hover:text-white text-xs transition">
+        <Link href="/eventos" className="inline-flex items-center min-h-[44px] text-white/60 hover:text-white text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6] rounded-lg">
           {t('gracias.seeAll')}
         </Link>
 
-        <p className="text-white/15 text-[10px] pt-4">Sivar Music Group · 2025</p>
+        <p className="text-white/40 text-[10px] pt-4">Sivar Music Group · 2025</p>
       </div>
     </div>
   )
