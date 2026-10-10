@@ -69,3 +69,51 @@ export async function checkEventCapacity(
       : `Quedan ${remaining} entradas disponibles`,
   }
 }
+
+/** "Quedan N" solo se informa cuando quedan este número de entradas o menos. */
+export const FEW_LEFT_THRESHOLD = 20
+
+/** Disponibilidad pública de un evento: sin conteos totales ni datos de órdenes. */
+export type EventAvailability = { soldOut: boolean; remaining: number | null }
+
+const OPEN: EventAvailability = { soldOut: false, remaining: null }
+
+/** Calcula lo que se muestra al público a partir del aforo y lo ocupado. */
+export function availabilityFor(maxEntradas: number | null | undefined, occupied: number): EventAvailability {
+  if (!maxEntradas || maxEntradas <= 0) return OPEN
+  const left = Math.max(0, maxEntradas - occupied)
+  if (left === 0) return { soldOut: true, remaining: null }
+  return { soldOut: false, remaining: left <= FEW_LEFT_THRESHOLD ? left : null }
+}
+
+/**
+ * Disponibilidad de varios eventos con UNA consulta, con el mismo criterio que
+ * checkEventCapacity (estados activos y holds de 72 h). Si la consulta falla
+ * no se muestra ningún chip (solo informativo): la compra igual re-verifica.
+ */
+export async function getEventsAvailability(
+  db: SupabaseClient,
+  events: { id: string; max_entradas?: number | null }[],
+): Promise<Map<string, EventAvailability>> {
+  const out = new Map<string, EventAvailability>()
+  const limited = events.filter(e => (e.max_entradas ?? 0) > 0)
+  for (const e of events) out.set(e.id, OPEN)
+  if (limited.length === 0) return out
+
+  const { data, error } = await db
+    .from('event_orders')
+    .select('event_id, cantidad, status, created_at')
+    .in('event_id', limited.map(e => e.id))
+    .in('status', [...ACTIVE_ORDER_STATUSES])
+  if (error) return out
+
+  const now = Date.now()
+  const occupied = new Map<string, number>()
+  for (const o of data ?? []) {
+    if (!holdsCapacity(o, now)) continue
+    const id = String(o.event_id)
+    occupied.set(id, (occupied.get(id) ?? 0) + (Number(o.cantidad) || 0))
+  }
+  for (const e of limited) out.set(e.id, availabilityFor(e.max_entradas, occupied.get(e.id) ?? 0))
+  return out
+}
