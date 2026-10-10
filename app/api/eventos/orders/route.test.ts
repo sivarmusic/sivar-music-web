@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const m = vi.hoisted(() => ({
-  getUser: vi.fn(), insert: vi.fn(), orders: [] as { cantidad: number }[], event: {} as Record<string, unknown>,
+  getUser: vi.fn(), insert: vi.fn(), orders: [] as { cantidad: number }[], insertError: null as null | { code: string; message: string }, event: {} as Record<string, unknown>,
 }))
 
 vi.mock('@/lib/supabase', () => ({
@@ -18,7 +18,7 @@ vi.mock('@/lib/supabase', () => ({
             in: () => Promise.resolve({ data: m.orders, error: null }),
           }),
         }),
-        insert: (row: unknown) => { m.insert(row); return { select: () => ({ single: () => Promise.resolve({ data: { id: 'o1', order_code: 'SM-1', cantidad: 2 }, error: null }) }) } },
+        insert: (row: unknown) => { m.insert(row); return { select: () => ({ single: () => Promise.resolve(m.insertError ? { data: null, error: m.insertError } : { data: { id: 'o1', order_code: 'SM-1', cantidad: 2 }, error: null }) }) } },
       }
     },
   },
@@ -39,7 +39,7 @@ const req = (cantidad: number) => new NextRequest('http://localhost/api/eventos/
 })
 
 beforeEach(() => {
-  m.getUser.mockReset(); m.insert.mockReset()
+  m.getUser.mockReset(); m.insert.mockReset(); m.insertError = null
   m.getUser.mockResolvedValue({ data: { user: { id: 'u', email: 'a@x.com' } }, error: null })
   m.event = { id: 'e1', nombre: 'Show', slug: 's', precio: 10, visible: true, max_entradas: 10 }
   m.orders = [{ cantidad: 6 }, { cantidad: 2 }]
@@ -71,5 +71,16 @@ describe('POST /api/eventos/orders — aforo', () => {
     m.orders = [{ cantidad: 999 }]
     const res = await POST(req(5))
     expect(res.status).toBe(200)
+  })
+
+  it('409 claro cuando otro usuario ya tiene una solicitud activa con ese teléfono', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    m.insertError = { code: '23505', message: 'duplicate key value violates unique constraint "event_orders_telefono_event_active"' }
+    const res = await POST(req(1))
+    const body = await res.json()
+    expect(res.status).toBe(409)
+    expect(body.code).toBe('phone_active')
+    expect(body.error).toMatch(/solicitud activa con este teléfono/)
+    expect(JSON.stringify(body)).not.toContain('constraint')
   })
 })

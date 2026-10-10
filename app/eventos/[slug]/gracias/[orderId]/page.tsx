@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n'
 
 interface Order {
-  id: string; order_code: string; nombre: string; cantidad: number; status: string
+  id: string; order_code: string; cantidad: number; status: string
   events: { slug: string; nombre: string; fecha: string; venue: string } | null
 }
 

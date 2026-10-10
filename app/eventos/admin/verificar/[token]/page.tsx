@@ -36,6 +36,8 @@ export default function VerificarTokenPage() {
         if (r.ok) {
           setTicket(data.ticket)
           setPageState(data.ticket.check_in_at ? 'already_used' : 'valid')
+        } else if (r.status === 401) {
+          router.push(`/eventos/admin/login?redirect=/eventos/admin/verificar/${token}`)
         } else if (r.status === 400) {
           setPageState('not_confirmed')
         } else if (r.status === 404) {
@@ -45,7 +47,7 @@ export default function VerificarTokenPage() {
         }
       })
       .catch(() => setPageState('error'))
-  }, [token])
+  }, [token, router])
 
   async function handleCheckIn() {
     setCheckingIn(true)
