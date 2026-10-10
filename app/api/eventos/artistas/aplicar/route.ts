@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { enforceRateLimit } from '@/lib/rate-limit'
 import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { sendSafely } from '@/lib/email-safe'
 import { sendAdminNewArtistApplication } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
+  const limited = await enforceRateLimit(req, 'artist-apply', { limit: 5, windowSeconds: 3600 })
+  if (limited) return limited
+
   const { nombreArtistico, nombreContacto, email, telefono, genero, bio, instagram, spotify, tiktok, youtube, otroLink } = await req.json()
 
   if (!nombreArtistico?.trim() || !nombreContacto?.trim() || !email?.trim()

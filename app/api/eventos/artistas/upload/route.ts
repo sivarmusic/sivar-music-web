@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { enforceRateLimit } from '@/lib/rate-limit'
 import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { validateImage } from '@/lib/imageUpload'
@@ -6,6 +7,9 @@ import { validateImage } from '@/lib/imageUpload'
 const FOLDERS: Record<string, string> = { perfil: 'perfil', galeria: 'galeria', evento: 'eventos' }
 
 export async function POST(req: NextRequest) {
+  const limited = await enforceRateLimit(req, 'upload-artist', { limit: 30, windowSeconds: 3600 })
+  if (limited) return limited
+
   const authHeader = req.headers.get('authorization')
   if (!authHeader?.startsWith('Bearer ')) {
     return NextResponse.json({ error: 'Se requiere autenticación' }, { status: 401 })

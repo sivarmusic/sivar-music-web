@@ -5,6 +5,7 @@ const m = vi.hoisted(() => ({
   upload: vi.fn(), remove: vi.fn(), update: vi.fn(),
 }))
 
+vi.mock('@/lib/rate-limit', () => ({ enforceRateLimit: async () => null }))
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     storage: { from: () => ({ upload: (...a: unknown[]) => { m.upload(...a); return Promise.resolve({ error: m.uploadError }) }, remove: m.remove }) },
