@@ -3,75 +3,195 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n'
-import { EVENT_TZ } from '@/lib/eventDate'
+import { formatMoneyFull, orderTotal } from '@/lib/format'
+import { copyFor, type CopyKey } from '../../../copy'
+import { Icon } from '../../../components/icons'
+import SiteHeader from '../../../components/site/SiteHeader'
+import SiteFooter from '../../../components/site/SiteFooter'
+import OrderSteps from '../../../components/ui/OrderSteps'
+import OrderStatusChip from '../../../components/ui/OrderStatusChip'
+import { fmtDate, fmtTime } from '../../../components/ui/format'
 
 interface Order {
   id: string; order_code: string; cantidad: number; status: string
-  events: { slug: string; nombre: string; fecha: string; venue: string } | null
+  events: { slug: string; nombre: string; precio?: number; fecha: string; venue: string } | null
 }
 
+const SUPPORT_EMAIL = 'admin@sivarmusic.com'
+
 export default function EventoGraciasPage() {
-  const { t, dateLocale } = useLanguage()
-  const STATUS_LABELS: Record<string, { label: string; color: string; icon: string; desc: string }> = {
-    en_revision: { label: t('gracias.statusEnRevision'), color: 'text-yellow-400', icon: '⏳', desc: t('gracias.descEnRevision') },
-    confirmado: { label: t('gracias.statusConfirmado'), color: 'text-green-400', icon: '✓', desc: t('gracias.descConfirmado') },
-    rechazado: { label: t('gracias.statusRechazado'), color: 'text-red-400', icon: '✕', desc: t('gracias.descRechazado') },
-  }
+  const { lang, t, dateLocale } = useLanguage()
+  const c = (key: CopyKey, vars?: Record<string, string | number>) => copyFor(lang, key, vars)
   const { slug, orderId } = useParams<{ slug: string; orderId: string }>()
   const [order, setOrder] = useState<Order | null>(null)
+  const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
     try { localStorage.removeItem('sm_pending') } catch {}
     fetch(`/api/eventos/order/${orderId}`)
       .then(r => r.json())
-      .then(d => { if (d.order) setOrder(d.order) })
+      .then(d => { if (d.order) setOrder(d.order); else setNotFound(true) })
+      .catch(() => setNotFound(true))
   }, [orderId])
 
-  if (!order) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">{t('gracias.loading')}</p></div>
-
-  const statusInfo = STATUS_LABELS[order.status] ?? STATUS_LABELS.en_revision
-  const fecha = order.events ? new Date(order.events.fecha) : null
-
-  return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      <div className="px-5 py-12 max-w-sm mx-auto space-y-6 flex flex-col items-center text-center">
-        <div>
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase mb-3">Sivar Music</p>
-          <div className="text-5xl mb-4">{statusInfo.icon}</div>
-          <h1 className="text-white text-2xl font-bold mb-2">
-            {order.status === 'confirmado' ? t('gracias.confirmedTitle') : t('gracias.pendingTitle')}
-          </h1>
-          <p className={`text-sm font-semibold ${statusInfo.color} mb-3`}>{statusInfo.label}</p>
-          <p className="text-white/70 text-sm leading-relaxed">{statusInfo.desc}</p>
-        </div>
-
-        {/* Orden */}
-        <div className="w-full rounded-2xl border border-white/10 bg-white/4 divide-y divide-white/8">
-          {[
-            { label: t('gracias.orderCode'), value: order.order_code, pink: true },
-            { label: t('gracias.event'), value: order.events?.nombre ?? '—' },
-            { label: t('gracias.tickets'), value: `${order.cantidad}` },
-            { label: t('gracias.venue'), value: order.events?.venue ?? '—' },
-            fecha ? { label: t('gracias.date'), value: fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'short', day: 'numeric', month: 'long' }) } : null,
-          ].filter(Boolean).map(item => item && (
-            <div key={item.label} className="flex items-center justify-between px-4 py-3">
-              <span className="text-white/60 text-sm">{item.label}</span>
-              <span className={`text-sm font-semibold ${item.pink ? 'text-[#F472B6]' : 'text-white'}`}>{item.value}</span>
-            </div>
-          ))}
-        </div>
-
-        <Link href="/eventos/mi-cuenta"
-          className="w-full bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 text-center block transition">
-          {order.status === 'confirmado' ? t('gracias.seeMyTickets') : t('gracias.seeMyAccount')}
-        </Link>
-
-        <Link href="/eventos" className="inline-flex items-center min-h-[44px] text-white/60 hover:text-white text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6] rounded-lg">
-          {t('gracias.seeAll')}
-        </Link>
-
-        <p className="text-white/40 text-[10px] pt-4">Sivar Music Group · 2025</p>
-      </div>
+  const shell = (main: React.ReactNode) => (
+    <div className="ev-surface">
+      <SiteHeader />
+      {main}
+      <SiteFooter />
     </div>
+  )
+
+  if (notFound) return shell(
+    <main id="main" className="ev-state-screen">
+      <div className="ev-stack">
+        <p className="ev-lead">{t('pago.notFound')}</p>
+        <Link href={`/eventos/${slug}`} className="ev-link-arrow">{t('pago.backToEvent')}</Link>
+      </div>
+    </main>
+  )
+
+  if (!order) return shell(
+    <main id="main" className="ev-state-screen" aria-busy="true">
+      <p className="ev-muted" role="status">{t('gracias.loading')}</p>
+    </main>
+  )
+
+  const isConfirmed = order.status === 'confirmado'
+  const isRejected = order.status === 'rechazado'
+  const fecha = order.events ? new Date(order.events.fecha) : null
+  const total = order.events?.precio != null ? orderTotal(order.cantidad, order.events.precio) : null
+  const eventName = order.events?.nombre ?? '—'
+  const when = fecha
+    ? `${fmtDate(fecha, dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })} · ${fmtTime(fecha, dateLocale)}${order.events?.venue ? ` · ${order.events.venue}` : ''}`
+    : order.events?.venue ?? ''
+
+  return shell(
+    <main id="main" className="ev-container ev-container--mid ev-page">
+      <OrderSteps current={isRejected ? 1 : 2} />
+
+      <section className="ev-stack ev-stack--lg" style={{ marginTop: 'var(--ev-space-8)' }}>
+        {/* ── Encabezado por estado ─────────────────────────── */}
+        <header className="ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-4)' }}>
+          {isRejected ? (
+            <OrderStatusChip status="rechazado" />
+          ) : isConfirmed ? (
+            <OrderStatusChip status="confirmado" />
+          ) : (
+            <span className="ev-stamp ev-stamp--accent ev-stamp--anim" style={{ fontSize: '2.25rem', alignSelf: 'start', marginLeft: 'var(--ev-space-2)' }}>
+              <Icon name="check" size="xl" />{c('evg.stamp')}
+            </span>
+          )}
+          <h1 className="ev-display ev-display--lg" style={{ marginTop: 'var(--ev-space-6)' }}>
+            {isRejected
+              ? c('evp.rejectedTitle')
+              : isConfirmed
+                ? t('gracias.confirmedTitle')
+                : <>{c('evg.titleA')}<br />{c('evg.titleB')}</>}
+          </h1>
+          <p className="ev-lead">
+            {isRejected
+              ? t('gracias.descRechazado')
+              : isConfirmed
+                ? t('gracias.descConfirmado')
+                : t('gracias.descEnRevision')}
+          </p>
+        </header>
+
+        {/* ── Boleto de la orden ─────────────────────────────── */}
+        <div className="ev-ticket">
+          <div className="ev-ticket__section ev-order-code" style={{ position: 'relative' }}>
+            <span className="ev-ticket__label">{t('gracias.orderCode')}</span>
+            <p className="ev-order-code__value ev-mono" style={{ fontSize: 'clamp(2.5rem, 12vw, 4.5rem)' }}>{order.order_code}</p>
+            <p className="ev-display" style={{ fontSize: '1.75rem' }}>{eventName}</p>
+            {when && <p className="ev-ticket__muted">{when}</p>}
+            {isConfirmed && (
+              <span
+                className="ev-stamp ev-stamp--paper ev-stamp--anim"
+                style={{ position: 'absolute', right: 'var(--ev-space-4)', top: 'var(--ev-space-4)', ['--stamp-c' as string]: '#11733d', fontSize: '1.5rem' }}
+              >
+                {c('evg.paid')}
+              </span>
+            )}
+          </div>
+          <div className="ev-ticket__perf" aria-hidden="true" />
+          <div className="ev-ticket__section">
+            <div className="ev-ticket__row">
+              <span className="ev-ticket__label">{t('gracias.tickets')}</span>
+              <span style={{ fontWeight: 600 }}>{order.cantidad}</span>
+            </div>
+            {total != null && (
+              <div className="ev-ticket__row">
+                <span className="ev-ticket__label">{isConfirmed ? c('evg.totalPaid') : c('evg.totalTransferred')}</span>
+                <span className="ev-ticket__total" style={{ fontSize: '2rem' }}>{formatMoneyFull(total)}</span>
+              </div>
+            )}
+            <div className="ev-ticket__row" style={{ alignItems: 'center' }}>
+              <span className="ev-ticket__label">{c('evg.status')}</span>
+              <OrderStatusChip status={order.status} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Qué pasa ahora (solo en revisión) ──────────────── */}
+        {!isConfirmed && !isRejected && (
+          <section className="ev-stack" aria-labelledby="ev-h-next">
+            <h2 className="ev-display ev-display--sm" id="ev-h-next">{c('evg.nextTitle')}</h2>
+            <ol className="ev-timeline">
+              <li className="ev-timeline__item is-current" aria-current="step">
+                <div><p className="ev-timeline__title">{c('evg.next1')}</p></div>
+              </li>
+              <li className="ev-timeline__item">
+                <div><p className="ev-timeline__title">{c('evg.next2')}</p></div>
+              </li>
+              <li className="ev-timeline__item">
+                <div>
+                  <p className="ev-timeline__title">{c('evg.next3')}</p>
+                  <p className="ev-timeline__text">{c('evg.next3Text')}</p>
+                </div>
+              </li>
+            </ol>
+          </section>
+        )}
+
+        {isConfirmed && (
+          <div className="ev-banner ev-banner--info">
+            <Icon name="mail" />
+            <div>
+              <p className="ev-banner__title">{c('evg.noMailTitle')}</p>
+              <p className="ev-banner__text">{c('evg.noMailText')}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Ayuda ──────────────────────────────────────────── */}
+        <section className="ev-stack" aria-labelledby="ev-h-help" style={{ ['--stack-gap' as string]: 'var(--ev-space-3)' }}>
+          <h2 className="ev-title ev-title--sm" id="ev-h-help">{c('evg.helpTitle')}</h2>
+          <p className="ev-muted">
+            {c('evg.helpText')} <span className="ev-mono" style={{ color: 'var(--ev-color-text)' }}>{order.order_code}</span>
+          </p>
+          <div className="ev-cluster">
+            <a className="ev-btn ev-btn--ghost ev-btn--sm" href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(order.order_code)}`}>
+              <Icon name="mail" />{SUPPORT_EMAIL}
+            </a>
+          </div>
+        </section>
+
+        <div className="ev-cluster">
+          {isRejected ? (
+            <Link className="ev-btn ev-btn--primary" href={`/eventos/${slug}/pago/${orderId}`}>
+              <Icon name="upload" size="lg" />{c('evp.reupload')}
+            </Link>
+          ) : (
+            <Link className={`ev-btn ${isConfirmed ? 'ev-btn--primary' : 'ev-btn--secondary'}`} href="/eventos/mi-cuenta">
+              <Icon name="ticket" size="lg" />{isConfirmed ? t('gracias.seeMyTickets') : t('gracias.seeMyAccount')}
+            </Link>
+          )}
+          <Link className="ev-link-arrow" href="/eventos">
+            {c('evg.backToLineup')} <Icon name="arrow-right" />
+          </Link>
+        </div>
+      </section>
+    </main>
   )
 }
