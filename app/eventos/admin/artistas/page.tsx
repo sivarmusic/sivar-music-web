@@ -2,7 +2,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AdminHeader from '../components/AdminHeader'
 import { useRequireAdmin } from '../components/useRequireAdmin'
 import { EVENT_TZ } from '@/lib/eventDate'
 
@@ -125,7 +124,6 @@ export default function AdminArtistasPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0008] text-white">
-      <AdminHeader />
       <div className="px-5 pt-5 max-w-2xl mx-auto">
         <h1 className="text-white text-lg font-bold">Artistas</h1>
       </div>
