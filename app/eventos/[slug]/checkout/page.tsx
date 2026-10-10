@@ -1,20 +1,44 @@
 'use client'
 import { useEffect, useState, Suspense } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
-import { formatMoney, orderTotal } from '@/lib/format'
-import { EVENT_TZ } from '@/lib/eventDate'
+import { formatMoney, formatMoneyFull, orderTotal } from '@/lib/format'
+import { copyFor, type CopyKey } from '../../copy'
+import { Icon } from '../../components/icons'
+import SiteHeader from '../../components/site/SiteHeader'
+import SiteFooter from '../../components/site/SiteFooter'
+import OrderSteps from '../../components/ui/OrderSteps'
+import QtyStepper from '../../components/ui/QtyStepper'
+import { fmtDate, fmtTime, splitOn } from '../../components/ui/format'
 
 interface Event {
   id: string; slug: string; nombre: string; fecha: string
-  venue: string; precio: number
+  venue: string; precio: number; imagen_url?: string | null
 }
 
-const INPUT = 'w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-base focus:outline-none focus:border-[#F472B6] focus:ring-2 focus:ring-[#F472B6]/40 transition'
+type FieldErrors = { nombre?: string; telefono?: string }
+
+/** Tope del selector (igual que en el detalle). El servidor admite hasta 20. */
+const MAX_QTY = 10
+
+function Loading({ label }: { label: string }) {
+  return (
+    <div className="ev-surface">
+      <SiteHeader />
+      <main id="main" className="ev-state-screen" aria-busy="true">
+        <p className="ev-muted" role="status">{label}</p>
+      </main>
+      <SiteFooter />
+    </div>
+  )
+}
 
 function CheckoutForm() {
-  const { t, dateLocale } = useLanguage()
+  const { lang, t, dateLocale } = useLanguage()
+  const c = (key: CopyKey, vars?: Record<string, string | number>) => copyFor(lang, key, vars)
   const { slug } = useParams<{ slug: string }>()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -32,7 +56,10 @@ function CheckoutForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [remaining, setRemaining] = useState<number | null>(null)
-  const [fieldErrors, setFieldErrors] = useState<{ nombre?: string; telefono?: string }>({})
+  const [requested, setRequested] = useState(0)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+  const [invalidCount, setInvalidCount] = useState(0)
+  const [phoneActive, setPhoneActive] = useState(false)
 
   useEffect(() => {
     async function init() {
@@ -72,11 +99,13 @@ function CheckoutForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!event || !token) return
-    const errs: { nombre?: string; telefono?: string } = {}
+    if (!event || !token || loading) return
+    const errs: FieldErrors = {}
     if (nombre.trim().length < 2) errs.nombre = t('checkout.errName')
     if (telefono.replace(/\D/g, '').length < 8) errs.telefono = t('checkout.errPhone')
     setFieldErrors(errs)
+    setPhoneActive(false)
+    setInvalidCount(Object.keys(errs).length)
     if (errs.nombre || errs.telefono) {
       document.getElementById(errs.nombre ? 'co-nombre' : 'co-telefono')?.focus()
       return
@@ -92,8 +121,16 @@ function CheckoutForm() {
         body: JSON.stringify({ event_id: event.id, nombre, telefono, email, cantidad }),
       })
       const data = await res.json()
+      if (res.status === 409 && data.code === 'phone_active') {
+        setFieldErrors({ telefono: c('evc.phoneActive') })
+        setPhoneActive(true)
+        setLoading(false)
+        document.getElementById('co-telefono')?.focus()
+        return
+      }
       if (res.status === 409 && typeof data.remaining === 'number') {
         setRemaining(data.remaining)
+        setRequested(cantidad)
         setLoading(false)
         return
       }
@@ -105,149 +142,245 @@ function CheckoutForm() {
     }
   }
 
-  if (!event) {
-    return (
-      <div className="min-h-screen bg-[#0a0008] flex items-center justify-center">
-        <p className="text-white/30 text-sm">{t('checkout.loading')}</p>
-      </div>
-    )
+  function changeQty(n: number) {
+    setCantidad(n)
+    setRemaining(null)
   }
+
+  if (!event) return <Loading label={t('checkout.loading')} />
 
   const fecha = new Date(event.fecha)
   const total = orderTotal(cantidad, event.precio)
+  const maxQty = Math.max(MAX_QTY, cantidad)
+  const left = splitOn(c('evc.stockText'), 'left')
+  const emailHint = splitOn(c('evc.emailHint'), 'account')
 
   return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      {/* Header */}
-      <div className="border-b border-white/8 px-5 py-5 flex items-center gap-3">
-        <button type="button" onClick={() => router.back()} aria-label={t('checkout.back')} className="text-white/60 hover:text-white text-lg w-11 h-11 -ml-3 flex items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6] transition">←</button>
-        <div>
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase">Sivar Events</p>
-          <h1 className="text-white text-lg font-bold">{t('checkout.title')}</h1>
-        </div>
-      </div>
+    <div className="ev-surface">
+      <SiteHeader />
 
-      <div className="px-5 py-6 max-w-lg mx-auto space-y-5">
-        {/* Resumen del evento */}
-        <div className="bg-white/4 border border-white/10 rounded-2xl p-4">
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">{t('checkout.yourOrder')}</p>
-          <p className="text-white font-bold text-base">{event.nombre}</p>
-          <p className="text-white/60 text-xs mt-1">
-            {fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'long', day: 'numeric', month: 'long' })}
-            {' · '}{event.venue}
-          </p>
-          <div className="border-t border-white/8 mt-3 pt-3 flex items-center justify-between">
-            <span className="text-white/60 text-sm">{cantidad} {cantidad > 1 ? t('detail.tickets') : t('detail.ticket')} × {formatMoney(event.precio)} · {t('detail.general')}</span>
-            <span className="text-[#F472B6] font-bold text-base">{formatMoney(total)}</span>
-          </div>
-        </div>
+      <main id="main" className="ev-container ev-page">
+        <Link className="ev-back-link" href={`/eventos/${slug}`}>
+          <Icon name="arrow-left" size="sm" />{event.nombre}
+        </Link>
 
-        {/* Formulario */}
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider">{t('checkout.yourData')}</p>
+        <OrderSteps current={0} style={{ marginTop: 'var(--ev-space-4)' }} />
 
-          <div>
-            <label htmlFor="co-nombre" className="block text-white/70 text-xs font-bold uppercase tracking-[0.14em] mb-1.5">{t('checkout.fullName')}</label>
-            <input
-              id="co-nombre"
-              type="text"
-              autoComplete="name"
-              aria-invalid={!!fieldErrors.nombre}
-              aria-describedby={fieldErrors.nombre ? 'co-nombre-err' : undefined}
-              value={nombre}
-              onChange={e => setNombre(e.target.value)}
-              placeholder={t('checkout.fullNamePh')}
-              required
-              className={INPUT}
-            />
-            {fieldErrors.nombre && <p id="co-nombre-err" className="text-red-400 text-xs mt-1.5">{fieldErrors.nombre}</p>}
-          </div>
+        <h1 className="ev-display ev-display--md" style={{ marginTop: 'var(--ev-space-6)' }}>{c('evc.title')}</h1>
+        <p className="ev-lead" style={{ marginTop: 'var(--ev-space-2)' }}>{c('evc.lead')}</p>
 
-          <div>
-            <label htmlFor="co-telefono" className="block text-white/70 text-xs font-bold uppercase tracking-[0.14em] mb-1.5">{t('checkout.phone')}</label>
-            <input
-              id="co-telefono"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              aria-invalid={!!fieldErrors.telefono}
-              aria-describedby={fieldErrors.telefono ? 'co-telefono-err' : undefined}
-              value={telefono}
-              onChange={e => setTelefono(e.target.value)}
-              placeholder="+503 7000 0000"
-              required
-              className={INPUT}
-            />
-            {fieldErrors.telefono && <p id="co-telefono-err" className="text-red-400 text-xs mt-1.5">{fieldErrors.telefono}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="co-email" className="block text-white/70 text-xs font-bold uppercase tracking-[0.14em] mb-1.5">{t('checkout.email')}</label>
-            <input
-              id="co-email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              readOnly
-              aria-describedby="co-email-note"
-              className={INPUT + ' opacity-60 cursor-not-allowed'}
-            />
-            <p id="co-email-note" className="text-white/50 text-xs mt-1.5">{t('checkout.emailNote')}</p>
-          </div>
-
-          <div aria-live="polite" role="status">
-            {remaining !== null && (
-              <div className="text-sm bg-yellow-400/10 border border-yellow-400/25 rounded-2xl px-4 py-3 space-y-3">
-                <p className="text-yellow-200 text-center">
-                  {remaining === 0 ? t('checkout.soldOut') : t('checkout.onlyLeft', { n: remaining })}
-                </p>
-                {remaining > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => { setCantidad(remaining); setRemaining(null) }}
-                    className="w-full min-h-[44px] bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl px-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6] transition"
-                  >
-                    {t('checkout.adjustTo')} {remaining} {remaining > 1 ? t('detail.tickets') : t('detail.ticket')} · {formatMoney(orderTotal(remaining, event.precio))}
-                  </button>
-                ) : (
-                  <a href={`/eventos/${slug}`} className="block w-full min-h-[44px] leading-[44px] text-center bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl px-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6] transition">
-                    {t('checkout.backToEvent')}
-                  </a>
-                )}
+        <div className="ev-split-2" style={{ marginTop: 'var(--ev-space-8)' }}>
+          {/* Resumen (arriba en mobile, a la derecha en desktop) */}
+          <aside aria-labelledby="ev-h-resumen" className="ev-split-2__aside">
+            <div className="ev-ticket">
+              <div className="ev-ticket__section" style={{ display: 'grid', gridTemplateColumns: '72px 1fr', gap: 'var(--ev-space-4)', alignItems: 'center' }}>
+                <div className="ev-event-card__media" style={{ width: 72, borderRadius: 4 }}>
+                  {event.imagen_url ? (
+                    <Image src={event.imagen_url} alt="" width={72} height={90} className="object-cover" />
+                  ) : (
+                    <div className="ev-poster-fallback" aria-hidden="true">
+                      <span className="ev-poster-fallback__name">{event.nombre}</span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h2 className="ev-ticket__label" id="ev-h-resumen">{c('evc.summary')}</h2>
+                  <p className="ev-display" style={{ fontSize: '1.75rem', marginTop: 4 }}>{event.nombre}</p>
+                  <p className="ev-ticket__muted">
+                    {fmtDate(fecha, dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })} · {fmtTime(fecha, dateLocale)} · {event.venue}
+                  </p>
+                </div>
               </div>
-            )}
+              <div className="ev-ticket__perf" aria-hidden="true" />
+              <div className="ev-ticket__section ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-4)' }}>
+                <div className="ev-ticket__row" style={{ alignItems: 'center' }}>
+                  <span className="ev-ticket__label" id="ev-qty-co">{c('evc.qty')}</span>
+                  <QtyStepper
+                    paper
+                    value={cantidad}
+                    max={maxQty}
+                    onChange={changeQty}
+                    labelledBy="ev-qty-co"
+                    decLabel={c('evd.qtyDec')}
+                    incLabel={c('evd.qtyInc')}
+                    inputLabel={c('evd.qtyInput')}
+                    style={{ gridTemplateColumns: '48px 52px 48px' }}
+                    inputStyle={{ fontSize: '1.5rem' }}
+                  />
+                </div>
+                <div className="ev-ticket__row">
+                  <span className="ev-ticket__muted">
+                    {cantidad} {cantidad > 1 ? t('detail.tickets') : t('detail.ticket')} × {formatMoneyFull(event.precio)}
+                  </span>
+                  <span className="ev-ticket__total">{formatMoneyFull(total)}</span>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <div className="ev-split-2__main">
+            <form
+              onSubmit={handleSubmit}
+              noValidate
+              className="ev-stack ev-stack--lg"
+              aria-busy={loading}
+            >
+              {invalidCount > 0 && (
+                <div className="ev-banner ev-banner--error" role="alert">
+                  <Icon name="alert-triangle" />
+                  <div>
+                    <p className="ev-banner__title">
+                      {invalidCount === 1 ? c('evc.reviewOne') : c('evc.reviewMany', { n: invalidCount })}
+                    </p>
+                    <p className="ev-banner__text">{c('evc.reviewText')}</p>
+                  </div>
+                </div>
+              )}
+
+              {remaining !== null && (
+                <div className="ev-banner ev-banner--warning" role="alert">
+                  <Icon name="alert-triangle" />
+                  <div>
+                    <p className="ev-banner__title">
+                      {remaining === 0 ? t('checkout.soldOut') : c('evc.stockTitle', { n: requested })}
+                    </p>
+                    {remaining > 0 && (
+                      <p className="ev-banner__text">
+                        {left
+                          ? <>{left[0]}<strong>{remaining}</strong>{left[1]}</>
+                          : c('evc.stockText', { left: remaining })}
+                      </p>
+                    )}
+                  </div>
+                  <div className="ev-banner__actions">
+                    {remaining > 0 ? (
+                      <button
+                        type="button"
+                        className="ev-btn ev-btn--primary ev-btn--sm"
+                        onClick={() => { setCantidad(remaining); setRemaining(null) }}
+                      >
+                        {c('evc.buyN', { n: remaining })} · {formatMoney(orderTotal(remaining, event.precio))}
+                      </button>
+                    ) : (
+                      <Link className="ev-btn ev-btn--secondary ev-btn--sm" href={`/eventos/${slug}`}>{t('checkout.backToEvent')}</Link>
+                    )}
+                    <Link className="ev-btn ev-btn--ghost ev-btn--sm" href="/eventos">{c('evc.otherEvents')}</Link>
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <div className="ev-banner ev-banner--error" role="alert">
+                  <Icon name="alert-triangle" />
+                  <div><p className="ev-banner__title">{error}</p></div>
+                </div>
+              )}
+
+              <div className="ev-form-grid">
+                <div className={`ev-field${fieldErrors.nombre ? ' ev-field--error' : ''}`}>
+                  <label className="ev-field__label" htmlFor="co-nombre">{t('checkout.fullName')}</label>
+                  <input
+                    className="ev-input"
+                    id="co-nombre"
+                    type="text"
+                    autoComplete="name"
+                    placeholder={t('checkout.fullNamePh')}
+                    aria-invalid={!!fieldErrors.nombre}
+                    aria-describedby={fieldErrors.nombre ? 'co-nombre-err' : undefined}
+                    value={nombre}
+                    onChange={e => setNombre(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                  {fieldErrors.nombre && (
+                    <p className="ev-field__error" id="co-nombre-err"><Icon name="alert-circle" size="sm" />{fieldErrors.nombre}</p>
+                  )}
+                </div>
+
+                <div className={`ev-field${fieldErrors.telefono ? ' ev-field--error' : ''}`}>
+                  <label className="ev-field__label" htmlFor="co-telefono">{t('checkout.phone')}</label>
+                  <div className="ev-field__control">
+                    <Icon name="phone" />
+                    <input
+                      className="ev-input"
+                      id="co-telefono"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder="7123 4567"
+                      aria-invalid={!!fieldErrors.telefono}
+                      aria-describedby={fieldErrors.telefono ? 'co-telefono-err' : 'co-telefono-hint'}
+                      value={telefono}
+                      onChange={e => setTelefono(e.target.value)}
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+                  {fieldErrors.telefono
+                    ? <p className="ev-field__error" id="co-telefono-err"><Icon name="alert-circle" size="sm" />{fieldErrors.telefono}</p>
+                    : <p className="ev-field__hint" id="co-telefono-hint">{c('evc.phoneHint')}</p>}
+                </div>
+
+                <div className="ev-field">
+                  <label className="ev-field__label" htmlFor="co-email">
+                    {t('checkout.email')}
+                    <span className="ev-field__lock"><Icon name="lock" size="sm" />{c('evc.fromAccount')}</span>
+                  </label>
+                  <div className="ev-field__control">
+                    <Icon name="mail" />
+                    <input
+                      className="ev-input"
+                      id="co-email"
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      readOnly
+                      aria-describedby="co-email-note"
+                    />
+                  </div>
+                  <p className="ev-field__hint" id="co-email-note">
+                    {emailHint
+                      ? <>{emailHint[0]}<Link href="/eventos/mi-cuenta">{c('evc.myAccount')}</Link>{emailHint[1]}</>
+                      : t('checkout.emailNote')}
+                  </p>
+                </div>
+              </div>
+
+              {phoneActive && (
+                <div className="ev-banner ev-banner--info">
+                  <Icon name="info" />
+                  <div>
+                    <p className="ev-banner__title">{c('evc.activeTitle')}</p>
+                    <p className="ev-banner__text">{c('evc.activeText')}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-3)' }}>
+                <button
+                  type="submit"
+                  className={`ev-btn ev-btn--primary ev-btn--lg ev-btn--block${loading ? ' is-loading' : ''}`}
+                  disabled={!token || remaining !== null}
+                  aria-disabled={loading || undefined}
+                >
+                  {loading ? c('evc.generating') : <>{c('evc.continue')} <Icon name="arrow-right" size="lg" /></>}
+                </button>
+                {loading && <p className="ev-visually-hidden" role="status">{c('evc.generatingStatus')}</p>}
+                <p className="ev-subtle" style={{ textAlign: 'center' }}>{t('checkout.footerNote')}</p>
+              </div>
+            </form>
           </div>
+        </div>
+      </main>
 
-          <div aria-live="assertive" role="alert">
-            {error && (
-              <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-center">{error}</p>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || !token}
-            className="w-full bg-[#F472B6] hover:bg-[#ec4899] active:scale-[0.98] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-white transition-all"
-          >
-            {loading ? t('checkout.processing') : `${t('checkout.confirm')} → ${formatMoney(total)}`}
-          </button>
-
-          <p className="text-center text-white/50 text-xs">
-            {t('checkout.footerNote')}
-          </p>
-        </form>
-      </div>
+      <SiteFooter />
     </div>
   )
 }
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#0a0008] flex items-center justify-center">
-        <p className="text-white/30 text-sm">Cargando...</p>
-      </div>
-    }>
+    <Suspense fallback={<div className="ev-surface" aria-busy="true" />}>
       <CheckoutForm />
     </Suspense>
   )
