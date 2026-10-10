@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
+import { uploadErrorMessage } from './uploadError'
 
 interface Profile {
   id: string; slug: string; nombre_artistico: string; genero: string | null; bio: string | null
@@ -29,7 +30,7 @@ async function uploadArtistImage(file: File, type: 'perfil' | 'galeria' | 'event
   fd.append('type', type)
   const res = await fetch('/api/eventos/artistas/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
   const data = await res.json()
-  if (!res.ok) throw new Error(data.error || 'Error al subir')
+  if (!res.ok) throw new Error(uploadErrorMessage(res.status, data.error))
   return data.url as string
 }
 
@@ -125,7 +126,9 @@ function ProfileTab({ profile, setProfile, token, t }: {
       set('foto_url', url)
       await supabaseBrowser.from('artist_profiles').update({ foto_url: url }).eq('id', profile.id)
       setProfile({ ...form, foto_url: url })
-    } catch { /* noop */ } finally { setUploading(false) }
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'No se pudo subir la imagen. Intentá de nuevo.')
+    } finally { setUploading(false) }
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -192,7 +195,9 @@ function GalleryTab({ artistId, gallery, setGallery, token, t }: {
       const url = await uploadArtistImage(file, 'galeria', token)
       const { data } = await supabaseBrowser.from('artist_gallery').insert({ artist_id: artistId, image_url: url }).select('id, image_url').single()
       if (data) setGallery([data, ...gallery])
-    } catch { /* noop */ } finally { setUploading(false) }
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'No se pudo subir la imagen. Intentá de nuevo.')
+    } finally { setUploading(false) }
   }
 
   async function handleDelete(id: string) {
@@ -251,7 +256,9 @@ function EventsTab({ token, events, setEvents, t }: {
     try {
       const url = await uploadArtistImage(file, 'evento', token)
       setForm(f => ({ ...f, imagen_url: url }))
-    } catch { /* noop */ } finally { setUploading(false) }
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'No se pudo subir la imagen. Intentá de nuevo.')
+    } finally { setUploading(false) }
   }
 
   async function handleCreate(e: React.FormEvent) {
