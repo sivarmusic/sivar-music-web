@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import EventosClient from './EventosClient'
 
 const TITLE = 'Eventos — Sivar Music'
-const DESCRIPTION = 'Conciertos y eventos de Sivar Music Group en El Salvador. Reservá tus entradas en línea.'
+const DESCRIPTION = 'Conciertos y eventos de Sivar Music Group. Reservá tus entradas en línea.'
 
 export const metadata: Metadata = {
   title: TITLE,

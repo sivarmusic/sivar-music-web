@@ -188,7 +188,7 @@ export async function sendTicketConfirmed({
     </div>
 
     <p style="text-align:center;color:rgba(255,255,255,0.15);font-size:11px;margin:0;">
-      Sivar Music Group · El Salvador
+      Sivar Music Group
     </p>
 
   </div>
