@@ -110,6 +110,26 @@ async function proxySoundForFilms(req: NextRequest, pathname: string) {
   return withNoindex(response);
 }
 
+/**
+ * Defensa en profundidad para /eventos/admin/**: redirige al login si no hay
+ * ninguna cookie de sesión de staff. NO es un control de seguridad (solo mira
+ * presencia, sin verificar firma): la autorización real la hacen las APIs con
+ * verifyStaffSession / verifyAdminSession.
+ */
+export function proxyEventosAdmin(req: NextRequest, pathname: string) {
+  if (pathname === "/eventos/admin/login") return NextResponse.next();
+
+  const hasSession =
+    req.cookies.get("pf_admin_token") || req.cookies.get("pf_admin_refresh");
+  if (hasSession) return NextResponse.next();
+
+  const url = req.nextUrl.clone();
+  url.pathname = "/eventos/admin/login";
+  url.search = "";
+  url.searchParams.set("redirect", pathname + req.nextUrl.search);
+  return NextResponse.redirect(url);
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -122,6 +142,10 @@ export async function proxy(req: NextRequest) {
     return proxySoundForFilms(req, pathname);
   }
 
+  if (pathname.startsWith("/eventos/admin")) {
+    return proxyEventosAdmin(req, pathname);
+  }
+
   if (pathname.startsWith("/voces")) {
     return proxyVoces(req, pathname);
   }
@@ -130,5 +154,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/sound-for-films/:path*", "/voces/:path*"],
+  matcher: ["/dashboard/:path*", "/sound-for-films/:path*", "/voces/:path*", "/eventos/admin/:path*"],
 };
