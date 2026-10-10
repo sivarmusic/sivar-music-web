@@ -3,17 +3,13 @@ import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { validateEventFields } from '@/lib/eventValidation'
 import { verifyAdminSession } from '@/lib/staff-auth'
+import { getPublicEvent } from '@/lib/eventsPublic'
 
 // Allowlist: nunca se pasa el body completo a update().
 const EDITABLE_FIELDS = [
   'nombre', 'slug', 'descripcion', 'fecha', 'venue', 'direccion', 'lat', 'lng',
   'precio', 'artistas', 'max_entradas', 'visible', 'imagen_url',
 ] as const
-
-// Columnas que necesita el público. El admin (sesión válida) ve todo, incluidos
-// eventos ocultos.
-const PUBLIC_COLUMNS =
-  'id, slug, nombre, descripcion, fecha, venue, direccion, lat, lng, imagen_url, precio, artistas, max_entradas, visible'
 
 export async function GET(
   _req: NextRequest,
@@ -23,8 +19,15 @@ export async function GET(
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   const isAdmin = !!(await verifyAdminSession())
 
-  let query = supabase.from('events').select(isAdmin ? '*' : PUBLIC_COLUMNS)
-  if (!isAdmin) query = query.eq('visible', true)
+  // Público: misma capa que generateMetadata (solo visibles, columnas acotadas).
+  // Admin (sesión válida): ve todo, incluidos eventos ocultos.
+  if (!isAdmin) {
+    const ev = await getPublicEvent(id)
+    if (!ev) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
+    return NextResponse.json({ event: ev })
+  }
+
+  const query = supabase.from('events').select('*')
   const { data, error } = await (isUuid
     ? query.or(`id.eq.${id},slug.eq.${id}`)
     : query.eq('slug', id)

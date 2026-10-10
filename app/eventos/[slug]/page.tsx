@@ -1,159 +1,51 @@
-'use client'
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Image from 'next/image'
-import Link from 'next/link'
-import EventMap from '../components/EventMap'
-import { supabaseBrowser } from '@/lib/supabase-browser'
-import { useLanguage } from '@/lib/i18n'
-import { formatMoney, orderTotal } from '@/lib/format'
-import { EVENT_TZ } from '@/lib/eventDate'
+import type { Metadata } from 'next'
+import EventClient from './EventClient'
+import { getPublicEvent } from '@/lib/eventsPublic'
+import { formatEventDateTime } from '@/lib/eventDate'
 
-interface Event {
-  id: string; slug: string; nombre: string; descripcion: string
-  fecha: string; venue: string; direccion: string; lat: number | null; lng: number | null
-  imagen_url: string | null; precio: number; artistas: string[]
+// El evento se lee en el servidor para que WhatsApp/Instagram/Google vean título,
+// descripción e imagen. La UI interactiva sigue siendo EventClient (sin cambios).
+
+function clip(text: string, max: number): string {
+  const t = text.replace(/\s+/g, ' ').trim()
+  return t.length <= max ? t : `${t.slice(0, max - 1).trimEnd()}…`
+}
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ slug: string }> },
+): Promise<Metadata> {
+  const { slug } = await params
+  let ev = null
+  try { ev = await getPublicEvent(slug) } catch { /* sin DB: metadata genérica */ }
+
+  if (!ev) {
+    return { title: 'Evento — Sivar Music', robots: { index: false, follow: false } }
+  }
+
+  const title = `${ev.nombre} — Sivar Music`
+  let when = ''
+  try { when = formatEventDateTime(ev.fecha) } catch { /* fecha inválida */ }
+  const description = clip(
+    ev.descripcion?.trim() || [when, ev.venue].filter(Boolean).join(' · ') || 'Entradas disponibles en Sivar Music.',
+    160,
+  )
+  const url = `/eventos/${ev.slug}`
+  const images = ev.imagen_url ? [{ url: ev.imagen_url, alt: ev.nombre }] : undefined
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url, siteName: 'Sivar Music', type: 'website', locale: 'es_SV', images },
+    twitter: {
+      card: images ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images: images?.map(i => i.url),
+    },
+  }
 }
 
 export default function EventPage() {
-  const { t, dateLocale } = useLanguage()
-  const { slug } = useParams<{ slug: string }>()
-  const router = useRouter()
-  const [event, setEvent] = useState<Event | null>(null)
-  const [notFound, setNotFound] = useState(false)
-  const [cantidad, setCantidad] = useState(1)
-  const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    fetch(`/api/eventos/events/${slug}`)
-      .then(r => r.json())
-      .then(d => { if (d.event) setEvent(d.event); else setNotFound(true) })
-      .catch(() => setNotFound(true))
-  }, [slug])
-
-  async function handleComprar() {
-    if (!event) return
-    setBusy(true)
-    const { data: { session } } = await supabaseBrowser.auth.getSession()
-    const checkoutUrl = `/eventos/${slug}/checkout?cantidad=${cantidad}`
-    if (session) {
-      router.push(checkoutUrl)
-    } else {
-      router.push(`/eventos/mi-cuenta/login?next=${encodeURIComponent(checkoutUrl)}`)
-    }
-  }
-
-  if (notFound) {
-    return (
-      <div className="min-h-screen bg-[#0a0008] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-white/50 text-sm mb-4">{t('detail.notFound')}</p>
-          <Link href="/eventos" className="text-[#F472B6] text-sm">{t('detail.backToAll')}</Link>
-        </div>
-      </div>
-    )
-  }
-
-  if (!event) {
-    return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">{t('detail.loading')}</p></div>
-  }
-
-  const fecha = new Date(event.fecha)
-  const total = orderTotal(cantidad, event.precio)
-
-  return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      {/* Imagen hero */}
-      {event.imagen_url ? (
-        <div className="relative h-64 w-full">
-          <Image src={event.imagen_url} alt={event.nombre} fill className="object-cover" priority />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0008]/30 to-[#0a0008]" />
-        </div>
-      ) : <div className="h-16" />}
-
-      <div className="px-5 pb-16 max-w-lg mx-auto -mt-10 relative z-10 space-y-6">
-        {/* Volver */}
-        <Link href="/eventos" className="inline-flex items-center min-h-[44px] text-white/60 hover:text-white text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6] rounded-lg">{t('detail.back')}</Link>
-
-        {/* Info del evento */}
-        <div>
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase mb-2">Sivar Music</p>
-          <h1 className="text-white text-2xl font-bold mb-3">{event.nombre}</h1>
-          <div className="space-y-1.5 text-sm">
-            <p className="text-white/60">
-              📅{' '}
-              {fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-              {' '}{t('detail.at')}{' '}
-              {fecha.toLocaleTimeString(dateLocale, { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' })}
-            </p>
-            <p className="text-white/60">📍 {event.venue}</p>
-            {event.artistas?.length > 0 && (
-              <p className="text-white/50">🎤 {event.artistas.join(', ')}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Descripción */}
-        {event.descripcion && (
-          <p className="text-white/55 text-sm leading-relaxed">{event.descripcion}</p>
-        )}
-
-        {/* Mapa */}
-        {event.lat && event.lng && (
-          <div>
-            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-2">{t('detail.location')}</p>
-            <EventMap lat={event.lat} lng={event.lng} venue={event.venue} direccion={event.direccion} />
-          </div>
-        )}
-
-        {/* Selector de entradas + botón de compra */}
-        <div className="border-t border-white/8 pt-6">
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-4">{t('detail.reserve')}</p>
-
-          <div className="bg-white/4 border border-white/10 rounded-2xl p-4 space-y-4 mb-4">
-            {/* Tipo y cantidad */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-semibold text-sm">{t('detail.general')}</p>
-                <p className="text-[#F472B6] font-bold text-sm">{formatMoney(event.precio)} {t('detail.perTicket')}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  aria-label="−"
-                  disabled={cantidad <= 1}
-                  onClick={() => setCantidad(c => Math.max(1, c - 1))}
-                  className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-40 text-white font-bold text-xl transition flex items-center justify-center leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6]"
-                >−</button>
-                <span aria-live="polite" className="text-white font-bold text-lg w-6 text-center tabular-nums">{cantidad}</span>
-                <button
-                  type="button"
-                  aria-label="+"
-                  disabled={cantidad >= 10}
-                  onClick={() => setCantidad(c => Math.min(10, c + 1))}
-                  className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-40 text-white font-bold text-xl transition flex items-center justify-center leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6]"
-                >+</button>
-              </div>
-            </div>
-
-            <div className="border-t border-white/8" />
-
-            <div className="flex items-center justify-between">
-              <span className="text-white/40 text-sm">{cantidad} {cantidad > 1 ? t('detail.tickets') : t('detail.ticket')}</span>
-              <span className="text-white font-bold">{formatMoney(total)}</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleComprar}
-            disabled={busy}
-            className="w-full bg-[#F472B6] hover:bg-[#ec4899] active:scale-[0.98] disabled:opacity-60 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-white transition-all"
-          >
-            {busy ? t('detail.loading') : `${t('detail.buy')} → ${formatMoney(total)}`}
-          </button>
-          <p className="text-center text-white/50 text-xs mt-2">{t('detail.bankTransfer')}</p>
-        </div>
-      </div>
-    </div>
-  )
+  return <EventClient />
 }
