@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { verifyStaffSession } from '@/lib/staff-auth'
 import { sendSafely } from '@/lib/email-safe'
 import { checkEventCapacity } from '@/lib/eventCapacity'
+import { parseCantidad } from '@/lib/eventValidation'
 import { sendOrderConfirmation, sendAdminNewOrderRequest } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
@@ -23,26 +24,37 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Sesión inválida. Iniciá sesión de nuevo.' }, { status: 401 })
   }
 
-  const { event_id, nombre, telefono, cantidad } = await req.json()
+  const body = await req.json().catch(() => null)
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
+  }
+  const { event_id, nombre, telefono, cantidad } = body
   const email = user.email!
 
-  if (!event_id || !nombre?.trim() || !telefono?.trim()) {
+  if (typeof event_id !== 'string' || typeof nombre !== 'string' || typeof telefono !== 'string'
+    || !event_id || !nombre.trim() || !telefono.trim()) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
+  }
+  const cantidadFinal = parseCantidad(cantidad)
+  if (cantidadFinal === null) {
+    return NextResponse.json({ error: 'La cantidad debe ser un número entero entre 1 y 20' }, { status: 400 })
   }
 
   // Verificar que el evento existe y está visible
-  const { data: event } = await supabase
+  const { data: event, error: eventError } = await supabase
     .from('events')
     .select('id, nombre, slug, precio, visible, max_entradas')
     .eq('id', event_id)
-    .single()
+    .maybeSingle()
 
+  // Un fallo de Supabase no es "evento no disponible": se informa como error interno.
+  if (eventError) return serverError('eventos/orders', eventError)
   if (!event || !event.visible) {
     return NextResponse.json({ error: 'Evento no disponible' }, { status: 404 })
   }
 
   // Recuperar orden activa existente del mismo usuario
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('event_orders')
     .select('*')
     .eq('event_id', event_id)
@@ -50,11 +62,12 @@ export async function POST(req: NextRequest) {
     .in('status', ['pendiente_comprobante', 'en_revision'])
     .maybeSingle()
 
+  // Si la consulta falla NO se asume "no existe": se podría crear una orden duplicada.
+  if (existingError) return serverError('eventos/orders', existingError)
+
   if (existing) {
     return NextResponse.json({ order: existing, recovered: true })
   }
-
-  const cantidadFinal = Math.max(1, Math.min(20, Number(cantidad) || 1))
 
   // Aforo: el servidor es la fuente de verdad. No atómico (ver eventCapacity.ts).
   const capacity = await checkEventCapacity(supabase, event_id, event.max_entradas, cantidadFinal)
@@ -63,11 +76,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Guardar/actualizar perfil
-  await supabase.from('attendee_profiles').upsert({
+  // Best-effort: el perfil es de conveniencia, no debe impedir la compra.
+  const { error: profileError } = await supabase.from('attendee_profiles').upsert({
     id: user.id,
     nombre: nombre.trim(),
     telefono: telefono.trim(),
   })
+  if (profileError) console.error('[eventos/orders] no se pudo guardar el perfil', { code: profileError.code, message: profileError.message })
 
   const { data: order, error } = await supabase
     .from('event_orders')
@@ -84,13 +99,14 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     if (error.code === '23505') {
-      const { data: race } = await supabase
+      const { data: race, error: raceError } = await supabase
         .from('event_orders')
         .select('*')
         .eq('event_id', event_id)
         .eq('user_id', user.id)
         .in('status', ['pendiente_comprobante', 'en_revision'])
         .maybeSingle()
+      if (raceError) return serverError('eventos/orders', raceError)
       if (race) return NextResponse.json({ order: race, recovered: true })
       // Otra cuenta ya tiene una solicitud activa con este teléfono para este evento.
       return NextResponse.json({

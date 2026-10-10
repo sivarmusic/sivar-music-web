@@ -1,20 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const m = vi.hoisted(() => ({
-  getUser: vi.fn(), insert: vi.fn(), orders: [] as { cantidad: number }[], insertError: null as null | { code: string; message: string }, event: {} as Record<string, unknown>,
+  getUser: vi.fn(), insert: vi.fn(), orders: [] as { cantidad: number }[], insertError: null as null | { code: string; message: string }, event: {} as Record<string, unknown>, existing: null as unknown, existingError: null as null | { message: string },
 }))
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     auth: { getUser: m.getUser },
     from: (table: string) => {
-      if (table === 'events') return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: m.event }) }) }) }
+      if (table === 'events') return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: m.event, error: null }) }) }) }
       if (table === 'attendee_profiles') return { upsert: () => Promise.resolve({}) }
       return {
         // existing-order lookup (.eq.eq.in.maybeSingle) y suma de cupo (.eq.in)
         select: () => ({
           eq: () => ({
-            eq: () => ({ in: () => ({ maybeSingle: () => Promise.resolve({ data: null }) }) }),
+            eq: () => ({ in: () => ({ maybeSingle: () => Promise.resolve({ data: m.existing, error: m.existingError }) }) }),
             in: () => Promise.resolve({ data: m.orders, error: null }),
           }),
         }),
@@ -39,13 +39,29 @@ const req = (cantidad: number) => new NextRequest('http://localhost/api/eventos/
 })
 
 beforeEach(() => {
-  m.getUser.mockReset(); m.insert.mockReset(); m.insertError = null
+  m.getUser.mockReset(); m.insert.mockReset(); m.insertError = null; m.existing = null; m.existingError = null
   m.getUser.mockResolvedValue({ data: { user: { id: 'u', email: 'a@x.com' } }, error: null })
   m.event = { id: 'e1', nombre: 'Show', slug: 's', precio: 10, visible: true, max_entradas: 10 }
   m.orders = [{ cantidad: 6 }, { cantidad: 2 }]
 })
 
 describe('POST /api/eventos/orders — aforo', () => {
+  it('500 (no crea orden) si falla la consulta de la orden activa existente', async () => {
+    m.existingError = { message: 'timeout' }
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const res = await POST(req(2))
+    expect(res.status).toBe(500)
+    expect(m.insert).not.toHaveBeenCalled()
+  })
+
+  it('400 con cantidad no entera, 0, negativa o texto (sin insertar)', async () => {
+    for (const c of [2.7, 0, -3, 'abc', 21]) {
+      const res = await POST(req(c as unknown as number))
+      expect(res.status).toBe(400)
+    }
+    expect(m.insert).not.toHaveBeenCalled()
+  })
+
   it('rechaza con 409 si la cantidad excede el cupo restante', async () => {
     const res = await POST(req(3))
     expect(res.status).toBe(409)

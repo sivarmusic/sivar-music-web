@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { enforceRateLimit } from '@/lib/rate-limit'
 import { supabase } from '@/lib/supabase'
 import { EXT_BY_MIME, matchesMime } from '@/lib/imageUpload'
+import { checkEventCapacity, holdsCapacity } from '@/lib/eventCapacity'
 
-const MAX_BYTES = 5 * 1024 * 1024
+// 4 MB: Vercel rechaza cuerpos > 4.5 MB antes de llegar a la función (413 HTML).
+const MAX_BYTES = 4 * 1024 * 1024
 
 // Solo se puede subir o reemplazar el comprobante mientras la orden no esté confirmada.
 const UPLOADABLE_STATUSES = ['pendiente_comprobante', 'en_revision', 'rechazado']
@@ -18,11 +20,11 @@ export async function POST(req: NextRequest) {
 
   if (!orderId || !file) return NextResponse.json({ error: 'Faltan datos' }, { status: 400 })
   if (!(file.type in EXT_BY_MIME)) return NextResponse.json({ error: 'Formato no permitido' }, { status: 400 })
-  if (file.size > MAX_BYTES) return NextResponse.json({ error: 'El archivo supera los 5MB' }, { status: 400 })
+  if (file.size > MAX_BYTES) return NextResponse.json({ error: 'El archivo supera los 4MB' }, { status: 400 })
 
   const { data: order, error: fetchError } = await supabase
     .from('event_orders')
-    .select('order_code, comprobante_path, status')
+    .select('order_code, comprobante_path, status, cantidad, event_id, created_at, events(max_entradas)')
     .eq('id', orderId)
     .single()
 
@@ -30,6 +32,17 @@ export async function POST(req: NextRequest) {
 
   if (!UPLOADABLE_STATUSES.includes(order.status)) {
     return NextResponse.json({ error: 'Esta orden ya fue confirmada' }, { status: 409 })
+  }
+
+  // Una orden rechazada (o con la reserva vencida) que sube comprobante vuelve a
+  // ocupar cupo al pasar a en_revision: se re-chequea antes de aceptarlo.
+  const needsCapacity = order.status === 'rechazado' || !holdsCapacity(order)
+  if (needsCapacity && order.event_id) {
+    const ev = order.events as unknown as { max_entradas: number | null } | null
+    const capacity = await checkEventCapacity(supabase, order.event_id, ev?.max_entradas, Number(order.cantidad) || 1)
+    if (!capacity.ok) {
+      return NextResponse.json({ error: capacity.message, remaining: capacity.remaining }, { status: 409 })
+    }
   }
 
   const bytes = await file.arrayBuffer()

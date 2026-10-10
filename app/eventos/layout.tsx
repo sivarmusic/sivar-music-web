@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { LanguageProvider } from '@/lib/i18n'
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://sivarmusic.com'),
   title: 'Eventos — Sivar Music',
   description: 'Compra tus entradas a los eventos de Sivar Music Group',
 }

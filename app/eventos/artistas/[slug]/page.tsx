@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 interface Profile {
   slug: string; nombre_artistico: string; genero: string | null; bio: string | null
@@ -81,7 +82,7 @@ export default function ArtistaPublicProfilePage() {
                     <div className="p-4">
                       <p className="text-white font-bold text-sm">{ev.nombre}</p>
                       <p className="text-white/50 text-xs mt-1">
-                        {fecha.toLocaleDateString(dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })}
+                        {fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'short', day: 'numeric', month: 'short' })}
                         {' · '}{ev.venue}
                       </p>
                       {ev.descripcion && <p className="text-white/40 text-sm mt-2 leading-relaxed">{ev.descripcion}</p>}

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
+import { safeInternalPath } from '@/lib/safe-redirect'
 
 type Tab = 'login' | 'register' | 'forgot'
 
@@ -12,7 +13,7 @@ function LoginForm() {
   const { t } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const next = searchParams.get('next') ?? '/eventos/mi-cuenta'
+  const next = safeInternalPath(searchParams.get('next'), '/eventos/mi-cuenta')
 
   const [tab, setTab] = useState<Tab>('login')
   const [email, setEmail] = useState('')

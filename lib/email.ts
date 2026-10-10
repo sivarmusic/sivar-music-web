@@ -1,8 +1,18 @@
 import { Resend } from 'resend'
 import { ADMIN_EMAIL } from './constants'
 import { formatMoney, formatMoneyFull } from './format'
+import { EVENT_TZ } from './eventDate'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Cliente perezoso: el constructor de Resend lanza si falta RESEND_API_KEY, y
+// hacerlo a nivel de módulo rompía el build y toda ruta que importara este
+// archivo. Ahora el error ocurre solo al enviar, dentro de sendSafely (log + false).
+let resendClient: Resend | null = null
+function getResend(): Resend {
+  const key = process.env.RESEND_API_KEY
+  if (!key) throw new Error('RESEND_API_KEY no está configurada')
+  if (!resendClient) resendClient = new Resend(key)
+  return resendClient
+}
 
 const FROM = 'Sivar Music <no-reply@sivarmusic.com>'
 
@@ -26,7 +36,7 @@ export async function sendOrderConfirmation({
   to: string; nombre: string; orderCode: string
   eventName: string; cantidad: number; total: number; pagoUrl: string
 }) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from,
     to,
     subject: `Tu orden ${orderCode} — ${eventName}`,
@@ -61,7 +71,7 @@ export async function sendAdminNewOrderRequest({
   orderCode: string; eventName: string; nombre: string
   telefono: string; email: string; cantidad: number; total: number
 }) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from,
     to: ADMIN_EMAIL,
     subject: `Nueva solicitud de entrada — ${eventName} (${orderCode})`,
@@ -87,7 +97,7 @@ export async function sendAdminNewArtistApplication({
   nombreArtistico: string; nombreContacto: string; email: string
   telefono: string; genero: string; bio: string
 }) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from,
     to: ADMIN_EMAIL,
     subject: `Nueva solicitud de artista — ${nombreArtistico}`,
@@ -112,7 +122,7 @@ export async function sendAdminNewArtistEvent({
 }: {
   nombreArtistico: string; nombreEvento: string; fecha: string; venue: string
 }) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from,
     to: ADMIN_EMAIL,
     subject: `Evento por confirmar — ${nombreEvento} (${nombreArtistico})`,
@@ -121,7 +131,7 @@ export async function sendAdminNewArtistEvent({
         <h2 style="color:#F472B6;margin:0 0 8px">Sivar Events for Artists</h2>
         <p style="color:#374151"><strong>Artista:</strong> ${esc(nombreArtistico)}</p>
         <p style="color:#374151"><strong>Evento:</strong> ${esc(nombreEvento)}</p>
-        <p style="color:#374151"><strong>Fecha:</strong> ${esc(new Date(fecha).toLocaleString('es-SV'))}</p>
+        <p style="color:#374151"><strong>Fecha:</strong> ${esc(new Date(fecha).toLocaleString('es-SV', { timeZone: EVENT_TZ }))}</p>
         <p style="color:#374151"><strong>Venue:</strong> ${esc(venue)}</p>
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
         <p style="color:#9ca3af;font-size:12px;text-align:center">Revisá y confirmá el evento en el panel de admin antes de que se publique.</p>
@@ -136,7 +146,7 @@ export async function sendTicketConfirmed({
   to: string; nombre: string; orderCode: string
   eventName: string; eventDate: string; eventVenue: string; verUrl: string
 }) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from,
     to,
     subject: `¡Tu entrada está confirmada! — ${eventName}`,
@@ -192,7 +202,7 @@ export async function sendAbandonedCartReminder({
 }: {
   to: string; nombre: string; orderCode: string; eventName: string; pagoUrl: string
 }) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from,
     to,
     subject: `Todavía te falta completar tu compra — ${eventName}`,
@@ -223,7 +233,7 @@ export async function sendWelcome({
 }: {
   to: string; nombre: string
 }) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from,
     to,
     subject: 'Bienvenido/a a Sivar Music',

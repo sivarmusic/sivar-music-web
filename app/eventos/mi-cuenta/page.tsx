@@ -7,6 +7,7 @@ import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import UserMenu from '../components/UserMenu'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 const QRCode = dynamic(() => import('qrcode').then(mod => ({
   default: ({ value, size }: { value: string; size: number }) => {
@@ -210,7 +211,7 @@ function OrderCard({ order, isExpanded, onExpand, onOpenQR, showQR, dim }: {
           <p className="text-white font-semibold text-sm truncate">{order.events?.nombre ?? 'Evento'}</p>
           {fecha && (
             <p className="text-white/40 text-xs mt-0.5 truncate">
-              {fecha.toLocaleDateString(dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })}
+              {fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'short', day: 'numeric', month: 'short' })}
               {' · '}{order.events?.venue}
             </p>
           )}
@@ -254,7 +255,7 @@ function OrderCard({ order, isExpanded, onExpand, onOpenQR, showQR, dim }: {
                   </button>
                   <p className="text-white/20 text-[10px] uppercase tracking-wider">{t('account.tapToEnlarge')}</p>
                   {ticket.check_in_at ? (
-                    <p className="text-green-400 text-xs font-semibold">{t('account.checkedInAt', { time: new Date(ticket.check_in_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' }) })}</p>
+                    <p className="text-green-400 text-xs font-semibold">{t('account.checkedInAt', { time: new Date(ticket.check_in_at).toLocaleTimeString(dateLocale, { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' }) })}</p>
                   ) : (
                     <p className="text-white/30 text-xs">{t('account.notCheckedIn')}</p>
                   )}
@@ -267,7 +268,7 @@ function OrderCard({ order, isExpanded, onExpand, onOpenQR, showQR, dim }: {
                 <div key={ticket.id} className="flex items-center justify-between bg-white/3 rounded-xl px-3 py-2">
                   <span className="text-white/55 text-xs">{t('account.ticketShort', { n: ticket.ticket_number })}</span>
                   {ticket.check_in_at
-                    ? <span className="text-green-400 text-xs">{t('account.checkedInAt', { time: new Date(ticket.check_in_at).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' }) })}</span>
+                    ? <span className="text-green-400 text-xs">{t('account.checkedInAt', { time: new Date(ticket.check_in_at).toLocaleTimeString(dateLocale, { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' }) })}</span>
                     : <span className="text-white/25 text-xs">{t('account.notCheckedIn')}</span>}
                 </div>
               ))}

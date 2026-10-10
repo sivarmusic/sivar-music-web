@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import AdminHeader from '../../components/AdminHeader'
 import { useRequireAdmin } from '../../components/useRequireAdmin'
+import { toEventDatetimeLocal } from '@/lib/eventDate'
 
 interface FormState {
   nombre: string; slug: string; descripcion: string
@@ -16,12 +17,8 @@ function slugify(s: string) {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
-function toLocalDatetime(iso: string) {
-  if (!iso) return ''
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
+// El input datetime-local se muestra y edita siempre en hora de El Salvador.
+const toLocalDatetime = toEventDatetimeLocal
 
 const INPUT = 'w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition'
 

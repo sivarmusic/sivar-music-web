@@ -3,6 +3,7 @@ import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { validateEventFields } from '@/lib/eventValidation'
 import { verifyAdminSession } from '@/lib/staff-auth'
+import { getPublicEvent } from '@/lib/eventsPublic'
 
 // Allowlist: nunca se pasa el body completo a update().
 const EDITABLE_FIELDS = [
@@ -16,6 +17,15 @@ export async function GET(
 ) {
   const { id } = await params
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  const isAdmin = !!(await verifyAdminSession())
+
+  // Público: misma capa que generateMetadata (solo visibles, columnas acotadas).
+  // Admin (sesión válida): ve todo, incluidos eventos ocultos.
+  if (!isAdmin) {
+    const ev = await getPublicEvent(id)
+    if (!ev) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
+    return NextResponse.json({ event: ev })
+  }
 
   const query = supabase.from('events').select('*')
   const { data, error } = await (isUuid
@@ -66,6 +76,22 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id } = await params
+
+  // Borrar un evento elimina en cascada sus órdenes y tickets: no se permite si
+  // ya hay entradas confirmadas (dinero cobrado). Ocultarlo es lo correcto.
+  const { count, error: countError } = await supabase
+    .from('event_orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_id', id)
+    .eq('status', 'confirmado')
+  if (countError) return serverError('eventos/events/[id]', countError)
+  if ((count ?? 0) > 0) {
+    return NextResponse.json(
+      { error: 'Tiene órdenes confirmadas: ocultalo en lugar de eliminarlo.' },
+      { status: 409 },
+    )
+  }
+
   const { error } = await supabase.from('events').delete().eq('id', id)
   if (error) return serverError('eventos/events/[id]', error)
   return NextResponse.json({ success: true })

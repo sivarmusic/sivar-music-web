@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AdminHeader from './components/AdminHeader'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 interface Ticket { id: string; ticket_number: number; qr_token: string; check_in_at: string | null }
 interface Order {
@@ -73,9 +74,11 @@ export default function EventosAdminPage() {
   async function deleteOrder(orderId: string) {
     if (!window.confirm('¿Eliminar esta orden? Esta acción no se puede deshacer.')) return
     setDeletingId(orderId)
-    await fetch(`/api/eventos/orders/${orderId}`, { method: 'DELETE' })
+    const res = await fetch(`/api/eventos/orders/${orderId}`, { method: 'DELETE' })
+    const data = await res.json().catch(() => ({} as { error?: string }))
     await fetchData()
     setDeletingId(null)
+    if (!res.ok) window.alert(data.error || 'No se pudo eliminar la orden')
   }
 
   async function resendEmail(orderId: string) {
@@ -92,19 +95,23 @@ export default function EventosAdminPage() {
   }
 
   async function toggleVisible(eventId: string, current: boolean) {
-    await fetch(`/api/eventos/events/${eventId}`, {
+    const res = await fetch(`/api/eventos/events/${eventId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ visible: !current }),
     })
+    const data = await res.json().catch(() => ({} as { error?: string }))
     await fetchData()
+    if (!res.ok) window.alert(data.error || 'No se pudo cambiar la visibilidad del evento')
   }
 
   async function deleteEvent(eventId: string, nombre: string) {
     if (!window.confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`)) return
     setDeletingEventId(eventId)
-    await fetch(`/api/eventos/events/${eventId}`, { method: 'DELETE' })
+    const res = await fetch(`/api/eventos/events/${eventId}`, { method: 'DELETE' })
+    const data = await res.json().catch(() => ({} as { error?: string }))
     await fetchData()
     setDeletingEventId(null)
+    if (!res.ok) window.alert(data.error || 'No se pudo eliminar el evento')
   }
 
   async function sendReminders() {
@@ -165,7 +172,7 @@ export default function EventosAdminPage() {
                     </button>
                   </div>
                   <p className="text-white/35 text-xs mt-1">
-                    {new Date(event.fecha).toLocaleDateString('es-SV', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {new Date(event.fecha).toLocaleDateString('es-SV', { timeZone: EVENT_TZ, day: 'numeric', month: 'short', year: 'numeric' })}
                     {event.venue && ` · ${event.venue}`}
                     {' · '}<span className="font-mono">${event.precio}</span>
                   </p>
@@ -299,7 +306,7 @@ export default function EventosAdminPage() {
                                 <span className="text-white/50 text-xs">Entrada {t.ticket_number}</span>
                                 <span className={`text-xs font-semibold ${t.check_in_at ? 'text-green-400' : 'text-white/25'}`}>
                                   {t.check_in_at
-                                    ? `Ingresó ${new Date(t.check_in_at).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}`
+                                    ? `Ingresó ${new Date(t.check_in_at).toLocaleTimeString('es-SV', { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' })}`
                                     : 'Pendiente'}
                                 </span>
                               </div>
