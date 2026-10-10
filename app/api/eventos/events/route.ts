@@ -3,6 +3,7 @@ import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/staff-auth'
 import { validateEventFields } from '@/lib/eventValidation'
+import { getEventsAvailability } from '@/lib/eventCapacity'
 
 // GET — público lista visibles + eventos informativos de artistas; con ?admin=1 y sesión admin lista todos los eventos con venta
 export async function GET(req: NextRequest) {
@@ -19,9 +20,17 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query
   if (error) return serverError('eventos/events', error)
 
-  const ticketEvents = (data ?? []).map(ev => ({ ...ev, kind: 'ticket' as const }))
+  if (isAdmin) {
+    return NextResponse.json({ events: (data ?? []).map(ev => ({ ...ev, kind: 'ticket' as const })) })
+  }
 
-  if (isAdmin) return NextResponse.json({ events: ticketEvents })
+  // Aditivo y retrocompatible: soldOut/remaining (remaining solo si quedan <= 20).
+  const availability = await getEventsAvailability(supabase, data ?? [])
+  const ticketEvents = (data ?? []).map(ev => ({
+    ...ev,
+    kind: 'ticket' as const,
+    ...(availability.get(ev.id) ?? { soldOut: false, remaining: null }),
+  }))
 
   const { data: artistEvents } = await supabase
     .from('artist_events')

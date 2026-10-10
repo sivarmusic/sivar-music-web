@@ -6,17 +6,31 @@ import Link from 'next/link'
 import EventMap from '../components/EventMap'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
-import { formatMoney, orderTotal } from '@/lib/format'
-import { EVENT_TZ } from '@/lib/eventDate'
+import { formatMoneyFull, orderTotal } from '@/lib/format'
+import { copyFor, type CopyKey } from '../copy'
+import { Icon } from '../components/icons'
+import SiteHeader from '../components/site/SiteHeader'
+import SiteFooter from '../components/site/SiteFooter'
+import QtyStepper from '../components/ui/QtyStepper'
+import { fmtDate, fmtTime } from '../components/ui/format'
 
 interface Event {
   id: string; slug: string; nombre: string; descripcion: string
   fecha: string; venue: string; direccion: string; lat: number | null; lng: number | null
   imagen_url: string | null; precio: number; artistas: string[]
+  /** Aditivos de la API pública: remaining solo viene cuando quedan <= 20. */
+  soldOut?: boolean; remaining?: number | null
 }
 
+/** Tope por orden en el selector (el servidor admite hasta 20). */
+const MAX_QTY = 10
+const INSTAGRAM = 'http://instagram.com/sivar.music'
+
+function upperFirst(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
+
 export default function EventClient() {
-  const { t, dateLocale } = useLanguage()
+  const { lang, t, dateLocale } = useLanguage()
+  const c = (key: CopyKey, vars?: Record<string, string | number>) => copyFor(lang, key, vars)
   const { slug } = useParams<{ slug: string }>()
   const router = useRouter()
   const [event, setEvent] = useState<Event | null>(null)
@@ -35,7 +49,7 @@ export default function EventClient() {
     if (!event) return
     setBusy(true)
     const { data: { session } } = await supabaseBrowser.auth.getSession()
-    const checkoutUrl = `/eventos/${slug}/checkout?cantidad=${cantidad}`
+    const checkoutUrl = `/eventos/${slug}/checkout?cantidad=${qty}`
     if (session) {
       router.push(checkoutUrl)
     } else {
@@ -45,115 +59,263 @@ export default function EventClient() {
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-[#0a0008] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-white/50 text-sm mb-4">{t('detail.notFound')}</p>
-          <Link href="/eventos" className="text-[#F472B6] text-sm">{t('detail.backToAll')}</Link>
-        </div>
+      <div className="ev-surface">
+        <SiteHeader />
+        <main id="main" className="ev-state-screen">
+          <div className="ev-stack">
+            <p className="ev-lead">{t('detail.notFound')}</p>
+            <Link href="/eventos" className="ev-link-arrow">{t('detail.backToAll')}</Link>
+          </div>
+        </main>
+        <SiteFooter />
       </div>
     )
   }
 
   if (!event) {
-    return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">{t('detail.loading')}</p></div>
+    return (
+      <div className="ev-surface">
+        <SiteHeader />
+        <main id="main" className="ev-state-screen" aria-busy="true">
+          <p className="ev-muted" role="status">{t('detail.loading')}</p>
+        </main>
+        <SiteFooter />
+      </div>
+    )
   }
 
   const fecha = new Date(event.fecha)
-  const total = orderTotal(cantidad, event.precio)
+  const soldOut = event.soldOut === true
+  const left = typeof event.remaining === 'number' ? event.remaining : null
+  const few = !soldOut && left !== null
+  // Si quedan menos que el tope, el "+" se frena en ese número (DESIGN §10.8).
+  const maxQty = left !== null ? Math.max(1, Math.min(MAX_QTY, left)) : MAX_QTY
+  const qty = Math.min(cantidad, maxQty)
+  const total = orderTotal(qty, event.precio)
+  const price = formatMoneyFull(event.precio)
+  const hasMap = !!(event.lat && event.lng)
+  const paragraphs = (event.descripcion ?? '').split(/\n+/).map(p => p.trim()).filter(Boolean)
+  const cappedByStock = left !== null && left < MAX_QTY && qty >= maxQty
+
+  const buyLabel = `${t('detail.buy')} ${qty}`
+  const chip = few ? (
+    <span className="ev-chip ev-chip--pending"><Icon name="alert-circle" />{c('evd.fewLeft', { n: left! })}</span>
+  ) : (
+    <span className="ev-chip ev-chip--confirmed"><Icon name="check" />{c('evd.available')}</span>
+  )
+
+  const stepper = (paper: boolean) => (
+    <QtyStepper
+      value={qty}
+      max={maxQty}
+      onChange={setCantidad}
+      paper={paper}
+      iconSize={paper ? 'lg' : undefined}
+      decLabel={c('evd.qtyDec')}
+      incLabel={c('evd.qtyInc')}
+      inputLabel={c('evd.qtyInput')}
+      groupLabel={c('evd.qty')}
+    />
+  )
 
   return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      {/* Imagen hero */}
-      {event.imagen_url ? (
-        <div className="relative h-64 w-full">
-          <Image src={event.imagen_url} alt={event.nombre} fill className="object-cover" priority />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0008]/30 to-[#0a0008]" />
-        </div>
-      ) : <div className="h-16" />}
+    <div className="ev-surface">
+      <SiteHeader />
 
-      <div className="px-5 pb-16 max-w-lg mx-auto -mt-10 relative z-10 space-y-6">
-        {/* Volver */}
-        <Link href="/eventos" className="inline-flex items-center min-h-[44px] text-white/60 hover:text-white text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6] rounded-lg">{t('detail.back')}</Link>
+      <main id="main" className="ev-container">
+        <Link className="ev-back-link" href="/eventos" style={{ marginTop: 'var(--ev-space-2)' }}>
+          <Icon name="arrow-left" size="sm" />{c('ev.title')}
+        </Link>
 
-        {/* Info del evento */}
-        <div>
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase mb-2">Sivar Music</p>
-          <h1 className="text-white text-2xl font-bold mb-3">{event.nombre}</h1>
-          <div className="space-y-1.5 text-sm">
-            <p className="text-white/60">
-              📅{' '}
-              {fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-              {' '}{t('detail.at')}{' '}
-              {fecha.toLocaleTimeString(dateLocale, { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' })}
-            </p>
-            <p className="text-white/60">📍 {event.venue}</p>
-            {event.artistas?.length > 0 && (
-              <p className="text-white/50">🎤 {event.artistas.join(', ')}</p>
+        <div className="ev-event-layout">
+          <article>
+            <header className="ev-event-hero">
+              <figure className="ev-event-hero__media">
+                {event.imagen_url ? (
+                  <Image
+                    src={event.imagen_url}
+                    alt={c('ev.poster', { name: event.nombre })}
+                    fill
+                    sizes="(min-width: 960px) 300px, 100vw"
+                    priority
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="ev-poster-fallback" role="img" aria-label={c('ev.posterNone', { name: event.nombre })}>
+                    <span className="ev-poster-fallback__name">{event.nombre}</span>
+                    <span className="ev-poster-fallback__tag">{c('ev.posterTag')}</span>
+                  </div>
+                )}
+              </figure>
+              <div className="ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-3)' }}>
+                <p className="ev-eyebrow" style={{ position: 'relative', zIndex: 1 }}>{c('evd.presents')}</p>
+                <h1 className="ev-event-hero__title" style={{ marginTop: 'var(--ev-space-2)' }}>{event.nombre}</h1>
+              </div>
+            </header>
+
+            <dl className="ev-event-facts" style={{ marginTop: 'var(--ev-space-6)' }}>
+              <div className="ev-event-facts__item">
+                <Icon name="calendar" />
+                <div>
+                  <dt className="ev-visually-hidden">{c('evd.factDate')}</dt>
+                  <dd className="ev-event-facts__main">
+                    {upperFirst(fmtDate(fecha, dateLocale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}
+                  </dd>
+                  <dd className="ev-event-facts__sub">{c('evd.showAt', { time: fmtTime(fecha, dateLocale) })}</dd>
+                </div>
+              </div>
+              <div className="ev-event-facts__item">
+                <Icon name="map-pin" />
+                <div>
+                  <dt className="ev-visually-hidden">{c('evd.factPlace')}</dt>
+                  <dd className="ev-event-facts__main">{event.venue}</dd>
+                  {(event.direccion || hasMap) && (
+                    <dd className="ev-event-facts__sub">
+                      {event.direccion}
+                      {event.direccion && hasMap && ' · '}
+                      {hasMap && <a href="#ev-mapa">{c('evd.seeMap')}</a>}
+                    </dd>
+                  )}
+                </div>
+              </div>
+              <div className="ev-event-facts__item">
+                <Icon name="ticket" />
+                <div>
+                  <dt className="ev-visually-hidden">{c('evd.factPrice')}</dt>
+                  <dd className="ev-event-facts__main">{price} {t('detail.perTicket')}</dd>
+                  <dd className="ev-event-facts__sub">{t('detail.bankTransfer')}</dd>
+                </div>
+              </div>
+              {event.artistas?.length > 0 && (
+                <div className="ev-event-facts__item">
+                  <Icon name="mic" />
+                  <div>
+                    <dt className="ev-visually-hidden">{c('evd.factArtists')}</dt>
+                    <dd className="ev-event-facts__main">{event.artistas.join(', ')}</dd>
+                  </div>
+                </div>
+              )}
+            </dl>
+
+            {paragraphs.length > 0 && (
+              <section className="ev-stack" style={{ marginTop: 'var(--ev-space-10)' }} aria-labelledby="ev-h-sobre">
+                <h2 className="ev-display ev-display--sm" id="ev-h-sobre">{c('evd.about')}</h2>
+                <div className="ev-prose">
+                  {paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+                </div>
+              </section>
             )}
-          </div>
-        </div>
 
-        {/* Descripción */}
-        {event.descripcion && (
-          <p className="text-white/55 text-sm leading-relaxed">{event.descripcion}</p>
-        )}
+            {hasMap && (
+              <section id="ev-mapa" className="ev-stack" style={{ marginTop: 'var(--ev-space-10)', scrollMarginTop: 'calc(var(--ev-header-h) + var(--ev-space-4))' }} aria-labelledby="ev-h-mapa">
+                <h2 className="ev-display ev-display--sm" id="ev-h-mapa">{t('detail.location')}</h2>
+                <EventMap lat={event.lat!} lng={event.lng!} venue={event.venue} direccion={event.direccion} />
+              </section>
+            )}
 
-        {/* Mapa */}
-        {event.lat && event.lng && (
-          <div>
-            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-2">{t('detail.location')}</p>
-            <EventMap lat={event.lat} lng={event.lng} venue={event.venue} direccion={event.direccion} />
-          </div>
-        )}
+            <section className="ev-stack" style={{ marginTop: 'var(--ev-space-10)' }} aria-labelledby="ev-h-como">
+              <h2 className="ev-display ev-display--sm" id="ev-h-como">{c('ev.howto')}</h2>
+              <ol className="ev-timeline">
+                {([1, 2, 3, 4] as const).map(n => (
+                  <li key={n} className="ev-timeline__item">
+                    <div>
+                      <p className="ev-timeline__title">{c(`evd.how${n}.title` as CopyKey)}</p>
+                      <p className="ev-timeline__text">{c(`evd.how${n}.text` as CopyKey)}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          </article>
 
-        {/* Selector de entradas + botón de compra */}
-        <div className="border-t border-white/8 pt-6">
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-4">{t('detail.reserve')}</p>
-
-          <div className="bg-white/4 border border-white/10 rounded-2xl p-4 space-y-4 mb-4">
-            {/* Tipo y cantidad */}
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-semibold text-sm">{t('detail.general')}</p>
-                <p className="text-[#F472B6] font-bold text-sm">{formatMoney(event.precio)} {t('detail.perTicket')}</p>
+          {/* Panel de compra (desktop) y barra pegajosa (mobile) */}
+          {soldOut ? (
+            <>
+              <aside className="ev-purchase" aria-label={c('evd.tickets')}>
+                <div className="ev-ticket">
+                  <div className="ev-ticket__section ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-4)', position: 'relative' }}>
+                    <span className="ev-ticket__label">{c('evd.tickets')}</span>
+                    <p className="ev-ticket__total ev-ticket__total--struck">{price}</p>
+                    <span className="ev-stamp ev-stamp--paper" style={{ fontSize: '2.5rem' }}>{c('evd.soldOut')}</span>
+                  </div>
+                  <div className="ev-ticket__perf" aria-hidden="true" />
+                  <div className="ev-ticket__section">
+                    <p className="ev-ticket__muted">{c('evd.soldOutText')}</p>
+                    <a className="ev-btn ev-btn--paper ev-btn--block" href={INSTAGRAM} target="_blank" rel="noopener noreferrer" style={{ marginTop: 'var(--ev-space-4)' }}>
+                      <Icon name="instagram" />{c('evd.followIg')}
+                    </a>
+                  </div>
+                </div>
+              </aside>
+              <div className="ev-buy-bar" role="region" aria-label={c('evd.tickets')} style={{ gridTemplateColumns: '1fr' }}>
+                <button type="button" className="ev-btn ev-btn--block" disabled>
+                  <Icon name="x" />{c('evd.soldOut')}
+                </button>
               </div>
-              <div className="flex items-center gap-3">
+            </>
+          ) : (
+            <>
+              <aside className="ev-purchase" aria-labelledby="ev-h-buy">
+                <div className="ev-ticket">
+                  <div className="ev-ticket__section ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-4)' }}>
+                    <div className="ev-ticket__row">
+                      <h2 className="ev-ticket__label" id="ev-h-buy">{c('evd.tickets')}</h2>
+                      {chip}
+                    </div>
+                    <p className="ev-ticket__total">
+                      {price}{' '}
+                      <span className="ev-ticket__muted" style={{ fontFamily: 'var(--ev-font-sans)', fontSize: 'var(--ev-text-sm)', fontWeight: 500 }}>{c('evd.each')}</span>
+                    </p>
+                    <div>
+                      <p className="ev-ticket__label" style={{ marginBottom: 'var(--ev-space-2)' }}>{c('evd.qty')}</p>
+                      {stepper(true)}
+                      {cappedByStock && <p className="ev-qty__note" style={{ color: '#4a3f00' }}>{c('evd.onlyLeft', { n: maxQty })}</p>}
+                    </div>
+                  </div>
+                  <div className="ev-ticket__perf" aria-hidden="true" />
+                  <div className="ev-ticket__section ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-4)' }}>
+                    <div className="ev-ticket__row">
+                      <span className="ev-ticket__label">{t('checkout.total')}</span>
+                      <span className="ev-ticket__total">{formatMoneyFull(total)}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className={`ev-btn ev-btn--paper ev-btn--lg ev-btn--block${busy ? ' is-loading' : ''}`}
+                      onClick={handleComprar}
+                      disabled={busy}
+                      aria-busy={busy}
+                    >
+                      {buyLabel} <Icon name="arrow-right" size="lg" />
+                    </button>
+                    <p className="ev-ticket__muted">{c('evd.noCard')}</p>
+                  </div>
+                </div>
+              </aside>
+
+              <div className="ev-buy-bar" role="region" aria-label={c('evd.buyRegion')}>
+                {stepper(false)}
                 <button
                   type="button"
-                  aria-label="−"
-                  disabled={cantidad <= 1}
-                  onClick={() => setCantidad(c => Math.max(1, c - 1))}
-                  className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-40 text-white font-bold text-xl transition flex items-center justify-center leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6]"
-                >−</button>
-                <span aria-live="polite" className="text-white font-bold text-lg w-6 text-center tabular-nums">{cantidad}</span>
-                <button
-                  type="button"
-                  aria-label="+"
-                  disabled={cantidad >= 10}
-                  onClick={() => setCantidad(c => Math.min(10, c + 1))}
-                  className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-40 text-white font-bold text-xl transition flex items-center justify-center leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F472B6]"
-                >+</button>
+                  className={`ev-btn ev-btn--primary ev-btn--block ev-btn--split${busy ? ' is-loading' : ''}`}
+                  style={{ minHeight: 56 }}
+                  onClick={handleComprar}
+                  disabled={busy}
+                  aria-busy={busy}
+                >
+                  {t('detail.buy')} <span className="ev-btn__meta">{formatMoneyFull(total)}</span>
+                </button>
+                {few && (
+                  <p className="ev-subtle" style={{ gridColumn: '1 / -1', display: 'flex', gap: 6, alignItems: 'center', color: 'var(--ev-color-warning)' }}>
+                    <Icon name="alert-circle" size="sm" />{c('evd.fewLeftLong', { n: left! })}
+                  </p>
+                )}
               </div>
-            </div>
-
-            <div className="border-t border-white/8" />
-
-            <div className="flex items-center justify-between">
-              <span className="text-white/40 text-sm">{cantidad} {cantidad > 1 ? t('detail.tickets') : t('detail.ticket')}</span>
-              <span className="text-white font-bold">{formatMoney(total)}</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleComprar}
-            disabled={busy}
-            className="w-full bg-[#F472B6] hover:bg-[#ec4899] active:scale-[0.98] disabled:opacity-60 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-white transition-all"
-          >
-            {busy ? t('detail.loading') : `${t('detail.buy')} → ${formatMoney(total)}`}
-          </button>
-          <p className="text-center text-white/50 text-xs mt-2">{t('detail.bankTransfer')}</p>
+            </>
+          )}
         </div>
-      </div>
+      </main>
+
+      <SiteFooter />
     </div>
   )
 }

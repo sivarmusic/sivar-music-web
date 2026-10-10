@@ -11,6 +11,9 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
+import { Icon } from '../../components/icons'
+import SiteHeader from '../../components/site/SiteHeader'
+import SiteFooter from '../../components/site/SiteFooter'
 
 const RESEND_WAIT = 60
 
@@ -50,92 +53,77 @@ function VerificarContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0008] text-white flex flex-col items-center justify-center px-5 py-12">
-      <div className="w-full max-w-sm text-center space-y-6">
-
-        <div>
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase mb-3">Sivar Events</p>
-          <div className="text-5xl mb-4">📬</div>
-          <h1 className="text-white text-2xl font-bold mb-3">{t('verify.title')}</h1>
-          <p className="text-white/50 text-sm leading-relaxed">
-            {t('verify.body1')}{' '}
-            {email && <strong className="text-white">{email}</strong>}.{' '}
-            {t('verify.body2')}
-          </p>
-        </div>
-
-        <div className="bg-white/4 border border-white/10 rounded-2xl p-5 text-left space-y-4">
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider">{t('verify.notReceived')}</p>
-          <p className="text-white/50 text-sm leading-relaxed">
-            {t('verify.checkSpam')}
-          </p>
-
-          {sent && !error && (
-            <p className="text-green-400 text-sm bg-green-400/10 border border-green-400/20 rounded-xl px-3 py-2 text-center">
-              {t('verify.resent')}
+    <div className="ev-surface">
+      <SiteHeader />
+      <main id="main" className="ev-container ev-container--narrow ev-page">
+        <div className="ev-stack ev-stack--lg" style={{ paddingBlock: 'var(--ev-space-8)' }}>
+          <header className="ev-stack ev-stack--sm">
+            <p className="ev-eyebrow">Sivar Eventos</p>
+            <h1 className="ev-display ev-display--md">{t('verify.title')}</h1>
+            <p className="ev-lead">
+              {t('verify.body1')}{' '}
+              {email && <strong style={{ color: 'var(--ev-color-text)' }}>{email}</strong>}.{' '}
+              {t('verify.body2')}
             </p>
-          )}
-          {error && (
-            <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-3 py-2 text-center">
-              {error}
-            </p>
-          )}
+          </header>
 
-          {seconds > 0 ? (
-            <div className="flex items-center justify-between">
-              <p className="text-white/30 text-sm">{t('verify.resend')}</p>
-              <div className="flex items-center gap-2">
-                <div className="relative w-8 h-8">
-                  <svg className="w-8 h-8 -rotate-90" viewBox="0 0 32 32">
-                    <circle cx="16" cy="16" r="13" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="2.5" />
-                    <circle
-                      cx="16" cy="16" r="13" fill="none"
-                      stroke="#F472B6" strokeWidth="2.5"
-                      strokeDasharray={`${2 * Math.PI * 13}`}
-                      strokeDashoffset={`${2 * Math.PI * 13 * (1 - seconds / RESEND_WAIT)}`}
-                      strokeLinecap="round"
-                      style={{ transition: 'stroke-dashoffset 1s linear' }}
-                    />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-white/50 text-[10px] font-bold">
-                    {seconds}
-                  </span>
+          <section className="ev-admin-card ev-stack" style={{ padding: 'var(--ev-space-5)' }} aria-labelledby="ev-h-noreceived">
+            <h2 className="ev-title ev-title--sm" id="ev-h-noreceived">{t('verify.notReceived')}</h2>
+            <p className="ev-muted">{t('verify.checkSpam')}</p>
+
+            <div role="status">
+              {sent && !error && (
+                <div className="ev-banner ev-banner--success">
+                  <Icon name="check-circle" />
+                  <div><p className="ev-banner__title">{t('verify.resent')}</p></div>
                 </div>
-              </div>
+              )}
             </div>
-          ) : (
-            <button
-              onClick={handleResend}
-              disabled={sending}
-              className="w-full bg-white/8 hover:bg-[#F472B6]/20 hover:text-[#F472B6] disabled:opacity-50 text-white/70 text-sm font-semibold rounded-xl py-2.5 transition-all"
-            >
-              {sending ? t('verify.sending') : t('verify.resend')}
-            </button>
-          )}
+            <div role="alert">
+              {error && (
+                <div className="ev-banner ev-banner--error">
+                  <Icon name="alert-triangle" />
+                  <div><p className="ev-banner__title">{error}</p></div>
+                </div>
+              )}
+            </div>
+
+            {seconds > 0 ? (
+              <p className="ev-subtle" style={{ display: 'flex', alignItems: 'center', gap: 'var(--ev-space-3)' }}>
+                <Icon name="clock" size="sm" />
+                {t('verify.resend')}
+                <span className="ev-mono ev-tabular" style={{ color: 'var(--ev-color-text)' }}>{seconds}s</span>
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={sending}
+                className={`ev-btn ev-btn--secondary ev-btn--sm${sending ? ' is-loading' : ''}`}
+              >
+                {sending ? t('verify.sending') : t('verify.resend')}
+              </button>
+            )}
+          </section>
+
+          <div className="ev-stack ev-stack--sm">
+            <Link href="/eventos/mi-cuenta/login" className="ev-btn ev-btn--primary ev-btn--lg ev-btn--block">
+              {t('verify.confirmed')}
+            </Link>
+            <Link href="/eventos" className="ev-back-link" style={{ justifySelf: 'center' }}>
+              {t('verify.backToEvents')}
+            </Link>
+          </div>
         </div>
-
-        <Link
-          href="/eventos/mi-cuenta/login"
-          className="block w-full bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all text-center"
-        >
-          {t('verify.confirmed')}
-        </Link>
-
-        <Link href="/eventos" className="block text-white/25 hover:text-white text-xs transition">
-          {t('verify.backToEvents')}
-        </Link>
-      </div>
+      </main>
+      <SiteFooter />
     </div>
   )
 }
 
 export default function VerificarPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#0a0008] flex items-center justify-center">
-        <p className="text-white/30 text-sm">Cargando...</p>
-      </div>
-    }>
+    <Suspense fallback={<div className="ev-surface" aria-busy="true" />}>
       <VerificarContent />
     </Suspense>
   )

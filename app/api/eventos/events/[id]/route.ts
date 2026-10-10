@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { validateEventFields } from '@/lib/eventValidation'
 import { verifyAdminSession } from '@/lib/staff-auth'
 import { getPublicEvent } from '@/lib/eventsPublic'
+import { getEventsAvailability } from '@/lib/eventCapacity'
 
 // Allowlist: nunca se pasa el body completo a update().
 const EDITABLE_FIELDS = [
@@ -24,7 +25,8 @@ export async function GET(
   if (!isAdmin) {
     const ev = await getPublicEvent(id)
     if (!ev) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
-    return NextResponse.json({ event: ev })
+    const availability = await getEventsAvailability(supabase, [ev])
+    return NextResponse.json({ event: { ...ev, ...(availability.get(ev.id) ?? { soldOut: false, remaining: null }) } })
   }
 
   const query = supabase.from('events').select('*')

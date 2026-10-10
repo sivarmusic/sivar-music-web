@@ -14,6 +14,8 @@ interface Event {
   id: string; slug?: string; nombre: string; fecha: string
   venue: string; imagen_url: string | null; precio?: number; artistas: string[]
   kind: 'ticket' | 'info'; artistSlug?: string | null
+  /** Aditivos de la API pública; remaining solo viene cuando quedan <= 20. */
+  soldOut?: boolean; remaining?: number | null
 }
 
 type TimeFilter = '24h' | '7d' | '30d' | null
@@ -72,6 +74,18 @@ export default function EventosClient() {
   const hrefFor = (ev: Event) => ev.kind === 'info' ? `/eventos/artistas/${ev.artistSlug}` : `/eventos/${ev.slug}`
 
   function resetFilters() { setSearch(''); setTimeFilter(null) }
+
+  // "Quedan N" / "Agotado": solo si la API los informa (icono + palabra + color).
+  function renderAvailability(ev: Event) {
+    if (ev.kind !== 'ticket') return null
+    if (ev.soldOut) {
+      return <span className="ev-chip ev-chip--soldout"><Icon name="x" />{c('evd.soldOut')}</span>
+    }
+    if (typeof ev.remaining === 'number') {
+      return <span className="ev-chip ev-chip--few"><Icon name="alert-circle" />{c('evd.fewLeft', { n: ev.remaining })}</span>
+    }
+    return null
+  }
 
   function renderPoster(ev: Event, sizes: string, priority = false) {
     if (ev.imagen_url) {
@@ -239,11 +253,20 @@ export default function EventosClient() {
                         <div className="ev-event-card__meta" style={{ fontSize: 'var(--ev-text-base)' }}>
                           <span><Icon name="map-pin" />{featured.venue}</span>
                         </div>
-                        {featured.precio != null && (
+                        {(featured.precio != null || featured.soldOut || typeof featured.remaining === 'number') && (
                           <div className="ev-cluster" style={{ justifyContent: 'space-between' }}>
-                            <p className="ev-event-card__price" style={{ fontSize: '2.5rem' }}>
-                              <span className="ev-visually-hidden">{c('ev.price')}</span>{formatMoneyFull(featured.precio)}
-                            </p>
+                            {featured.precio != null && (
+                              <p
+                                className="ev-event-card__price"
+                                style={{
+                                  fontSize: '2.5rem',
+                                  ...(featured.soldOut ? { color: 'var(--ev-color-text-subtle)', textDecoration: 'line-through', textDecorationThickness: 2 } : null),
+                                }}
+                              >
+                                <span className="ev-visually-hidden">{c('ev.price')}</span>{formatMoneyFull(featured.precio)}
+                              </p>
+                            )}
+                            {renderAvailability(featured)}
                           </div>
                         )}
                         <span className="ev-btn ev-btn--primary ev-btn--lg ev-btn--block" aria-hidden="true">
@@ -266,9 +289,10 @@ export default function EventosClient() {
                     {gridEvents.map(event => {
                       const fecha = new Date(event.fecha)
                       const isPast = fecha < now
+                      const soldOut = event.kind === 'ticket' && event.soldOut === true && !isPast
                       return (
                         <li key={event.id}>
-                          <Link className={`ev-event-card${isPast ? ' ev-event-card--past' : ''}`} href={hrefFor(event)}>
+                          <Link className={`ev-event-card${isPast ? ' ev-event-card--past' : ''}${soldOut ? ' ev-event-card--soldout' : ''}`} href={hrefFor(event)}>
                             <div className="ev-event-card__media">
                               {renderPoster(event, '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 104px')}
                               <p className="ev-event-card__date">
@@ -279,6 +303,9 @@ export default function EventosClient() {
                               {isPast && (
                                 <div className="ev-event-card__stamp"><span className="ev-stamp">{t('home.pastEvent')}</span></div>
                               )}
+                              {soldOut && (
+                                <div className="ev-event-card__stamp"><span className="ev-stamp">{c('evd.soldOut')}</span></div>
+                              )}
                             </div>
                             <div className="ev-event-card__body">
                               <h3 className="ev-event-card__title">{event.nombre}</h3>
@@ -286,11 +313,14 @@ export default function EventosClient() {
                                 <span><Icon name="clock" />{fmtTime(fecha)}</span>
                                 <span><Icon name="map-pin" />{event.venue}</span>
                               </p>
-                              {event.kind === 'ticket' && event.precio != null && (
+                              {event.kind === 'ticket' && (event.precio != null || (!isPast && (event.soldOut || typeof event.remaining === 'number'))) && (
                                 <div className="ev-event-card__foot">
-                                  <p className="ev-event-card__price">
-                                    <span className="ev-visually-hidden">{c('ev.price')}</span>{formatMoneyFull(event.precio)}
-                                  </p>
+                                  {event.precio != null && (
+                                    <p className="ev-event-card__price">
+                                      <span className="ev-visually-hidden">{c('ev.price')}</span>{formatMoneyFull(event.precio)}
+                                    </p>
+                                  )}
+                                  {!isPast && renderAvailability(event)}
                                 </div>
                               )}
                             </div>
