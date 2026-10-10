@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AdminHeader from '../../../components/AdminHeader'
+import { Icon } from '../../../../components/icons'
 import { useRequireAdmin } from '../../../components/useRequireAdmin'
 import { EVENT_TZ } from '@/lib/eventDate'
 
@@ -45,8 +45,8 @@ export default function ReporteEventoPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  if (loading) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">Cargando...</p></div>
-  if (!event) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">Evento no encontrado.</p></div>
+  if (loading) return <div className="ev-state-screen"><p className="ev-muted" role="status">Cargando…</p></div>
+  if (!event) return <div className="ev-state-screen"><p className="ev-muted" role="status">Evento no encontrado.</p></div>
 
   const compraOrders = orders.filter(o => o.order_type !== 'cortesia')
   const cortesiaOrders = orders.filter(o => o.order_type === 'cortesia')
@@ -91,81 +91,92 @@ export default function ReporteEventoPage() {
     URL.revokeObjectURL(url)
   }
 
+  const categorias = Object.entries(cortesiaPorCategoria)
+  const eventDate = new Date(event.fecha).toLocaleDateString('es-SV', { timeZone: EVENT_TZ, day: 'numeric', month: 'short', year: 'numeric' })
+
   return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      <AdminHeader />
-
-      <div className="px-5 py-6 max-w-2xl mx-auto space-y-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <Link href="/eventos/admin" className="text-white/35 hover:text-white text-xs transition">← Eventos</Link>
-            <h1 className="text-white text-lg font-bold truncate mt-1">Reporte — {event.nombre}</h1>
-            <p className="text-white/35 text-xs mt-0.5">{event.venue} · {new Date(event.fecha).toLocaleDateString('es-SV', { timeZone: EVENT_TZ, day: 'numeric', month: 'short', year: 'numeric' })}</p>
-          </div>
-          <button onClick={exportCsv}
-            className="flex-none bg-white/8 hover:bg-[#F472B6]/20 hover:text-[#F472B6] text-white/60 text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl transition">
-            Exportar CSV
-          </button>
+    <>
+      <div className="ev-page-head">
+        <div className="ev-stack ev-stack--sm" style={{ minWidth: 0 }}>
+          <Link className="ev-back-link" href="/eventos/admin"><Icon name="arrow-left" size="sm" />Eventos</Link>
+          <h1 className="ev-display ev-display--md">Reporte</h1>
+          <p className="ev-muted">{event.nombre} · {event.venue} · {eventDate}</p>
         </div>
+        <button type="button" className="ev-btn ev-btn--secondary ev-btn--sm" onClick={exportCsv}>
+          <Icon name="download" />Exportar CSV
+        </button>
+      </div>
 
-        {/* Resumen para el venue */}
-        <div className="rounded-2xl border border-[#F472B6]/25 bg-[#F472B6]/5 p-4">
-          <p className="text-[#F472B6] text-[10px] font-bold uppercase tracking-wider mb-1">Para liquidación con el venue</p>
-          <p className="text-white text-3xl font-bold">{vendidas}</p>
-          <p className="text-white/40 text-xs">entradas vendidas (no incluye cortesías)</p>
+      <h2 className="ev-visually-hidden">Resumen</h2>
+      <div className="ev-stats" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: 'var(--ev-space-8)' }}>
+        <div className="ev-stat ev-stat--accent">
+          <span className="ev-stat__value">{vendidas}</span>
+          <span className="ev-stat__label">Entradas vendidas (sin cortesías) · para liquidación con el venue</span>
         </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-white/5 border border-white/8 p-3 text-center">
-            <p className="text-white text-2xl font-bold">{ingresados}</p>
-            <p className="text-white/35 text-[10px] mt-1">Total ingresaron</p>
-          </div>
-          <div className="rounded-2xl bg-white/5 border border-white/8 p-3 text-center">
-            <p className="text-purple-300 text-2xl font-bold">{cortesias}</p>
-            <p className="text-white/35 text-[10px] mt-1">Entradas de cortesía</p>
-          </div>
+        <div className="ev-stat ev-stat--confirmed">
+          <span className="ev-stat__value">{ingresados}</span>
+          <span className="ev-stat__label">Total ingresaron</span>
         </div>
-
-        {/* Desglose cortesías */}
-        {cortesias > 0 && (
-          <div>
-            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-2">Cortesías por categoría</p>
-            <div className="grid grid-cols-2 gap-2">
-              {Object.entries(cortesiaPorCategoria).map(([cat, count]) => (
-                <div key={cat} className="rounded-xl bg-white/4 border border-white/8 px-3 py-2 flex items-center justify-between">
-                  <span className="text-white/60 text-xs">{CATEGORIA_LABELS[cat] ?? cat}</span>
-                  <span className="text-white font-bold text-sm">{count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tabla de asistentes */}
-        <div>
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-2">Asistentes ({attendees.length})</p>
-          {attendees.length === 0 ? (
-            <p className="text-white/25 text-sm text-center py-8">No hay entradas confirmadas para este evento.</p>
-          ) : (
-            <div className="space-y-1.5">
-              {attendees.map((a, i) => (
-                <div key={`${a.orderCode}-${a.ticketNumber}-${i}`} className="rounded-xl bg-white/4 border border-white/8 px-4 py-2.5 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-white text-sm font-semibold truncate">{a.nombre}</p>
-                    <p className="text-white/35 text-xs">{a.orderCode} · {a.tipo} · Entrada {a.ticketNumber}</p>
-                  </div>
-                  <span className={`text-xs font-semibold flex-none ${a.checkInAt ? 'text-green-400' : 'text-white/25'}`}>
-                    {a.checkInAt
-                      ? new Date(a.checkInAt).toLocaleTimeString('es-SV', { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' })
-                      : 'No ha ingresado'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="ev-stat">
+          <span className="ev-stat__value">{cortesias}</span>
+          <span className="ev-stat__label"><Icon name="gift" size="sm" />Entradas de cortesía</span>
+        </div>
+        <div className="ev-stat">
+          <span className="ev-stat__value">{attendees.length}</span>
+          <span className="ev-stat__label">Entradas confirmadas</span>
         </div>
       </div>
-    </div>
+
+      <div className="ev-split-2">
+        {cortesias > 0 && (
+          <section className="ev-admin-card ev-admin-form ev-split-2__aside" aria-labelledby="h-cat">
+            <h2 className="ev-title ev-title--sm" id="h-cat" style={{ marginBottom: 'var(--ev-space-5)' }}>Cortesías por categoría</h2>
+            <div className="ev-bar-list">
+              {categorias.map(([cat, count]) => (
+                <div key={cat} className="ev-bar-list__row">
+                  <span>{CATEGORIA_LABELS[cat] ?? cat}</span>
+                  <span className="ev-tabular"><strong>{count}</strong></span>
+                  <div className="ev-bar-list__track">
+                    <div className="ev-bar-list__fill" style={{ width: `${cortesias ? Math.round((count / cortesias) * 100) : 0}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section className="ev-split-2__main" aria-labelledby="h-asist" style={cortesias > 0 ? undefined : { gridColumn: '1 / -1' }}>
+          <h2 className="ev-title ev-title--sm" id="h-asist" style={{ marginBottom: 'var(--ev-space-4)' }}>Asistentes ({attendees.length})</h2>
+          {attendees.length === 0 ? (
+            <div className="ev-empty">
+              <span className="ev-dropzone__icon" aria-hidden="true"><Icon name="ticket" size="lg" /></span>
+              <p className="ev-empty__text">No hay entradas confirmadas para este evento.</p>
+            </div>
+          ) : (
+            <div className="ev-table-wrap">
+              <table className="ev-table">
+                <thead>
+                  <tr><th>Asistente</th><th>Tipo</th><th className="num">Entrada</th><th>Ingreso</th></tr>
+                </thead>
+                <tbody>
+                  {attendees.map((a, i) => (
+                    <tr key={`${a.orderCode}-${a.ticketNumber}-${i}`}>
+                      <td><strong>{a.nombre}</strong><br /><span className="ev-subtle">{a.orderCode}</span></td>
+                      <td>{a.tipo}</td>
+                      <td className="num">{a.ticketNumber}</td>
+                      <td>
+                        {a.checkInAt
+                          ? <span className="ev-chip ev-chip--confirmed"><Icon name="check-circle" />{new Date(a.checkInAt).toLocaleTimeString('es-SV', { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' })}</span>
+                          : <span className="ev-subtle">No ha ingresado</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+    </>
   )
 }

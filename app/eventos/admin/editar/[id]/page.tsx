@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import AdminHeader from '../../components/AdminHeader'
+import EventFormView from '../../components/EventFormView'
 import { useRequireAdmin } from '../../components/useRequireAdmin'
 import { toEventDatetimeLocal } from '@/lib/eventDate'
 
@@ -19,19 +19,6 @@ function slugify(s: string) {
 
 // El input datetime-local se muestra y edita siempre en hora de El Salvador.
 const toLocalDatetime = toEventDatetimeLocal
-
-const INPUT = 'w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition'
-
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">
-        {label}{required && <span className="text-[#F472B6] ml-1">*</span>}
-      </label>
-      {children}
-    </div>
-  )
-}
 
 export default function EditarEventoPage() {
   useRequireAdmin()
@@ -126,93 +113,24 @@ export default function EditarEventoPage() {
     } finally { setLoading(false) }
   }
 
-  if (fetching) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">Cargando...</p></div>
+  if (fetching) return <div className="ev-state-screen"><p className="ev-muted" role="status">Cargando…</p></div>
 
   const currentImage = imagePreview ?? form.imagen_url
 
   return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      <AdminHeader />
-      <div className="px-5 pt-5 max-w-lg mx-auto flex items-center justify-between">
-        <h1 className="text-white text-lg font-bold">Editar evento</h1>
-        <a href="/eventos/admin" className="text-white/35 hover:text-white text-xs transition">← Volver</a>
-      </div>
-
-      <form onSubmit={handleSubmit} className="px-5 py-6 max-w-lg mx-auto space-y-4">
-        {/* Imagen */}
-        <div>
-          <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-2">Foto del evento</label>
-          <div onClick={() => document.getElementById('img-input')?.click()}
-            className="rounded-2xl border-2 border-dashed border-white/15 hover:border-[#F472B6]/50 bg-white/3 cursor-pointer transition overflow-hidden">
-            {currentImage
-              ? <img src={currentImage} alt="Preview" className="w-full h-44 object-cover" />
-              : <div className="h-32 flex flex-col items-center justify-center gap-2"><span className="text-3xl">🖼</span><span className="text-white/35 text-sm">Seleccionar imagen</span></div>}
-          </div>
-          <input id="img-input" type="file" accept="image/*" onChange={handleImage} className="hidden" />
-          {currentImage && !imageFile && <p className="text-white/25 text-xs mt-1">Tocá para cambiar la imagen</p>}
-        </div>
-
-        <Field label="Nombre del evento" required>
-          <input type="text" value={form.nombre} required onChange={e => set('nombre', e.target.value)} className={INPUT} />
-        </Field>
-
-        <Field label="Slug (URL)">
-          <input type="text" value={form.slug} onChange={e => set('slug', e.target.value)} className={INPUT} />
-          <p className="text-white/25 text-xs mt-1">sivarmusic.com/eventos/<strong>{form.slug || '...'}</strong></p>
-        </Field>
-
-        <Field label="Descripción">
-          <textarea value={form.descripcion} rows={3} onChange={e => set('descripcion', e.target.value)} className={INPUT + ' resize-none'} />
-        </Field>
-
-        <Field label="Fecha y hora" required>
-          <input type="datetime-local" value={form.fecha} required onChange={e => set('fecha', e.target.value)} className={INPUT + ' [color-scheme:dark]'} />
-        </Field>
-
-        <Field label="Venue / Lugar" required>
-          <input type="text" value={form.venue} required onChange={e => set('venue', e.target.value)} className={INPUT} />
-        </Field>
-
-        <Field label="Dirección">
-          <input type="text" value={form.direccion} onChange={e => set('direccion', e.target.value)} className={INPUT} />
-        </Field>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Latitud">
-            <input type="number" step="any" value={form.lat} onChange={e => set('lat', e.target.value)} className={INPUT} />
-          </Field>
-          <Field label="Longitud">
-            <input type="number" step="any" value={form.lng} onChange={e => set('lng', e.target.value)} className={INPUT} />
-          </Field>
-        </div>
-
-        <Field label="Artistas (separados por coma)">
-          <input type="text" value={form.artistas} onChange={e => set('artistas', e.target.value)} className={INPUT} />
-        </Field>
-
-        <Field label="Precio por entrada (USD)" required>
-          <input type="number" step="0.01" min="0" value={form.precio} required onChange={e => set('precio', e.target.value)} className={INPUT} />
-        </Field>
-
-        <Field label="Máximo de entradas (opcional)">
-          <input type="number" min="1" value={form.max_entradas} onChange={e => set('max_entradas', e.target.value)} className={INPUT} />
-        </Field>
-
-        <label className="flex items-center gap-3 cursor-pointer py-1">
-          <div onClick={() => set('visible', !form.visible)}
-            className={`w-10 h-6 rounded-full transition-colors flex-none ${form.visible ? 'bg-[#F472B6]' : 'bg-white/15'}`}>
-            <div className={`w-5 h-5 bg-white rounded-full shadow mt-0.5 transition-transform ${form.visible ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
-          </div>
-          <span className="text-white/55 text-sm">Publicar evento (visible en /eventos)</span>
-        </label>
-
-        {error && <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-center">{error}</p>}
-
-        <button type="submit" disabled={loading}
-          className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-          {loading ? 'Guardando...' : 'Guardar cambios'}
-        </button>
-      </form>
-    </div>
+    <EventFormView
+      title="Editar evento"
+      values={form}
+      slugPreview={form.slug}
+      onChange={set}
+      imageSrc={currentImage}
+      imageChosen={!!imageFile}
+      onImage={handleImage}
+      error={error}
+      loading={loading}
+      submitLabel="Guardar cambios"
+      loadingLabel="Guardando…"
+      onSubmit={handleSubmit}
+    />
   )
 }
