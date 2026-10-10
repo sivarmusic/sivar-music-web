@@ -46,6 +46,14 @@ beforeEach(() => {
 })
 
 describe('POST /api/eventos/orders — aforo', () => {
+  it('400 con cantidad no entera, 0, negativa o texto (sin insertar)', async () => {
+    for (const c of [2.7, 0, -3, 'abc', 21]) {
+      const res = await POST(req(c as unknown as number))
+      expect(res.status).toBe(400)
+    }
+    expect(m.insert).not.toHaveBeenCalled()
+  })
+
   it('rechaza con 409 si la cantidad excede el cupo restante', async () => {
     const res = await POST(req(3))
     expect(res.status).toBe(409)

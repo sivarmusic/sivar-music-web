@@ -75,11 +75,20 @@ export async function DELETE(
 
   const { id } = await params
 
-  const { data: order } = await supabase
+  const { data: order, error: readError } = await supabase
     .from('event_orders')
-    .select('comprobante_path')
+    .select('comprobante_path, status')
     .eq('id', id)
-    .single()
+    .maybeSingle()
+  if (readError) return serverError('eventos/orders/[id]', readError)
+
+  // Las órdenes confirmadas (pagadas, con tickets) no se eliminan: se rechazan.
+  if (order?.status === 'confirmado') {
+    return NextResponse.json(
+      { error: 'La orden está confirmada: rechazala en lugar de eliminarla (así se conserva el registro del pago).' },
+      { status: 409 },
+    )
+  }
 
   if (order?.comprobante_path) {
     await supabase.storage.from('comprobantes').remove([order.comprobante_path])

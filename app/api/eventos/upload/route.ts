@@ -3,7 +3,8 @@ import { enforceRateLimit } from '@/lib/rate-limit'
 import { supabase } from '@/lib/supabase'
 import { EXT_BY_MIME, matchesMime } from '@/lib/imageUpload'
 
-const MAX_BYTES = 5 * 1024 * 1024
+// 4 MB: Vercel rechaza cuerpos > 4.5 MB antes de llegar a la función (413 HTML).
+const MAX_BYTES = 4 * 1024 * 1024
 
 // Solo se puede subir o reemplazar el comprobante mientras la orden no esté confirmada.
 const UPLOADABLE_STATUSES = ['pendiente_comprobante', 'en_revision', 'rechazado']
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   if (!orderId || !file) return NextResponse.json({ error: 'Faltan datos' }, { status: 400 })
   if (!(file.type in EXT_BY_MIME)) return NextResponse.json({ error: 'Formato no permitido' }, { status: 400 })
-  if (file.size > MAX_BYTES) return NextResponse.json({ error: 'El archivo supera los 5MB' }, { status: 400 })
+  if (file.size > MAX_BYTES) return NextResponse.json({ error: 'El archivo supera los 4MB' }, { status: 400 })
 
   const { data: order, error: fetchError } = await supabase
     .from('event_orders')

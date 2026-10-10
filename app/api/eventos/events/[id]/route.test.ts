@@ -38,11 +38,16 @@ describe('PATCH /api/eventos/events/[id]', () => {
     expect((await call({ imagen_url: 'javascript:alert(1)' })).status).toBe(400)
   })
 
+  it('400 con imagen de un host no permitido (rompería next/image)', async () => {
+    expect((await call({ imagen_url: 'https://evil.tld/a.jpg' })).status).toBe(400)
+    expect((await call({ imagen_url: 'https://mthpqfiozddtohkcrbui.supabase.co.evil.tld/storage/v1/object/public/a.jpg' })).status).toBe(400)
+  })
+
   it('acepta una edición completa válida', async () => {
     const res = await call({
       nombre: 'Show', slug: 'Mi Show', fecha: '2026-12-01T20:00', venue: 'Teatro', direccion: 'Calle 1',
       lat: 13.7, lng: -89.2, precio: 12.5, artistas: ['A', 'B'], max_entradas: 100, visible: true,
-      imagen_url: 'https://x.supabase.co/a.jpg',
+      imagen_url: 'https://mthpqfiozddtohkcrbui.supabase.co/storage/v1/object/public/event-images/a/cover.jpg',
     })
     expect(res.status).toBe(200)
     expect(m.update.mock.calls[0][0]).toMatchObject({ slug: 'mi-show', precio: 12.5, max_entradas: 100 })

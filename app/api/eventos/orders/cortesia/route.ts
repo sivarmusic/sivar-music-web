@@ -5,6 +5,7 @@ import { verifyAdminSession } from '@/lib/staff-auth'
 import { buildTicketRows } from '@/lib/eventTickets'
 import { recordAudit } from '@/lib/audit'
 import { checkEventCapacity } from '@/lib/eventCapacity'
+import { parseCantidad } from '@/lib/eventValidation'
 import { sendSafely } from '@/lib/email-safe'
 import { sendTicketConfirmed } from '@/lib/email'
 
@@ -20,7 +21,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
   }
 
-  const cantidadFinal = Math.max(1, Math.min(20, Number(cantidad) || 1))
+  const cantidadFinal = parseCantidad(cantidad)
+  if (cantidadFinal === null) {
+    return NextResponse.json({ error: 'La cantidad debe ser un número entero entre 1 y 20' }, { status: 400 })
+  }
 
   const { data: event } = await supabase
     .from('events')

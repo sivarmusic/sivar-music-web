@@ -2,11 +2,12 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
+import { safeInternalPath } from '@/lib/safe-redirect'
 
 function AdminLoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') || '/eventos/admin'
+  const redirect = safeInternalPath(searchParams.get('redirect'), '/eventos/admin', { prefix: '/eventos/admin' })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')

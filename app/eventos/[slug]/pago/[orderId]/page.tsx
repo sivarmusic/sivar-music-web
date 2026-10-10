@@ -71,7 +71,7 @@ export default function EventoPagoPage() {
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]; if (!f) return; setError('')
     if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(f.type)) { setError(t('pago.errorType')); return }
-    if (f.size > 5 * 1024 * 1024) { setError(t('pago.errorSize')); return }
+    if (f.size > 4 * 1024 * 1024) { setError(t('pago.errorSize')); return }
     setFile(f)
     if (f.type.startsWith('image/')) setPreview(URL.createObjectURL(f))
   }
@@ -81,7 +81,9 @@ export default function EventoPagoPage() {
     try {
       const fd = new FormData(); fd.append('orderId', orderId); fd.append('file', file)
       const res = await fetch('/api/eventos/upload', { method: 'POST', body: fd })
-      const data = await res.json()
+      // Una respuesta no-JSON (p. ej. 413 de la plataforma) no debe romper el flujo.
+      const data = await res.json().catch(() => ({} as { error?: string }))
+      if (res.status === 413) throw new Error(t('pago.errorSize'))
       if (res.status === 409) { setAlreadyConfirmed(true); return }
       if (!res.ok) throw new Error(data.error || t('pago.errorUpload'))
       setDone(true)
