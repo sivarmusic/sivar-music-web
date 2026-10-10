@@ -1,11 +1,15 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase-browser'
-import { useLanguage } from '@/lib/i18n'
+import { formatMoneyFull } from '@/lib/format'
 import { uploadErrorMessage } from './uploadError'
 import { EVENT_TZ } from '@/lib/eventDate'
+import { Icon, type IconName } from '../../components/icons'
+import SiteHeader from '../../components/site/SiteHeader'
+import SiteFooter from '../../components/site/SiteFooter'
+import { Field, AreaField } from '../components/Field'
+import { useCopy } from '../components/useCopy'
 
 interface Profile {
   id: string; slug: string; nombre_artistico: string; genero: string | null; bio: string | null
@@ -22,9 +26,6 @@ interface ArtistEvent {
 
 type Tab = 'perfil' | 'galeria' | 'eventos'
 
-const INPUT = 'w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition'
-const LABEL = 'block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5'
-
 async function uploadArtistImage(file: File, type: 'perfil' | 'galeria' | 'evento', token: string) {
   const fd = new FormData()
   fd.append('file', file)
@@ -35,14 +36,23 @@ async function uploadArtistImage(file: File, type: 'perfil' | 'galeria' | 'event
   return data.url as string
 }
 
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <div className="ev-banner ev-banner--error" role="alert">
+      <Icon name="alert-triangle" />
+      <div><p className="ev-banner__title">{message}</p></div>
+    </div>
+  )
+}
+
 export default function ArtistaPanelPage() {
-  const { t } = useLanguage()
+  const { t, c } = useCopy()
   const router = useRouter()
   const [token, setToken] = useState('')
   const [profile, setProfile] = useState<Profile | null>(null)
   const [gallery, setGallery] = useState<GalleryItem[]>([])
   const [events, setEvents] = useState<ArtistEvent[]>([])
-  const [tab, setTab] = useState<Tab>('perfil')
+  const [tab, setTab] = useState<Tab>('eventos')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -71,133 +81,176 @@ export default function ArtistaPanelPage() {
   }
 
   if (loading || !profile) {
-    return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">{t('account.loading')}</p></div>
+    return (
+      <div className="ev-surface">
+        <div className="ev-state-screen"><p className="ev-muted" role="status">{t('account.loading')}</p></div>
+      </div>
+    )
   }
 
-  return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      <div className="border-b border-white/8 px-5 py-5 flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.25em] uppercase">Sivar Events for Artists</p>
-          <h1 className="text-white text-lg font-bold">{profile.nombre_artistico}</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href={`/eventos/artistas/${profile.slug}`} target="_blank" className="text-white/40 hover:text-white text-xs transition">
-            {t('artistas.panel.viewProfile')}
-          </Link>
-          <button onClick={handleLogout} className="text-white/30 hover:text-white text-xs uppercase tracking-wider transition">
-            {t('artistas.panel.logout')}
-          </button>
-        </div>
-      </div>
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'eventos', label: t('artistas.panel.tabEvents') },
+    { id: 'galeria', label: t('artistas.panel.tabGallery') },
+    { id: 'perfil', label: t('artistas.panel.tabProfile') },
+  ]
 
-      <div className="px-5 py-6 max-w-lg mx-auto space-y-6">
-        <div className="flex bg-white/5 rounded-2xl p-1 gap-1">
-          {(['perfil', 'galeria', 'eventos'] as const).map(tb => (
-            <button key={tb} onClick={() => setTab(tb)}
-              className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition ${tab === tb ? 'bg-[#F472B6] text-white' : 'text-white/40 hover:text-white'}`}>
-              {t(`artistas.panel.tab${tb === 'perfil' ? 'Profile' : tb === 'galeria' ? 'Gallery' : 'Events'}`)}
+  return (
+    <div className="ev-surface">
+      <SiteHeader />
+      <main id="main" className="ev-container ev-page">
+        <header className="ev-page-head">
+          <div className="ev-stack ev-stack--sm">
+            <p className="ev-eyebrow">{c('ev.forArtists')}</p>
+            <h1 className="ev-display ev-display--md">{profile.nombre_artistico}</h1>
+            <span className="ev-chip ev-chip--confirmed"><Icon name="check-circle" />{c('art.panel.published')}</span>
+          </div>
+          <div className="ev-cluster">
+            <a className="ev-btn ev-btn--secondary ev-btn--sm" href={`/eventos/artistas/${profile.slug}`} target="_blank" rel="noopener noreferrer">
+              <Icon name="external" />{c('art.panel.viewPublic')}
+            </a>
+            <button type="button" className="ev-btn ev-btn--ghost ev-btn--sm" onClick={() => setTab('perfil')}>
+              <Icon name="edit" />{c('art.panel.editProfile')}
+            </button>
+            <button type="button" className="ev-btn ev-btn--ghost ev-btn--sm" onClick={handleLogout}>
+              <Icon name="log-out" />{t('artistas.panel.logout')}
+            </button>
+          </div>
+        </header>
+
+        <div className="ev-segmented ev-artist-panel-nav" role="tablist" aria-label={c('art.panel.sections')}>
+          {tabs.map(tb => (
+            <button
+              key={tb.id} type="button" role="tab" id={`tab-${tb.id}`} aria-controls={`panel-${tb.id}`}
+              aria-selected={tab === tb.id} tabIndex={tab === tb.id ? 0 : -1}
+              className="ev-segmented__opt" onClick={() => setTab(tb.id)}
+            >
+              {tb.label}
             </button>
           ))}
         </div>
 
-        {tab === 'perfil' && <ProfileTab profile={profile} setProfile={setProfile} token={token} t={t} />}
-        {tab === 'galeria' && <GalleryTab artistId={profile.id} gallery={gallery} setGallery={setGallery} token={token} t={t} />}
-        {tab === 'eventos' && <EventsTab events={events} setEvents={setEvents} token={token} t={t} />}
-      </div>
+        <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+          {tab === 'perfil' && <ProfileTab profile={profile} setProfile={setProfile} token={token} />}
+          {tab === 'galeria' && <GalleryTab artistId={profile.id} gallery={gallery} setGallery={setGallery} token={token} />}
+          {tab === 'eventos' && <EventsTab events={events} setEvents={setEvents} token={token} />}
+        </div>
+      </main>
+      <SiteFooter />
     </div>
   )
 }
 
-function ProfileTab({ profile, setProfile, token, t }: {
-  profile: Profile; setProfile: (p: Profile) => void; token: string; t: (k: any, v?: any) => string
+function ProfileTab({ profile, setProfile, token }: {
+  profile: Profile; setProfile: (p: Profile) => void; token: string
 }) {
+  const { t, c } = useCopy()
   const [form, setForm] = useState(profile)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [msg, setMsg] = useState('')
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
+  const [uploadErr, setUploadErr] = useState('')
 
   function set<K extends keyof Profile>(key: K, value: Profile[K]) { setForm(f => ({ ...f, [key]: value })) }
 
   async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return
-    setUploading(true)
+    setUploading(true); setUploadErr('')
     try {
       const url = await uploadArtistImage(file, 'perfil', token)
       set('foto_url', url)
       await supabaseBrowser.from('artist_profiles').update({ foto_url: url }).eq('id', profile.id)
       setProfile({ ...form, foto_url: url })
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : 'No se pudo subir la imagen. Intentá de nuevo.')
+      setUploadErr(err instanceof Error ? err.message : c('art.panel.uploadFail'))
     } finally { setUploading(false) }
   }
 
   async function handleSave(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true); setMsg('')
+    e.preventDefault(); setSaving(true); setMsg(null)
     const { error } = await supabaseBrowser.from('artist_profiles').update({
       bio: form.bio, genero: form.genero, instagram: form.instagram, spotify: form.spotify,
       tiktok: form.tiktok, youtube: form.youtube, apple_music: form.apple_music, otro_link: form.otro_link,
     }).eq('id', profile.id)
-    setMsg(error ? error.message : t('artistas.panel.saved'))
+    setMsg(error ? { text: error.message, ok: false } : { text: t('artistas.panel.saved'), ok: true })
     setProfile(form)
     setSaving(false)
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-4">
-      <div className="flex items-center gap-4">
-        <div className="w-20 h-20 rounded-full overflow-hidden bg-white/8 flex-none">
-          {form.foto_url && <img src={form.foto_url} alt={form.nombre_artistico} className="w-full h-full object-cover" />}
-        </div>
-        <label className="text-[#F472B6] text-xs font-semibold uppercase tracking-wider cursor-pointer hover:text-white transition">
-          {uploading ? t('pago.uploading') : t('artistas.panel.changePhoto')}
-          <input type="file" accept="image/*" onChange={handlePhoto} disabled={uploading} className="hidden" />
+    <form onSubmit={handleSave} className="ev-stack ev-stack--lg ev-container--mid" style={{ marginInline: 0 }} aria-busy={saving}>
+      <fieldset className="ev-fieldset">
+        <legend className="ev-display ev-display--sm">{t('artistas.panel.photo')}</legend>
+        <label className="ev-img-pick">
+          <input type="file" accept="image/*" onChange={handlePhoto} disabled={uploading} aria-label={t('artistas.panel.changePhoto')} />
+          {form.foto_url ? (
+            <img src={form.foto_url} alt={c('art.panel.photoAlt', { name: form.nombre_artistico })} />
+          ) : (
+            <span className="ev-img-pick__empty">
+              <span>
+                <span className="ev-dropzone__title" style={{ display: 'block' }}>
+                  {uploading ? t('pago.uploading') : c('art.panel.pickImage')}
+                </span>
+                <span className="ev-dropzone__formats">{c('art.panel.imageFormats')}</span>
+              </span>
+              <span className="ev-dropzone__icon" aria-hidden="true"><Icon name="image" size="lg" /></span>
+            </span>
+          )}
         </label>
-      </div>
+        {form.foto_url && (
+          <p className="ev-subtle" style={{ marginTop: 'var(--ev-space-2)' }}>
+            {uploading ? t('pago.uploading') : t('artistas.panel.changePhoto')}
+          </p>
+        )}
+        {uploadErr && <div style={{ marginTop: 'var(--ev-space-3)' }}><ErrorBanner message={uploadErr} /></div>}
+      </fieldset>
 
-      <div>
-        <label className={LABEL}>{t('artistas.apply.genre')}</label>
-        <input type="text" value={form.genero ?? ''} onChange={e => set('genero', e.target.value)} className={INPUT} />
-      </div>
-      <div>
-        <label className={LABEL}>Bio</label>
-        <textarea value={form.bio ?? ''} onChange={e => set('bio', e.target.value)} rows={3} className={INPUT + ' resize-none'} />
-      </div>
+      <fieldset className="ev-fieldset">
+        <legend className="ev-display ev-display--sm">{t('artistas.panel.tabProfile')}</legend>
+        <div className="ev-form-grid">
+          <Field id="pf-g" label={t('artistas.apply.genre')} icon="music" value={form.genero ?? ''} onChange={e => set('genero', e.target.value)} />
+          <AreaField id="pf-b" label={c('art.profile.bio')} rows={4} value={form.bio ?? ''} onChange={e => set('bio', e.target.value)} />
+        </div>
+      </fieldset>
 
-      <div className="border-t border-white/8 pt-4 space-y-2">
-        <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-1">{t('artistas.panel.socialsTitle')}</p>
-        <input type="url" value={form.instagram ?? ''} onChange={e => set('instagram', e.target.value)} placeholder={t('artistas.panel.instagram')} className={INPUT} />
-        <input type="url" value={form.spotify ?? ''} onChange={e => set('spotify', e.target.value)} placeholder={t('artistas.panel.spotify')} className={INPUT} />
-        <input type="url" value={form.tiktok ?? ''} onChange={e => set('tiktok', e.target.value)} placeholder={t('artistas.panel.tiktok')} className={INPUT} />
-        <input type="url" value={form.youtube ?? ''} onChange={e => set('youtube', e.target.value)} placeholder={t('artistas.panel.youtube')} className={INPUT} />
-        <input type="url" value={form.apple_music ?? ''} onChange={e => set('apple_music', e.target.value)} placeholder={t('artistas.panel.appleMusic')} className={INPUT} />
-        <input type="url" value={form.otro_link ?? ''} onChange={e => set('otro_link', e.target.value)} placeholder={t('artistas.panel.otherLink')} className={INPUT} />
-      </div>
+      <fieldset className="ev-fieldset">
+        <legend className="ev-display ev-display--sm">{t('artistas.panel.socialsTitle')}</legend>
+        <div className="ev-form-grid ev-form-grid--2">
+          <Field id="pf-ig" label={t('artistas.panel.instagram')} icon="instagram" type="url" value={form.instagram ?? ''} onChange={e => set('instagram', e.target.value)} />
+          <Field id="pf-sp" label={t('artistas.panel.spotify')} icon="spotify" type="url" value={form.spotify ?? ''} onChange={e => set('spotify', e.target.value)} />
+          <Field id="pf-tk" label={t('artistas.panel.tiktok')} icon="music" type="url" value={form.tiktok ?? ''} onChange={e => set('tiktok', e.target.value)} />
+          <Field id="pf-yt" label={t('artistas.panel.youtube')} icon="youtube" type="url" value={form.youtube ?? ''} onChange={e => set('youtube', e.target.value)} />
+          <Field id="pf-am" label={t('artistas.panel.appleMusic')} icon="music" type="url" value={form.apple_music ?? ''} onChange={e => set('apple_music', e.target.value)} />
+          <Field id="pf-ot" label={t('artistas.panel.otherLink')} icon="globe" type="url" value={form.otro_link ?? ''} onChange={e => set('otro_link', e.target.value)} />
+        </div>
+      </fieldset>
 
-      {msg && <p className="text-green-400 text-sm bg-green-400/10 border border-green-400/20 rounded-2xl px-4 py-3 text-center">{msg}</p>}
+      {msg && (msg.ok
+        ? <div className="ev-banner ev-banner--success" role="status"><Icon name="check-circle" /><div><p className="ev-banner__title">{msg.text}</p></div></div>
+        : <ErrorBanner message={msg.text} />)}
 
-      <button type="submit" disabled={saving}
-        className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
+      <button type="submit" disabled={saving} className={`ev-btn ev-btn--primary ev-btn--lg ev-btn--block${saving ? ' is-loading' : ''}`}>
         {saving ? t('artistas.panel.saving') : t('artistas.panel.save')}
       </button>
     </form>
   )
 }
 
-function GalleryTab({ artistId, gallery, setGallery, token, t }: {
-  artistId: string; gallery: GalleryItem[]; setGallery: (g: GalleryItem[]) => void; token: string; t: (k: any) => string
+function GalleryTab({ artistId, gallery, setGallery, token }: {
+  artistId: string; gallery: GalleryItem[]; setGallery: (g: GalleryItem[]) => void; token: string
 }) {
+  const { t, c } = useCopy()
   const [uploading, setUploading] = useState(false)
+  const [uploadErr, setUploadErr] = useState('')
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return
-    setUploading(true)
+    setUploading(true); setUploadErr('')
     try {
       const url = await uploadArtistImage(file, 'galeria', token)
       const { data } = await supabaseBrowser.from('artist_gallery').insert({ artist_id: artistId, image_url: url }).select('id, image_url').single()
       if (data) setGallery([data, ...gallery])
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : 'No se pudo subir la imagen. Intentá de nuevo.')
+      setUploadErr(err instanceof Error ? err.message : c('art.panel.uploadFail'))
     } finally { setUploading(false) }
   }
 
@@ -207,40 +260,50 @@ function GalleryTab({ artistId, gallery, setGallery, token, t }: {
   }
 
   return (
-    <div className="space-y-4">
-      <label className="block w-full text-center bg-white/6 hover:bg-white/10 border border-dashed border-white/15 rounded-2xl py-4 text-white/60 text-sm font-semibold cursor-pointer transition">
-        {uploading ? t('pago.uploading') : t('artistas.panel.uploadPhoto')}
-        <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} className="hidden" />
+    <div className="ev-stack ev-stack--lg">
+      <label className={`ev-dropzone${uploadErr ? ' ev-dropzone--error' : ''}`}>
+        <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} aria-describedby="gal-fmt" />
+        <span className="ev-dropzone__icon" aria-hidden="true"><Icon name="upload" size="lg" /></span>
+        <span className="ev-dropzone__title">{uploading ? t('pago.uploading') : t('artistas.panel.uploadPhoto')}</span>
+        <span className="ev-dropzone__formats" id="gal-fmt">{c('art.panel.imageFormats')}</span>
       </label>
 
+      {uploadErr && <ErrorBanner message={uploadErr} />}
+
       {gallery.length === 0 ? (
-        <p className="text-white/30 text-sm text-center py-8">{t('artistas.panel.galleryEmpty')}</p>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {gallery.map(item => (
-            <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden bg-white/5 group">
-              <img src={item.image_url} alt="" className="w-full h-full object-cover" />
-              <button onClick={() => handleDelete(item.id)}
-                className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-red-500/80 text-white text-[10px] font-bold uppercase px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition">
-                {t('artistas.panel.delete')}
-              </button>
-            </div>
-          ))}
+        <div className="ev-empty">
+          <span className="ev-dropzone__icon" aria-hidden="true"><Icon name="image" size="lg" /></span>
+          <p className="ev-empty__text">{t('artistas.panel.galleryEmpty')}</p>
         </div>
+      ) : (
+        <ul className="ev-gallery-grid" role="list">
+          {gallery.map((item, i) => (
+            <li key={item.id} className="ev-gallery-item">
+              <img src={item.image_url} alt="" loading="lazy" />
+              <button
+                type="button" className="ev-btn ev-btn--ghost ev-btn--sm" onClick={() => handleDelete(item.id)}
+                aria-label={c('art.panel.removeAria', { name: `${t('artistas.panel.photo')} ${gallery.length - i}` })}
+              >
+                <Icon name="trash" />{t('artistas.panel.delete')}
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   )
 }
 
-const STATUS_LABELS: Record<ArtistEvent['status'], { label: string; color: string }> = {
-  pendiente: { label: 'Pendiente de aprobación', color: 'text-yellow-400' },
-  aprobado: { label: 'Publicado', color: 'text-green-400' },
-  rechazado: { label: 'Rechazado', color: 'text-red-400' },
+const STATUS_CHIP: Record<ArtistEvent['status'], { cls: string; icon: IconName; key: 'art.panel.statusPending' | 'art.panel.statusApproved' | 'art.panel.statusRejected' }> = {
+  pendiente: { cls: 'review', icon: 'hourglass', key: 'art.panel.statusPending' },
+  aprobado: { cls: 'confirmed', icon: 'check-circle', key: 'art.panel.statusApproved' },
+  rechazado: { cls: 'rejected', icon: 'x-circle', key: 'art.panel.statusRejected' },
 }
 
-function EventsTab({ token, events, setEvents, t }: {
-  events: ArtistEvent[]; setEvents: (e: ArtistEvent[]) => void; token: string; t: (k: any) => string
+function EventsTab({ token, events, setEvents }: {
+  events: ArtistEvent[]; setEvents: (e: ArtistEvent[]) => void; token: string
 }) {
+  const { t, c, dateLocale } = useCopy()
   const empty = {
     nombre: '', fecha: '', venue: '', direccion: '', descripcion: '', imagen_url: '',
     lat: '', lng: '', precio: '', max_entradas: '', link_externo: '',
@@ -250,15 +313,16 @@ function EventsTab({ token, events, setEvents, t }: {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [uploadErr, setUploadErr] = useState('')
 
   async function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return
-    setUploading(true)
+    setUploading(true); setUploadErr('')
     try {
       const url = await uploadArtistImage(file, 'evento', token)
       setForm(f => ({ ...f, imagen_url: url }))
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : 'No se pudo subir la imagen. Intentá de nuevo.')
+      setUploadErr(err instanceof Error ? err.message : c('art.panel.uploadFail'))
     } finally { setUploading(false) }
   }
 
@@ -278,11 +342,11 @@ function EventsTab({ token, events, setEvents, t }: {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Error al crear evento')
+      if (!res.ok) throw new Error(data.error || c('art.panel.createFail'))
       setEvents([...events, data.event].sort((a, b) => a.fecha.localeCompare(b.fecha)))
       setForm(empty); setShowForm(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado')
+      setError(err instanceof Error ? err.message : c('art.panel.unexpected'))
     } finally { setSaving(false) }
   }
 
@@ -291,97 +355,114 @@ function EventsTab({ token, events, setEvents, t }: {
     setEvents(events.filter(ev => ev.id !== id))
   }
 
-  return (
-    <div className="space-y-4">
-      {events.length === 0 && !showForm && <p className="text-white/30 text-sm text-center py-4">{t('artistas.panel.eventsEmpty')}</p>}
+  const setF = (k: keyof typeof empty) => (e: { target: { value: string } }) => setForm(f => ({ ...f, [k]: e.target.value }))
 
-      <div className="space-y-3">
-        {events.map(ev => {
-          const status = STATUS_LABELS[ev.status]
-          return (
-            <div key={ev.id} className="bg-white/4 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-white font-semibold text-sm truncate">{ev.nombre}</p>
-                <p className="text-white/40 text-xs mt-0.5">{new Date(ev.fecha).toLocaleDateString('es-SV', { timeZone: EVENT_TZ })} · {ev.venue}</p>
-                <p className={`text-xs mt-1 font-semibold ${status.color}`}>{status.label}</p>
-              </div>
-              <button onClick={() => handleDelete(ev.id)} className="flex-none text-red-400/70 hover:text-red-400 text-xs font-bold uppercase transition">
-                {t('artistas.panel.delete')}
-              </button>
-            </div>
-          )
-        })}
+  return (
+    <div className="ev-stack ev-stack--lg">
+      <div className="ev-cluster" style={{ justifyContent: 'space-between' }}>
+        <h2 className="ev-display ev-display--sm">{c('art.panel.myEvents')}</h2>
+        {!showForm && (
+          <button type="button" className="ev-btn ev-btn--primary ev-btn--sm" onClick={() => setShowForm(true)}>
+            <Icon name="plus" />{t('artistas.panel.newEvent')}
+          </button>
+        )}
       </div>
 
-      {!showForm ? (
-        <button onClick={() => setShowForm(true)}
-          className="w-full bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-          {t('artistas.panel.newEvent')}
-        </button>
-      ) : (
-        <form onSubmit={handleCreate} className="space-y-3 border-t border-white/8 pt-4">
-          <div>
-            <label className={LABEL}>{t('artistas.panel.eventImage')}</label>
-            {form.imagen_url && <img src={form.imagen_url} alt="" className="w-full h-32 object-cover rounded-xl mb-2" />}
-            <label className="block w-full text-center bg-white/6 hover:bg-white/10 border border-dashed border-white/15 rounded-2xl py-3 text-white/60 text-sm font-semibold cursor-pointer transition">
-              {uploading ? t('pago.uploading') : t('artistas.panel.eventImage')}
-              <input type="file" accept="image/*" onChange={handleImage} disabled={uploading} className="hidden" />
+      {events.length === 0 && !showForm && (
+        <div className="ev-empty">
+          <span className="ev-dropzone__icon" aria-hidden="true"><Icon name="calendar" size="lg" /></span>
+          <p className="ev-empty__text">{t('artistas.panel.eventsEmpty')}</p>
+        </div>
+      )}
+
+      {events.length > 0 && (
+        <>
+          <ul className="ev-admin-grid" role="list">
+            {events.map(ev => {
+              const st = STATUS_CHIP[ev.status]
+              const fecha = new Date(ev.fecha)
+              return (
+                <li key={ev.id} className="ev-admin-card">
+                  <div className="ev-admin-card__head">
+                    <div className="ev-admin-card__thumb">
+                      {ev.imagen_url
+                        ? <img src={ev.imagen_url} alt="" />
+                        : <div className="ev-poster-fallback" aria-hidden="true"><span className="ev-poster-fallback__name">{ev.nombre}</span></div>}
+                    </div>
+                    <div className="ev-stack ev-stack--sm" style={{ flex: 1, minWidth: 0 }}>
+                      <span className={`ev-chip ev-chip--${st.cls}`} style={{ alignSelf: 'start' }}><Icon name={st.icon} />{c(st.key)}</span>
+                      <h3 className="ev-title ev-title--sm">{ev.nombre}</h3>
+                      <p className="ev-subtle">
+                        {fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'short', day: 'numeric', month: 'short' })}
+                        {' · '}{ev.venue}
+                        {ev.precio != null && <>{' · '}{formatMoneyFull(ev.precio)}</>}
+                      </p>
+                    </div>
+                    <button
+                      type="button" className="ev-btn ev-btn--ghost ev-btn--sm" onClick={() => handleDelete(ev.id)}
+                      aria-label={c('art.panel.removeAria', { name: ev.nombre })}
+                    >
+                      <Icon name="trash" />{t('artistas.panel.delete')}
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+          <p className="ev-subtle">{c('art.panel.eventsHint')}</p>
+        </>
+      )}
+
+      {showForm && (
+        <form onSubmit={handleCreate} className="ev-admin-card ev-admin-form ev-stack ev-stack--lg" aria-busy={saving}>
+          <h3 className="ev-title ev-title--sm">{t('artistas.panel.newEvent')}</h3>
+
+          <fieldset className="ev-fieldset">
+            <legend className="ev-field__label" style={{ marginBottom: 'var(--ev-space-2)' }}>{t('artistas.panel.eventImage')}</legend>
+            <label className="ev-img-pick">
+              <input type="file" accept="image/*" onChange={handleImage} disabled={uploading} aria-label={t('artistas.panel.eventImage')} />
+              {form.imagen_url ? (
+                <img src={form.imagen_url} alt="" />
+              ) : (
+                <span className="ev-img-pick__empty">
+                  <span>
+                    <span className="ev-dropzone__title" style={{ display: 'block' }}>
+                      {uploading ? t('pago.uploading') : c('art.panel.pickImage')}
+                    </span>
+                    <span className="ev-dropzone__formats">{c('art.panel.imageFormats')}</span>
+                  </span>
+                  <span className="ev-dropzone__icon" aria-hidden="true"><Icon name="image" size="lg" /></span>
+                </span>
+              )}
             </label>
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.panel.eventName')}</label>
-            <input type="text" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} required className={INPUT} />
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.panel.eventDescription')}</label>
-            <textarea value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} rows={3} className={INPUT + ' resize-none'} />
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.panel.eventDate')}</label>
-            <input type="datetime-local" value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} required className={INPUT + ' [color-scheme:dark]'} />
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.panel.eventVenue')}</label>
-            <input type="text" value={form.venue} onChange={e => setForm(f => ({ ...f, venue: e.target.value }))} required className={INPUT} />
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.panel.eventAddress')}</label>
-            <input type="text" value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} className={INPUT} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={LABEL}>{t('artistas.panel.eventLat')}</label>
-              <input type="number" step="any" value={form.lat} placeholder="13.6929" onChange={e => setForm(f => ({ ...f, lat: e.target.value }))} className={INPUT} />
-            </div>
-            <div>
-              <label className={LABEL}>{t('artistas.panel.eventLng')}</label>
-              <input type="number" step="any" value={form.lng} placeholder="-89.2182" onChange={e => setForm(f => ({ ...f, lng: e.target.value }))} className={INPUT} />
-            </div>
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.panel.eventPrice')}</label>
-            <input type="number" step="0.01" min="0" value={form.precio} placeholder="10.00" onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} className={INPUT} />
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.panel.eventMaxTickets')}</label>
-            <input type="number" min="1" value={form.max_entradas} onChange={e => setForm(f => ({ ...f, max_entradas: e.target.value }))} className={INPUT} />
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.panel.eventLink')}</label>
-            <input type="url" value={form.link_externo} onChange={e => setForm(f => ({ ...f, link_externo: e.target.value }))} className={INPUT} />
+            {uploadErr && <div style={{ marginTop: 'var(--ev-space-3)' }}><ErrorBanner message={uploadErr} /></div>}
+          </fieldset>
+
+          <div className="ev-form-grid ev-form-grid--2">
+            <Field id="ne-n" className="ev-span-2" label={t('artistas.panel.eventName')} required value={form.nombre} onChange={setF('nombre')} />
+            <AreaField id="ne-d" className="ev-span-2" label={t('artistas.panel.eventDescription')} rows={3} value={form.descripcion} onChange={setF('descripcion')} />
+            <Field id="ne-f" label={t('artistas.panel.eventDate')} icon="calendar" type="datetime-local" required value={form.fecha} onChange={setF('fecha')} />
+            <Field id="ne-v" label={t('artistas.panel.eventVenue')} icon="map-pin" required value={form.venue} onChange={setF('venue')} />
+            <Field id="ne-a" className="ev-span-2" label={t('artistas.panel.eventAddress')} value={form.direccion} onChange={setF('direccion')} />
+            <Field id="ne-la" label={t('artistas.panel.eventLat')} type="number" step="any" inputMode="decimal" placeholder="13.6929" value={form.lat} onChange={setF('lat')} />
+            <Field id="ne-lo" label={t('artistas.panel.eventLng')} type="number" step="any" inputMode="decimal" placeholder="-89.2182" value={form.lng} onChange={setF('lng')} />
+            <Field id="ne-p" label={t('artistas.panel.eventPrice')} type="number" step="0.01" min="0" inputMode="decimal" placeholder="10.00" value={form.precio} onChange={setF('precio')} />
+            <Field id="ne-m" label={t('artistas.panel.eventMaxTickets')} type="number" min="1" inputMode="numeric" value={form.max_entradas} onChange={setF('max_entradas')} />
+            <Field id="ne-l" className="ev-span-2" label={t('artistas.panel.eventLink')} icon="globe" type="url" value={form.link_externo} onChange={setF('link_externo')} />
           </div>
 
-          <p className="text-white/30 text-xs">{t('artistas.panel.eventPendingNote')}</p>
+          <div className="ev-banner ev-banner--info">
+            <Icon name="info" />
+            <div><p className="ev-banner__text">{t('artistas.panel.eventPendingNote')}</p></div>
+          </div>
 
-          {error && <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-center">{error}</p>}
+          {error && <ErrorBanner message={error} />}
 
-          <div className="flex gap-2">
-            <button type="button" onClick={() => { setShowForm(false); setForm(empty) }}
-              className="flex-1 bg-white/8 hover:bg-white/15 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
+          <div className="ev-cluster">
+            <button type="button" className="ev-btn ev-btn--ghost" onClick={() => { setShowForm(false); setForm(empty); setError(''); setUploadErr('') }}>
               {t('artistas.panel.cancel')}
             </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
+            <button type="submit" disabled={saving} className={`ev-btn ev-btn--primary${saving ? ' is-loading' : ''}`}>
               {saving ? t('artistas.panel.saving') : t('artistas.panel.eventCreate')}
             </button>
           </div>

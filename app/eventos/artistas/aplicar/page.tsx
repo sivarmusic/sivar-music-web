@@ -2,12 +2,17 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n'
-
-const INPUT = 'w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition'
-const LABEL = 'block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5'
+import { copyFor, type CopyKey } from '../../copy'
+import { Icon } from '../../components/icons'
+import SiteHeader from '../../components/site/SiteHeader'
+import SiteFooter from '../../components/site/SiteFooter'
+import { Field, AreaField } from '../components/Field'
+import { collectInvalid } from '../components/formErrors'
+import { ARTIST_ART } from '../components/artistArt'
 
 export default function AplicarArtistaPage() {
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
+  const c = (key: CopyKey, vars?: Record<string, string | number>) => copyFor(lang, key, vars)
   const [nombreArtistico, setNombreArtistico] = useState('')
   const [nombreContacto, setNombreContacto] = useState('')
   const [email, setEmail] = useState('')
@@ -21,9 +26,26 @@ export default function AplicarArtistaPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault(); setError(''); setLoading(true)
+  function bind(id: string, set: (v: string) => void) {
+    return (e: { target: { value: string } }) => {
+      set(e.target.value)
+      if (fieldErrors[id]) setFieldErrors(prev => { const next = { ...prev }; delete next[id]; return next })
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault(); setError('')
+    // Mismas reglas nativas de siempre (required / email / url), con error por campo.
+    const invalid = collectInvalid(e.currentTarget)
+    if (invalid.length) {
+      setFieldErrors(Object.fromEntries(invalid.map(f => [f.id, f.missing ? c('art.required') : c('art.invalidValue')])))
+      invalid[0].element.focus()
+      return
+    }
+    setFieldErrors({})
+    setLoading(true)
     try {
       const res = await fetch('/api/eventos/artistas/aplicar', {
         method: 'POST',
@@ -38,72 +60,82 @@ export default function AplicarArtistaPage() {
     } finally { setLoading(false) }
   }
 
-  if (success) {
-    return (
-      <div className="min-h-screen bg-[#0a0008] text-white flex flex-col items-center justify-center px-5 py-12 text-center">
-        <div className="w-full max-w-sm space-y-4">
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase">Sivar Events for Artists</p>
-          <p className="text-5xl">🎉</p>
-          <p className="text-white/70 text-sm leading-relaxed">{t('artistas.apply.success')}</p>
-          <Link href="/eventos" className="text-[#F472B6] text-sm hover:text-white transition block mt-4">← Sivar Events</Link>
-        </div>
-      </div>
-    )
-  }
+  const errorCount = Object.keys(fieldErrors).length
 
   return (
-    <div className="min-h-screen bg-[#0a0008] text-white flex flex-col items-center justify-center px-5 py-12">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <Link href="/eventos/artistas" className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase">Sivar Events for Artists</Link>
-          <h1 className="text-white text-xl font-bold mt-2">{t('artistas.apply.title')}</h1>
-          <p className="text-white/40 text-sm mt-1">{t('artistas.apply.subtitle')}</p>
+    <div className="ev-surface">
+      <SiteHeader />
+      <main id="main">
+        <section className="ev-artist-hero">
+          <img className="ev-artist-hero__img" src={ARTIST_ART} alt="" />
+          <div className="ev-container ev-artist-hero__inner">
+            <p className="ev-eyebrow">{c('ev.forArtists')}</p>
+            <h1 className="ev-artist-hero__name ev-artist-hero__name--lg" style={{ marginTop: 'var(--ev-space-3)' }}>{t('artistas.apply.title')}</h1>
+            <p className="ev-lead" style={{ marginTop: 'var(--ev-space-4)', maxWidth: '46ch' }}>{t('artistas.apply.subtitle')}</p>
+          </div>
+        </section>
+
+        <div className="ev-container ev-container--narrow ev-page">
+          {success ? (
+            <section className="ev-stack ev-stack--lg" role="status">
+              <span className="ev-stamp ev-stamp--accent ev-stamp--anim" style={{ alignSelf: 'start', marginLeft: 'var(--ev-space-2)', fontSize: '2rem' }}>
+                <Icon name="check" size="xl" />{c('art.sent')}
+              </span>
+              <h2 className="ev-display ev-display--md">{c('art.thanks')}</h2>
+              <p className="ev-lead">{t('artistas.apply.success')}</p>
+              <Link href="/eventos" className="ev-link-arrow">{c('eva.seeLineup')} <Icon name="arrow-right" /></Link>
+            </section>
+          ) : (
+            <form className="ev-stack ev-stack--lg" noValidate onSubmit={handleSubmit} aria-busy={loading}>
+              {errorCount > 0 && (
+                <div className="ev-banner ev-banner--error" role="alert">
+                  <Icon name="alert-triangle" />
+                  <div><p className="ev-banner__title">{c('art.fixFields', { n: errorCount })}</p></div>
+                </div>
+              )}
+              {error && (
+                <div className="ev-banner ev-banner--error" role="alert">
+                  <Icon name="alert-triangle" />
+                  <div><p className="ev-banner__title">{error}</p></div>
+                </div>
+              )}
+
+              <fieldset className="ev-fieldset">
+                <legend className="ev-display ev-display--sm">{c('art.about')}</legend>
+                <div className="ev-form-grid">
+                  <Field id="ap-a" label={t('artistas.apply.stageName')} autoComplete="off" required value={nombreArtistico} onChange={bind('ap-a', setNombreArtistico)} error={fieldErrors['ap-a']} />
+                  <Field id="ap-n" label={t('artistas.apply.contactName')} autoComplete="name" required value={nombreContacto} onChange={bind('ap-n', setNombreContacto)} error={fieldErrors['ap-n']} />
+                  <Field id="ap-e" label={t('artistas.apply.email')} icon="mail" type="email" autoComplete="email" required placeholder="tu@correo.com" value={email} onChange={bind('ap-e', setEmail)} error={fieldErrors['ap-e']} />
+                  <Field id="ap-t" label={t('artistas.apply.phone')} icon="phone" type="tel" autoComplete="tel" placeholder="+503 7000 0000" value={telefono} onChange={bind('ap-t', setTelefono)} error={fieldErrors['ap-t']} />
+                </div>
+              </fieldset>
+
+              <fieldset className="ev-fieldset">
+                <legend className="ev-display ev-display--sm">{c('art.music')}</legend>
+                <div className="ev-form-grid">
+                  <Field id="ap-g" label={t('artistas.apply.genre')} icon="music" placeholder="Pop, Reggaetón, Rock..." value={genero} onChange={bind('ap-g', setGenero)} error={fieldErrors['ap-g']} />
+                  <AreaField id="ap-m" label={t('artistas.apply.bio')} rows={4} value={bio} onChange={bind('ap-m', setBio)} error={fieldErrors['ap-m']} />
+                </div>
+              </fieldset>
+
+              <fieldset className="ev-fieldset">
+                <legend className="ev-display ev-display--sm">{t('artistas.apply.socials')}</legend>
+                <div className="ev-form-grid">
+                  <Field id="ap-ig" label="Instagram" icon="instagram" type="url" required placeholder="https://instagram.com/…" value={instagram} onChange={bind('ap-ig', setInstagram)} error={fieldErrors['ap-ig']} />
+                  <Field id="ap-sp" label="Spotify" icon="spotify" type="url" required placeholder="https://open.spotify.com/…" value={spotify} onChange={bind('ap-sp', setSpotify)} error={fieldErrors['ap-sp']} />
+                  <Field id="ap-tk" label="TikTok" icon="music" type="url" required placeholder="https://tiktok.com/@…" value={tiktok} onChange={bind('ap-tk', setTiktok)} error={fieldErrors['ap-tk']} />
+                  <Field id="ap-yt" label="YouTube" icon="youtube" type="url" required placeholder="https://youtube.com/…" value={youtube} onChange={bind('ap-yt', setYoutube)} error={fieldErrors['ap-yt']} />
+                </div>
+              </fieldset>
+
+              <button className={`ev-btn ev-btn--primary ev-btn--lg ev-btn--block${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
+                {loading ? t('artistas.apply.sending') : t('artistas.apply.submit')}
+              </button>
+            </form>
+          )}
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className={LABEL}>{t('artistas.apply.stageName')}</label>
-            <input type="text" value={nombreArtistico} onChange={e => setNombreArtistico(e.target.value)} required className={INPUT} />
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.apply.contactName')}</label>
-            <input type="text" value={nombreContacto} onChange={e => setNombreContacto(e.target.value)} required className={INPUT} />
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.apply.email')}</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="tu@correo.com" className={INPUT} />
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.apply.phone')}</label>
-            <input type="tel" value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="+503 7000 0000" className={INPUT} />
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.apply.genre')}</label>
-            <input type="text" value={genero} onChange={e => setGenero(e.target.value)} placeholder="Pop, Reggaetón, Rock..." className={INPUT} />
-          </div>
-          <div>
-            <label className={LABEL}>{t('artistas.apply.bio')}</label>
-            <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} className={INPUT + ' resize-none'} />
-          </div>
-
-          <div className="border-t border-white/8 pt-3">
-            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-2">{t('artistas.apply.socials')}</p>
-            <div className="space-y-2">
-              <input type="url" value={instagram} onChange={e => setInstagram(e.target.value)} placeholder="Instagram" required className={INPUT} />
-              <input type="url" value={spotify} onChange={e => setSpotify(e.target.value)} placeholder="Spotify" required className={INPUT} />
-              <input type="url" value={tiktok} onChange={e => setTiktok(e.target.value)} placeholder="TikTok" required className={INPUT} />
-              <input type="url" value={youtube} onChange={e => setYoutube(e.target.value)} placeholder="YouTube" required className={INPUT} />
-            </div>
-          </div>
-
-          {error && <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-center">{error}</p>}
-
-          <button type="submit" disabled={loading}
-            className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-            {loading ? t('artistas.apply.sending') : t('artistas.apply.submit')}
-          </button>
-        </form>
-      </div>
+      </main>
+      <SiteFooter />
     </div>
   )
 }
