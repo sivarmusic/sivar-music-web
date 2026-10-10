@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
+import { Icon } from '../../components/icons'
+import SiteHeader from '../../components/site/SiteHeader'
+import SiteFooter from '../../components/site/SiteFooter'
 
 type OnboardingArtist = { slug: string; name: string; genre: string; menuImage: string }
 
@@ -62,100 +65,102 @@ export default function OnboardingPage() {
     router.push('/eventos/mi-cuenta')
   }
 
-  const PROGRESS = ['w-1/3', 'w-2/3', 'w-full'][step - 1]
-
   return (
-    <div className="min-h-screen bg-[#0a0008] text-white flex flex-col items-center justify-center px-5 py-12">
-      <div className="w-full max-w-sm space-y-6">
-        <div>
-          <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-            <div className={`h-full bg-[#F472B6] transition-all duration-300 ${PROGRESS}`} />
-          </div>
-          <p className="text-white/30 text-[10px] font-bold uppercase tracking-wider mt-2">{t('onboarding.step', { n: step })}</p>
-        </div>
-
-        {step === 1 && (
-          <div className="text-center space-y-5 py-6">
-            <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase">Sivar Events</p>
-            <h1 className="text-white text-2xl font-bold">{t('onboarding.welcomeTitle')}</h1>
-            <p className="text-white/50 text-sm leading-relaxed">{t('onboarding.welcomeBody')}</p>
-            <button onClick={() => setStep(2)}
-              className="w-full bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-              {t('onboarding.start')}
-            </button>
-            <button onClick={finish} className="w-full text-white/30 hover:text-white/60 text-xs text-center transition py-1">
-              {t('onboarding.skip')}
-            </button>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-5">
-            <div>
-              <h1 className="text-white text-xl font-bold">{t('onboarding.genresTitle')}</h1>
-              <p className="text-white/40 text-sm mt-1">{t('onboarding.genresBody')}</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {GENRE_KEYS.map(key => (
-                <button key={key} onClick={() => toggleGenre(key)}
-                  className={`text-sm font-semibold px-4 py-2 rounded-full border transition ${
-                    genres.includes(key)
-                      ? 'border-[#F472B6] bg-[#F472B6]/15 text-[#F472B6]'
-                      : 'border-white/10 text-white/50 hover:text-white hover:border-white/25'
-                  }`}>
-                  {t(key)}
-                </button>
+    <div className="ev-surface">
+      <SiteHeader />
+      <main id="main" className="ev-container ev-container--narrow ev-page">
+        <div className="ev-stack ev-stack--lg" style={{ paddingBlock: 'var(--ev-space-6)' }}>
+          <div className="ev-stack ev-stack--sm">
+            <ol className="ev-steps" aria-hidden="true" style={{ maxWidth: 560 }}>
+              {[1, 2, 3].map(n => (
+                <li key={n} className={`ev-steps__item${n < step ? ' is-done' : ''}`} aria-current={n === step ? 'step' : undefined} />
               ))}
-            </div>
-            <button onClick={() => setStep(3)}
-              className="w-full bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-              {t('onboarding.continue')}
-            </button>
-            <div className="flex items-center justify-between">
-              <button onClick={() => setStep(1)} className="text-white/30 hover:text-white/60 text-xs transition">{t('onboarding.back')}</button>
-              <button onClick={finish} className="text-white/30 hover:text-white/60 text-xs transition">{t('onboarding.skip')}</button>
-            </div>
+            </ol>
+            <p className="ev-eyebrow">{t('onboarding.step', { n: step })}</p>
           </div>
-        )}
 
-        {step === 3 && (
-          <div className="space-y-5">
-            <div>
-              <h1 className="text-white text-xl font-bold">{t('onboarding.artistsTitle')}</h1>
-              <p className="text-white/40 text-sm mt-1">{t('onboarding.artistsBody')}</p>
+          {step === 1 && (
+            <div className="ev-stack ev-stack--lg">
+              <div className="ev-stack ev-stack--sm">
+                <p className="ev-eyebrow ev-eyebrow--accent">Sivar Eventos</p>
+                <h1 className="ev-display ev-display--md">{t('onboarding.welcomeTitle')}</h1>
+                <p className="ev-lead">{t('onboarding.welcomeBody')}</p>
+              </div>
+              <div className="ev-stack ev-stack--sm">
+                <button type="button" onClick={() => setStep(2)} className="ev-btn ev-btn--primary ev-btn--lg ev-btn--block">
+                  {t('onboarding.start')} <Icon name="arrow-right" size="lg" />
+                </button>
+                <button type="button" onClick={finish} className="ev-btn ev-btn--ghost ev-btn--block">{t('onboarding.skip')}</button>
+              </div>
             </div>
-            <div className="space-y-3">
-              {artists.map(artist => {
-                const isFollowed = followed.includes(artist.slug)
-                return (
-                  <div key={artist.slug} className="flex items-center gap-3 bg-white/4 border border-white/10 rounded-2xl p-3">
-                    <div className="relative w-12 h-12 rounded-xl overflow-hidden flex-none bg-white/5">
-                      <Image src={artist.menuImage} alt={artist.name} fill className="object-cover" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-semibold text-sm truncate">{artist.name}</p>
-                      <p className="text-white/35 text-[10px] uppercase tracking-wider truncate">{artist.genre}</p>
-                    </div>
-                    <button onClick={() => toggleArtist(artist.slug)}
-                      className={`flex-none text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition ${
-                        isFollowed ? 'bg-white/10 text-white/60' : 'bg-[#F472B6] text-white hover:bg-[#ec4899]'
-                      }`}>
-                      {isFollowed ? t('onboarding.following') : t('onboarding.follow')}
-                    </button>
-                  </div>
-                )
-              })}
+          )}
+
+          {step === 2 && (
+            <div className="ev-stack ev-stack--lg">
+              <div className="ev-stack ev-stack--sm">
+                <h1 className="ev-display ev-display--md">{t('onboarding.genresTitle')}</h1>
+                <p className="ev-lead">{t('onboarding.genresBody')}</p>
+              </div>
+              <div className="ev-cluster" role="group" aria-label={t('onboarding.genresTitle')}>
+                {GENRE_KEYS.map(key => (
+                  <button key={key} type="button" onClick={() => toggleGenre(key)} aria-pressed={genres.includes(key)} className="ev-filter-chip">
+                    {t(key)}
+                  </button>
+                ))}
+              </div>
+              <div className="ev-stack ev-stack--sm">
+                <button type="button" onClick={() => setStep(3)} className="ev-btn ev-btn--primary ev-btn--lg ev-btn--block">
+                  {t('onboarding.continue')} <Icon name="arrow-right" size="lg" />
+                </button>
+                <div className="ev-cluster" style={{ justifyContent: 'space-between' }}>
+                  <button type="button" onClick={() => setStep(1)} className="ev-back-link" style={{ background: 'transparent', border: 0 }}>{t('onboarding.back')}</button>
+                  <button type="button" onClick={finish} className="ev-back-link" style={{ background: 'transparent', border: 0 }}>{t('onboarding.skip')}</button>
+                </div>
+              </div>
             </div>
-            <button onClick={finish} disabled={saving}
-              className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-              {saving ? t('onboarding.saving') : t('onboarding.finish')}
-            </button>
-            <button onClick={() => setStep(2)} className="w-full text-white/30 hover:text-white/60 text-xs text-center transition py-1">
-              {t('onboarding.back')}
-            </button>
-          </div>
-        )}
-      </div>
+          )}
+
+          {step === 3 && (
+            <div className="ev-stack ev-stack--lg">
+              <div className="ev-stack ev-stack--sm">
+                <h1 className="ev-display ev-display--md">{t('onboarding.artistsTitle')}</h1>
+                <p className="ev-lead">{t('onboarding.artistsBody')}</p>
+              </div>
+              <ul className="ev-stack" role="list" style={{ padding: 0, listStyle: 'none' }}>
+                {artists.map(artist => {
+                  const isFollowed = followed.includes(artist.slug)
+                  return (
+                    <li key={artist.slug} className="ev-admin-card" style={{ display: 'flex', alignItems: 'center', gap: 'var(--ev-space-3)', padding: 'var(--ev-space-3)' }}>
+                      <div style={{ position: 'relative', width: 52, height: 52, flex: 'none', borderRadius: 'var(--ev-radius-xs)', overflow: 'hidden', background: 'var(--ev-color-surface-2)' }}>
+                        <Image src={artist.menuImage} alt={artist.name} fill className="object-cover" />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontWeight: 'var(--ev-weight-semi)', overflowWrap: 'anywhere' }}>{artist.name}</p>
+                        <p className="ev-subtle">{artist.genre}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleArtist(artist.slug)}
+                        aria-pressed={isFollowed}
+                        className={`ev-btn ev-btn--sm ${isFollowed ? 'ev-btn--secondary' : 'ev-btn--primary'}`}
+                      >
+                        {isFollowed ? t('onboarding.following') : t('onboarding.follow')}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+              <div className="ev-stack ev-stack--sm">
+                <button type="button" onClick={finish} disabled={saving} className={`ev-btn ev-btn--primary ev-btn--lg ev-btn--block${saving ? ' is-loading' : ''}`}>
+                  {saving ? t('onboarding.saving') : t('onboarding.finish')}
+                </button>
+                <button type="button" onClick={() => setStep(2)} className="ev-btn ev-btn--ghost ev-btn--block">{t('onboarding.back')}</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+      <SiteFooter />
     </div>
   )
 }

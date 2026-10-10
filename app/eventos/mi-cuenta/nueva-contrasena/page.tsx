@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { useLanguage } from '@/lib/i18n'
+import { Icon } from '../../components/icons'
+import SiteHeader from '../../components/site/SiteHeader'
+import SiteFooter from '../../components/site/SiteFooter'
 
 export default function NuevaContrasenaPage() {
   const { t } = useLanguage()
@@ -39,35 +42,53 @@ export default function NuevaContrasenaPage() {
     } finally { setLoading(false) }
   }
 
-  if (!ready) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">{t('resetPw.verifying')}</p></div>
+  const shell = (main: React.ReactNode) => (
+    <div className="ev-surface">
+      <SiteHeader />
+      {main}
+      <SiteFooter />
+    </div>
+  )
 
-  return (
-    <div className="min-h-screen bg-[#0a0008] text-white flex flex-col items-center justify-center px-5">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase">Sivar Music</p>
-          <h1 className="text-white text-xl font-bold mt-2">{t('resetPw.title')}</h1>
+  if (!ready) return shell(
+    <main id="main" className="ev-state-screen" aria-busy="true">
+      <p className="ev-muted" role="status">{t('resetPw.verifying')}</p>
+    </main>
+  )
+
+  return shell(
+    <main id="main" className="ev-container ev-container--narrow ev-page">
+      <div className="ev-auth__inner" style={{ paddingBlock: 'var(--ev-space-8)' }}>
+        <div className="ev-stack ev-stack--sm">
+          <p className="ev-eyebrow">Sivar Eventos</p>
+          <h1 className="ev-display ev-display--md">{t('resetPw.title')}</h1>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('resetPw.newPassword')}</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8}
-              placeholder={t('login.passwordMinPh')}
-              className="w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition" />
+        <form onSubmit={handleSubmit} className="ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-5)' }}>
+          <div className="ev-field">
+            <label className="ev-field__label" htmlFor="np-pw">{t('resetPw.newPassword')}</label>
+            <div className="ev-field__control">
+              <Icon name="lock" />
+              <input className="ev-input" id="np-pw" type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} placeholder={t('login.passwordMinPh')} />
+            </div>
           </div>
-          <div>
-            <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('resetPw.confirmPassword')}</label>
-            <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required
-              placeholder={t('resetPw.confirmPasswordPh')}
-              className="w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition" />
+          <div className="ev-field">
+            <label className="ev-field__label" htmlFor="np-pw2">{t('resetPw.confirmPassword')}</label>
+            <div className="ev-field__control">
+              <Icon name="lock" />
+              <input className="ev-input" id="np-pw2" type="password" autoComplete="new-password" value={confirm} onChange={e => setConfirm(e.target.value)} required placeholder={t('resetPw.confirmPasswordPh')} />
+            </div>
           </div>
-          {error && <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-center">{error}</p>}
-          <button type="submit" disabled={loading}
-            className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
+          {error && (
+            <div className="ev-banner ev-banner--error" role="alert">
+              <Icon name="alert-triangle" />
+              <div><p className="ev-banner__title">{error}</p></div>
+            </div>
+          )}
+          <button type="submit" disabled={loading} className={`ev-btn ev-btn--primary ev-btn--lg ev-btn--block${loading ? ' is-loading' : ''}`}>
             {loading ? t('resetPw.saving') : t('resetPw.save')}
           </button>
         </form>
       </div>
-    </div>
+    </main>
   )
 }

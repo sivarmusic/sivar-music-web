@@ -4,10 +4,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
-import LanguageSwitcher from '../../components/LanguageSwitcher'
-import UserMenu from '../../components/UserMenu'
-
-const INPUT = 'w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition'
+import { Icon } from '../../components/icons'
+import SiteHeader from '../../components/site/SiteHeader'
+import SiteFooter from '../../components/site/SiteFooter'
 
 export default function AjustesPage() {
   const { t } = useLanguage()
@@ -68,92 +67,108 @@ export default function AjustesPage() {
     setSavingPassword(false)
   }
 
+  const shell = (main: React.ReactNode) => (
+    <div className="ev-surface">
+      <SiteHeader />
+      {main}
+      <SiteFooter />
+    </div>
+  )
+
   if (loading) {
-    return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">{t('account.loading')}</p></div>
+    return shell(
+      <main id="main" className="ev-state-screen" aria-busy="true">
+        <p className="ev-muted" role="status">{t('account.loading')}</p>
+      </main>
+    )
   }
 
-  return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      <header className="sticky top-0 z-20 bg-[#0a0008]/95 backdrop-blur-md border-b border-white/8">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <Link href="/eventos" className="flex-none mr-1 flex items-center gap-2.5">
-            <img src="/favicon.ico" alt="Sivar Music" className="h-9 w-9 rounded-lg" />
-            <span className="text-white font-bold text-sm hidden sm:block">Sivar Music</span>
-          </Link>
-          <div className="flex-1" />
-          <LanguageSwitcher />
-          <UserMenu />
+  const profileOk = profileMsg === t('settings.saved')
+  const passwordOk = passwordMsg === t('settings.saved')
+
+  return shell(
+    <main id="main" className="ev-container ev-container--narrow ev-page">
+      <Link href="/eventos/mi-cuenta" className="ev-back-link">
+        <Icon name="arrow-left" size="sm" />{t('settings.back').replace(/^←\s*/, '')}
+      </Link>
+      <h1 className="ev-display ev-display--md" style={{ marginTop: 'var(--ev-space-4)' }}>{t('settings.title')}</h1>
+
+      {/* Perfil */}
+      <form onSubmit={handleSaveProfile} className="ev-stack ev-stack--lg" style={{ marginTop: 'var(--ev-space-8)' }}>
+        <h2 className="ev-display ev-display--sm">{t('settings.profile')}</h2>
+        <div className="ev-form-grid">
+          <div className="ev-field">
+            <label className="ev-field__label" htmlFor="st-nombre">{t('settings.fullName')}</label>
+            <input className="ev-input" id="st-nombre" type="text" autoComplete="name" value={nombre} onChange={e => setNombre(e.target.value)} />
+          </div>
+          <div className="ev-field">
+            <label className="ev-field__label" htmlFor="st-tel">{t('settings.phone')}</label>
+            <div className="ev-field__control">
+              <Icon name="phone" />
+              <input className="ev-input" id="st-tel" type="tel" inputMode="tel" autoComplete="tel" value={telefono} onChange={e => setTelefono(e.target.value)} />
+            </div>
+          </div>
+          <div className="ev-field">
+            <label className="ev-field__label" htmlFor="st-email">{t('settings.email')}</label>
+            <div className="ev-field__control">
+              <Icon name="mail" />
+              <input className="ev-input" id="st-email" type="email" value={email} readOnly />
+            </div>
+          </div>
         </div>
-      </header>
 
-      <div className="px-5 py-6 max-w-lg mx-auto space-y-8">
-        <div>
-          <Link href="/eventos/mi-cuenta" className="text-white/35 hover:text-white text-xs transition block mb-2">{t('settings.back')}</Link>
-          <h1 className="text-white text-lg font-bold">{t('settings.title')}</h1>
-        </div>
-
-        {/* Perfil */}
-        <form onSubmit={handleSaveProfile} className="space-y-3">
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider">{t('settings.profile')}</p>
-
-          <div>
-            <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('settings.fullName')}</label>
-            <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} className={INPUT} />
+        {profileMsg && (
+          <div className={`ev-banner ev-banner--${profileOk ? 'success' : 'error'}`} role={profileOk ? 'status' : 'alert'}>
+            <Icon name={profileOk ? 'check-circle' : 'alert-triangle'} />
+            <div><p className="ev-banner__title">{profileMsg}</p></div>
           </div>
+        )}
 
-          <div>
-            <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('settings.phone')}</label>
-            <input type="tel" value={telefono} onChange={e => setTelefono(e.target.value)} className={INPUT} />
-          </div>
+        <button type="submit" disabled={savingProfile} className={`ev-btn ev-btn--primary ev-btn--lg ev-btn--block${savingProfile ? ' is-loading' : ''}`}>
+          {savingProfile ? t('settings.saving') : t('settings.save')}
+        </button>
+      </form>
 
-          <div>
-            <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('settings.email')}</label>
-            <input type="email" value={email} disabled className={INPUT + ' opacity-40 cursor-not-allowed'} />
-          </div>
+      <hr className="ev-divider" style={{ margin: 'var(--ev-space-10) 0' }} />
 
-          {profileMsg && (
-            <p className={`text-sm rounded-2xl px-4 py-3 text-center border ${profileMsg === t('settings.saved') ? 'text-green-400 bg-green-400/10 border-green-400/20' : 'text-red-400 bg-red-400/10 border-red-400/20'}`}>
-              {profileMsg}
-            </p>
-          )}
+      {/* Contraseña */}
+      <section className="ev-stack ev-stack--lg" aria-labelledby="ev-h-pw">
+        <h2 className="ev-display ev-display--sm" id="ev-h-pw">{t('settings.password')}</h2>
 
-          <button type="submit" disabled={savingProfile}
-            className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-            {savingProfile ? t('settings.saving') : t('settings.save')}
-          </button>
-        </form>
-
-        {/* Contraseña */}
-        <div className="border-t border-white/8 pt-6">
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">{t('settings.password')}</p>
-
-          {isGoogleOnly ? (
-            <p className="text-white/30 text-sm">{t('settings.googleNotice')}</p>
-          ) : (
-            <form onSubmit={handleChangePassword} className="space-y-3">
-              <div>
-                <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('resetPw.newPassword')}</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={8} placeholder={t('login.passwordMinPh')} className={INPUT} />
+        {isGoogleOnly ? (
+          <p className="ev-muted">{t('settings.googleNotice')}</p>
+        ) : (
+          <form onSubmit={handleChangePassword} className="ev-stack ev-stack--lg">
+            <div className="ev-form-grid">
+              <div className="ev-field">
+                <label className="ev-field__label" htmlFor="st-pw">{t('resetPw.newPassword')}</label>
+                <div className="ev-field__control">
+                  <Icon name="lock" />
+                  <input className="ev-input" id="st-pw" type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} minLength={8} placeholder={t('login.passwordMinPh')} />
+                </div>
               </div>
-              <div>
-                <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('resetPw.confirmPassword')}</label>
-                <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder={t('resetPw.confirmPasswordPh')} className={INPUT} />
+              <div className="ev-field">
+                <label className="ev-field__label" htmlFor="st-pw2">{t('resetPw.confirmPassword')}</label>
+                <div className="ev-field__control">
+                  <Icon name="lock" />
+                  <input className="ev-input" id="st-pw2" type="password" autoComplete="new-password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder={t('resetPw.confirmPasswordPh')} />
+                </div>
               </div>
+            </div>
 
-              {passwordMsg && (
-                <p className={`text-sm rounded-2xl px-4 py-3 text-center border ${passwordMsg === t('settings.saved') ? 'text-green-400 bg-green-400/10 border-green-400/20' : 'text-red-400 bg-red-400/10 border-red-400/20'}`}>
-                  {passwordMsg}
-                </p>
-              )}
+            {passwordMsg && (
+              <div className={`ev-banner ev-banner--${passwordOk ? 'success' : 'error'}`} role={passwordOk ? 'status' : 'alert'}>
+                <Icon name={passwordOk ? 'check-circle' : 'alert-triangle'} />
+                <div><p className="ev-banner__title">{passwordMsg}</p></div>
+              </div>
+            )}
 
-              <button type="submit" disabled={savingPassword}
-                className="w-full bg-white/8 hover:bg-white/15 disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-                {savingPassword ? t('settings.saving') : t('settings.changePassword')}
-              </button>
-            </form>
-          )}
-        </div>
-      </div>
-    </div>
+            <button type="submit" disabled={savingPassword} className={`ev-btn ev-btn--secondary ev-btn--lg ev-btn--block${savingPassword ? ' is-loading' : ''}`}>
+              {savingPassword ? t('settings.saving') : t('settings.changePassword')}
+            </button>
+          </form>
+        )}
+      </section>
+    </main>
   )
 }

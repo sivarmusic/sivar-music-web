@@ -5,19 +5,25 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
-import LanguageSwitcher from '../components/LanguageSwitcher'
-import UserMenu from '../components/UserMenu'
-import { EVENT_TZ } from '@/lib/eventDate'
+import { copyFor, type CopyKey } from '../copy'
+import { Icon } from '../components/icons'
+import SiteHeader from '../components/site/SiteHeader'
+import SiteFooter from '../components/site/SiteFooter'
+import OrderStatusChip from '../components/ui/OrderStatusChip'
+import { fmtDate, fmtTime } from '../components/ui/format'
 
-const QRCode = dynamic(() => import('qrcode').then(mod => ({
-  default: ({ value, size }: { value: string; size: number }) => {
+// El valor del QR (qr_token) llega tal cual desde la API; acá solo se dibuja.
+const QRCode = dynamic(() => import('qrcode').then(mod => {
+  function QrImage({ value, size, alt }: { value: string; size: number; alt: string }) {
     const [url, setUrl] = useState('')
     useEffect(() => {
       mod.toDataURL(value, { width: size, margin: 1 }).then(setUrl)
     }, [value, size])
-    return url ? <img src={url} alt="QR" className="rounded-lg" width={size} height={size} /> : null
+    // eslint-disable-next-line @next/next/no-img-element
+    return url ? <img src={url} alt={alt} width={size} height={size} /> : null
   }
-})), { ssr: false })
+  return { default: QrImage }
+}), { ssr: false })
 
 interface Ticket {
   id: string; qr_token: string; ticket_number: number; check_in_at: string | null
@@ -32,24 +38,16 @@ interface FullscreenQR {
   token: string; orderCode: string; label: string
 }
 
-function statusInfo(status: string, t: ReturnType<typeof useLanguage>['t']) {
-  const map: Record<string, { label: string; color: string; bg: string }> = {
-    pendiente_comprobante: { label: t('account.statusPendingProof'), color: 'text-white/50', bg: 'bg-white/8' },
-    en_revision: { label: t('account.statusEnRevision'), color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-    confirmado: { label: t('account.statusConfirmado'), color: 'text-green-400', bg: 'bg-green-400/10' },
-    rechazado: { label: t('account.statusRechazado'), color: 'text-red-400', bg: 'bg-red-400/10' },
-  }
-  return map[status] ?? { label: status, color: 'text-white/50', bg: 'bg-white/8' }
-}
+const STATUS_RANK: Record<string, number> = { confirmado: 0, en_revision: 1, pendiente_comprobante: 2, rechazado: 3 }
 
 export default function MiCuentaPage() {
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
+  const c = (key: CopyKey, vars?: Record<string, string | number>) => copyFor(lang, key, vars)
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [fullscreenQR, setFullscreenQR] = useState<FullscreenQR | null>(null)
 
   useEffect(() => {
@@ -79,203 +77,247 @@ export default function MiCuentaPage() {
     })
   }, [router])
 
-  if (loading) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">{t('account.loading')}</p></div>
+  // Cerrar el diálogo del QR con Escape
+  useEffect(() => {
+    if (!fullscreenQR) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFullscreenQR(null) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [fullscreenQR])
 
-  const upcoming = orders.filter(o => o.events && new Date(o.events.fecha) >= new Date() && o.status === 'confirmado')
-  const past = orders.filter(o => o.events && new Date(o.events.fecha) < new Date())
-  const pending = orders.filter(o => ['pendiente_comprobante', 'en_revision'].includes(o.status))
+  async function handleLogout() {
+    await supabaseBrowser.auth.signOut()
+    router.push('/eventos')
+  }
 
-  return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      {/* Modal QR fullscreen */}
+  const shell = (main: React.ReactNode) => (
+    <div className="ev-surface">
+      <SiteHeader />
+      {main}
+      <SiteFooter />
+    </div>
+  )
+
+  if (loading) {
+    return shell(
+      <main id="main" className="ev-state-screen" aria-busy="true">
+        <p className="ev-muted" role="status">{t('account.loading')}</p>
+      </main>
+    )
+  }
+
+  const now = new Date()
+  const isPast = (o: Order) => !!o.events && new Date(o.events.fecha) < now
+  // Mismo orden del diseño: confirmadas, en revisión, falta comprobante, rechazadas. Pasados al final.
+  const sorted = [...orders].sort((a, b) =>
+    Number(isPast(a)) - Number(isPast(b))
+    || (STATUS_RANK[a.status] ?? 9) - (STATUS_RANK[b.status] ?? 9)
+    || new Date(a.events?.fecha ?? 0).getTime() - new Date(b.events?.fecha ?? 0).getTime()
+  )
+  const firstName = name.split(' ')[0]
+
+  return shell(
+    <main id="main">
       {fullscreenQR && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm px-6"
-          onClick={() => setFullscreenQR(null)}
-        >
+        <div className="ev-modal-backdrop" onClick={() => setFullscreenQR(null)}>
           <div
-            className="flex flex-col items-center gap-5"
+            className="ev-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ev-qr-title"
             onClick={e => e.stopPropagation()}
           >
-            <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider">{fullscreenQR.label}</p>
-            <div className="bg-white p-5 rounded-3xl shadow-2xl">
-              <QRCode value={fullscreenQR.token} size={260} />
+            <div className="ev-modal__head">
+              <h2 className="ev-modal__title" id="ev-qr-title">{fullscreenQR.label}</h2>
+              <button type="button" className="ev-icon-btn ev-icon-btn--boxed" aria-label={t('account.close')} onClick={() => setFullscreenQR(null)} autoFocus>
+                <Icon name="x" />
+              </button>
             </div>
-            <p className="text-[#F472B6] font-bold text-xl tracking-widest">{fullscreenQR.orderCode}</p>
-            <p className="text-white/30 text-xs">{t('account.showAtEntrance')}</p>
+            <div style={{ background: '#fff', padding: 20, borderRadius: 8, justifySelf: 'center' }}>
+              <QRCode value={fullscreenQR.token} size={260} alt={`QR ${fullscreenQR.orderCode}`} />
+            </div>
+            <p className="ev-display ev-display--sm" style={{ textAlign: 'center' }}>{fullscreenQR.orderCode}</p>
+            <p className="ev-subtle" style={{ textAlign: 'center' }}>{t('account.showAtEntrance')}</p>
           </div>
-          <button
-            onClick={() => setFullscreenQR(null)}
-            className="absolute bottom-10 text-white/25 hover:text-white text-xs uppercase tracking-widest transition"
-          >
-            {t('account.close')}
-          </button>
         </div>
       )}
 
-      {/* Header — misma estructura y posiciones que /eventos */}
-      <header className="sticky top-0 z-20 bg-[#0a0008]/95 backdrop-blur-md border-b border-white/8">
-        <div className="px-4 py-3 flex items-center gap-3 max-w-6xl mx-auto">
-          <Link href="/eventos" className="flex-none mr-1 flex items-center gap-2.5">
-            <img src="/favicon.ico" alt="Sivar Music" className="h-9 w-9 rounded-lg" />
-            <span className="text-white font-bold text-sm hidden sm:block">Sivar Music</span>
-          </Link>
-          <div className="flex-1" />
-          <LanguageSwitcher />
-          <UserMenu />
-        </div>
-      </header>
-
-      <div className="px-5 py-6 max-w-lg mx-auto space-y-8">
-        <div>
-          <Link href="/eventos" className="text-white/35 hover:text-white text-xs transition block mb-2">{t('account.backToEvents')}</Link>
-          <h1 className="text-white text-lg font-bold">{t('account.greeting', { name: name.split(' ')[0] })}</h1>
-          <p className="text-white/35 text-xs mt-0.5">{email}</p>
-        </div>
-
-        {orders.length === 0 ? (
-          <div className="text-center py-16 flex flex-col items-center">
-            <div className="w-16 h-16 rounded-full bg-white/6 flex items-center justify-center mb-5 text-3xl">🎫</div>
-            <h2 className="text-white font-bold text-lg">{t('account.emptyTitle')}</h2>
-            <p className="text-white/40 text-sm mt-2 max-w-xs">{t('account.emptyBody')}</p>
-            <Link href="/eventos"
-              className="mt-6 bg-[#F472B6] hover:bg-[#ec4899] text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl px-8 py-3.5 transition-all">
-              {t('account.exploreEvents')}
-            </Link>
+      {orders.length === 0 ? (
+        <section className="ev-container ev-container--narrow ev-page">
+          <header className="ev-stack ev-stack--sm" style={{ marginBottom: 'var(--ev-space-8)' }}>
+            <p className="ev-eyebrow">{t('account.title')}</p>
+            <h1 className="ev-display ev-display--md">{t('account.greeting', { name: firstName })}</h1>
+            <p className="ev-subtle">{email}</p>
+          </header>
+          <div className="ev-empty">
+            <h2 className="ev-empty__title">{t('account.emptyTitle')}</h2>
+            <p className="ev-empty__text">{c('eva.emptyText')}</p>
+            <Link className="ev-btn ev-btn--primary" href="/eventos">{c('eva.seeLineup')}</Link>
           </div>
-        ) : (
-          <>
-            {pending.length > 0 && <Section icon="⏳" title={t('account.pending')} orders={pending} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} />}
-            {upcoming.length > 0 && <Section icon="🎟️" title={t('account.upcoming')} orders={upcoming} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} showQR />}
-            {past.length > 0 && <Section icon="✓" title={t('account.past')} orders={past} expanded={expandedOrder} onExpand={setExpandedOrder} onOpenQR={setFullscreenQR} dim />}
-          </>
-        )}
-      </div>
-    </div>
+        </section>
+      ) : (
+        <section className="ev-container ev-page">
+          <header className="ev-page-head">
+            <div className="ev-stack ev-stack--sm">
+              <p className="ev-eyebrow">{t('account.title')}</p>
+              <h1 className="ev-display ev-display--md">{t('account.greeting', { name: firstName })}</h1>
+              <p className="ev-subtle">{email}</p>
+            </div>
+            <button type="button" className="ev-btn ev-btn--ghost ev-btn--sm" onClick={handleLogout}>
+              <Icon name="log-out" />{t('menu.logout')}
+            </button>
+          </header>
+
+          <h2 className="ev-display ev-display--sm" style={{ marginBottom: 'var(--ev-space-5)' }}>{c('eva.myTickets')}</h2>
+          <ul className="ev-my-tickets" role="list">
+            {sorted.map(order => (
+              <OrderTickets key={order.id} order={order} past={isPast(order)} onOpenQR={setFullscreenQR} />
+            ))}
+          </ul>
+        </section>
+      )}
+    </main>
   )
 }
 
-function Section({ icon, title, orders, expanded, onExpand, onOpenQR, showQR, dim }: {
-  icon: string; title: string; orders: Order[]; expanded: string | null
-  onExpand: (id: string | null) => void
-  onOpenQR: (qr: FullscreenQR) => void
-  showQR?: boolean; dim?: boolean
+/** Una orden → uno o varios boletos de papel (un QR por entrada confirmada). */
+function OrderTickets({ order, past, onOpenQR }: {
+  order: Order; past: boolean; onOpenQR: (qr: FullscreenQR) => void
 }) {
-  return (
-    <div>
-      <p className="flex items-center gap-1.5 text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">
-        <span className="text-xs">{icon}</span>{title}
-      </p>
-      <div className="space-y-3">
-        {orders.map(order => (
-          <OrderCard
-            key={order.id}
-            order={order}
-            isExpanded={expanded === order.id}
-            onExpand={() => onExpand(expanded === order.id ? null : order.id)}
-            onOpenQR={onOpenQR}
-            showQR={showQR}
-            dim={dim}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function OrderCard({ order, isExpanded, onExpand, onOpenQR, showQR, dim }: {
-  order: Order; isExpanded: boolean; onExpand: () => void
-  onOpenQR: (qr: FullscreenQR) => void
-  showQR?: boolean; dim?: boolean
-}) {
-  const { t, dateLocale } = useLanguage()
-  const status = statusInfo(order.status, t)
-  const fecha = order.events ? new Date(order.events.fecha) : null
+  const { lang, t, dateLocale } = useLanguage()
+  const c = (key: CopyKey, vars?: Record<string, string | number>) => copyFor(lang, key, vars)
+  const ev = order.events
+  const fecha = ev ? new Date(ev.fecha) : null
+  const title = ev?.nombre ?? t('account.title')
+  const meta = fecha
+    ? `${fmtDate(fecha, dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })} · ${fmtTime(fecha, dateLocale)} · ${ev?.venue ?? ''}`
+    : ev?.venue ?? ''
   const categoryLabel = order.cortesia_categoria === 'staff' ? t('account.categoryStaff')
     : order.cortesia_categoria === 'organizacion' ? t('account.categoryOrganizacion')
     : order.cortesia_categoria === 'vip' ? t('account.categoryVip')
     : order.cortesia_categoria === 'musicos' ? t('account.categoryMusicos')
     : order.cortesia_categoria
+  const isCourtesy = order.order_type === 'cortesia'
+  const ticketsLabel = `${order.cantidad} ${order.cantidad > 1 ? t('account.tickets') : t('account.ticket')}`
+  const payHref = ev ? `/eventos/${ev.slug}/pago/${order.id}` : '/eventos'
+  const style = past || order.status === 'rechazado' ? { opacity: 0.85 } : undefined
 
-  return (
-    <div className={`rounded-2xl border ${dim ? 'border-white/6 bg-white/2 opacity-70' : 'border-white/10 bg-white/4'}`}>
-      <button onClick={onExpand} className="w-full px-4 py-4 text-left flex items-center gap-3">
-        <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/6 flex-none flex items-center justify-center">
-          {order.events?.imagen_url ? (
-            <img src={order.events.imagen_url} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-white/20 text-xl">🎵</span>
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-white font-semibold text-sm truncate">{order.events?.nombre ?? 'Evento'}</p>
-          {fecha && (
-            <p className="text-white/40 text-xs mt-0.5 truncate">
-              {fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'short', day: 'numeric', month: 'short' })}
-              {' · '}{order.events?.venue}
-            </p>
-          )}
-          <span className={`inline-block text-[10px] font-bold uppercase tracking-wider mt-1.5 px-2 py-0.5 rounded-full ${status.bg} ${status.color}`}>{status.label}</span>
-          {order.order_type === 'cortesia' && (
-            <span className="inline-block text-[10px] font-bold uppercase tracking-wider mt-1.5 ml-1.5 px-2 py-0.5 rounded-full bg-purple-400/10 text-purple-300">
-              {t('account.courtesy')}{categoryLabel ? ` — ${categoryLabel}` : ''}
-            </span>
-          )}
-        </div>
-        <div className="text-right flex-none">
-          <p className="text-[#F472B6] font-bold text-sm">{order.order_code}</p>
-          <p className="text-white/30 text-xs mt-1">{order.cantidad} {order.cantidad > 1 ? t('account.tickets') : t('account.ticket')}</p>
-          <p className="text-white/20 text-xs mt-1">{isExpanded ? '▲' : '▼'}</p>
-        </div>
-      </button>
+  const head = (id: string) => (
+    <div className="ev-ticket__section ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-2)' }}>
+      <div className="ev-my-ticket__head">
+        <h3 className="ev-my-ticket__title" id={id}>{title}</h3>
+        <OrderStatusChip status={order.status} variant="short" />
+      </div>
+      <p className="ev-ticket__muted">{meta}</p>
+      {isCourtesy && (
+        <span className="ev-chip ev-chip--courtesy">
+          <Icon name="gift" />{t('account.courtesy')}{categoryLabel ? ` — ${categoryLabel}` : ''}
+        </span>
+      )}
+      {past && <p className="ev-ticket__muted">{t('home.pastEvent')}</p>}
+    </div>
+  )
 
-      {isExpanded && (
-        <div className="border-t border-white/8 px-4 py-4 space-y-4">
-          {order.event_tickets.length === 0 ? (
-            <p className="text-white/30 text-sm text-center py-2">
-              {order.status === 'confirmado' ? t('account.ticketsArriving') : t('account.pendingConfirmation')}
-            </p>
-          ) : showQR ? (
-            <div className="space-y-4">
-              {order.event_tickets.map(ticket => (
-                <div key={ticket.id} className="flex flex-col items-center gap-3 bg-white/4 rounded-2xl p-4">
-                  <p className="text-white/55 text-xs font-semibold uppercase tracking-wider">
-                    {t('account.ticketOf', { n: ticket.ticket_number, total: order.cantidad })}
-                  </p>
+  function checkIn(ticket: Ticket) {
+    return ticket.check_in_at
+      ? t('account.checkedInAt', { time: fmtTime(ticket.check_in_at, dateLocale) })
+      : t('account.notCheckedIn')
+  }
+
+  // Confirmada con QR: un boleto por entrada
+  if (order.status === 'confirmado' && order.event_tickets.length > 0) {
+    return (
+      <>
+        {order.event_tickets.map(ticket => {
+          const id = `ev-t-${ticket.id}`
+          const ticketLabel = t('account.ticketOf', { n: ticket.ticket_number, total: order.cantidad })
+          return (
+            <li key={ticket.id}>
+              <article className="ev-ticket ev-my-ticket" aria-labelledby={id} style={style}>
+                {head(id)}
+                <div className="ev-ticket__perf" aria-hidden="true" />
+                <div className="ev-ticket__section ev-my-ticket__qr">
                   <button
+                    type="button"
                     onClick={() => onOpenQR({
                       token: ticket.qr_token,
                       orderCode: order.order_code,
-                      label: `${order.events?.nombre ?? 'Evento'} · ${t('account.ticketShort', { n: ticket.ticket_number })}`,
+                      label: `${title} · ${t('account.ticketShort', { n: ticket.ticket_number })}`,
                     })}
-                    className="bg-white p-3 rounded-xl active:scale-95 transition-transform cursor-pointer"
                     title={t('account.tapToEnlarge')}
+                    aria-label={`${t('account.tapToEnlarge')}: ${ticketLabel} · ${order.order_code}`}
+                    style={{ background: 'transparent', border: 0, padding: 0, justifySelf: 'start' }}
                   >
-                    <QRCode value={ticket.qr_token} size={160} />
+                    <QRCode value={ticket.qr_token} size={264} alt={`QR · ${ticketLabel} · ${order.order_code}`} />
                   </button>
-                  <p className="text-white/20 text-[10px] uppercase tracking-wider">{t('account.tapToEnlarge')}</p>
-                  {ticket.check_in_at ? (
-                    <p className="text-green-400 text-xs font-semibold">{t('account.checkedInAt', { time: new Date(ticket.check_in_at).toLocaleTimeString(dateLocale, { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' }) })}</p>
-                  ) : (
-                    <p className="text-white/30 text-xs">{t('account.notCheckedIn')}</p>
-                  )}
+                  <div className="ev-stack ev-stack--sm">
+                    <p className="ev-ticket__label">{ticketLabel}</p>
+                    <p className="ev-display" style={{ fontSize: '1.75rem' }}>{order.order_code}</p>
+                    <p className="ev-ticket__muted">{c('eva.showAtDoor')}</p>
+                    <p className="ev-ticket__muted">{checkIn(ticket)}</p>
+                  </div>
                 </div>
-              ))}
+              </article>
+            </li>
+          )
+        })}
+      </>
+    )
+  }
+
+  const id = `ev-t-${order.id}`
+
+  // En revisión (o confirmada sin QR todavía): QR pendiente
+  if (order.status === 'en_revision' || order.status === 'confirmado') {
+    return (
+      <li>
+        <article className="ev-ticket ev-my-ticket" aria-labelledby={id} style={style}>
+          {head(id)}
+          <div className="ev-ticket__perf" aria-hidden="true" />
+          <div className="ev-ticket__section ev-my-ticket__qr">
+            <div className="ev-my-ticket__qr--placeholder"><Icon name="hourglass" size="lg" /></div>
+            <div className="ev-stack ev-stack--sm">
+              <p className="ev-ticket__label">{c('eva.orderLine', { code: order.order_code, tickets: ticketsLabel })}</p>
+              <p className="ev-ticket__muted">
+                {order.status === 'confirmado' ? t('account.ticketsArriving') : c('eva.qrAfterReview')}
+              </p>
+              {order.status === 'en_revision' && <Link href={payHref}>{c('eva.seePayment')}</Link>}
             </div>
-          ) : (
-            <div className="space-y-2">
-              {order.event_tickets.map(ticket => (
-                <div key={ticket.id} className="flex items-center justify-between bg-white/3 rounded-xl px-3 py-2">
-                  <span className="text-white/55 text-xs">{t('account.ticketShort', { n: ticket.ticket_number })}</span>
-                  {ticket.check_in_at
-                    ? <span className="text-green-400 text-xs">{t('account.checkedInAt', { time: new Date(ticket.check_in_at).toLocaleTimeString(dateLocale, { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' }) })}</span>
-                    : <span className="text-white/25 text-xs">{t('account.notCheckedIn')}</span>}
-                </div>
-              ))}
-            </div>
-          )}
+          </div>
+        </article>
+      </li>
+    )
+  }
+
+  // Falta comprobante
+  if (order.status === 'pendiente_comprobante') {
+    return (
+      <li>
+        <article className="ev-ticket ev-my-ticket" aria-labelledby={id} style={style}>
+          {head(id)}
+          <div className="ev-ticket__perf" aria-hidden="true" />
+          <div className="ev-ticket__section ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-3)' }}>
+            <p className="ev-ticket__muted">{c('eva.orderLine', { code: order.order_code, tickets: ticketsLabel })}</p>
+            <Link className="ev-btn ev-btn--paper ev-btn--block" href={payHref}>
+              <Icon name="upload" size="lg" />{c('eva.uploadProof')}
+            </Link>
+          </div>
+        </article>
+      </li>
+    )
+  }
+
+  // Rechazada
+  return (
+    <li>
+      <article className="ev-ticket ev-my-ticket" aria-labelledby={id} style={style}>
+        {head(id)}
+        <div className="ev-ticket__perf" aria-hidden="true" />
+        <div className="ev-ticket__section ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-2)' }}>
+          <p className="ev-ticket__muted">{c('eva.rejectedLine', { code: order.order_code })}</p>
+          <Link href={payHref}>{c('eva.seeWhatHappened')}</Link>
         </div>
-      )}
-    </div>
+      </article>
+    </li>
   )
 }
