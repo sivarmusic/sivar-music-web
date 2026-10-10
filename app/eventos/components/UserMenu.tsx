@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
 import { ADMIN_EMAIL } from '@/lib/constants'
+import { copyFor } from '../copy'
 
 interface Profile {
   name: string
@@ -12,8 +13,8 @@ interface Profile {
   isAdmin: boolean
 }
 
-export default function UserMenu() {
-  const { t } = useLanguage()
+export default function UserMenu({ variant = 'default' }: { variant?: 'default' | 'rotulo' }) {
+  const { t, lang } = useLanguage()
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined)
   const [open, setOpen] = useState(false)
@@ -65,6 +66,65 @@ export default function UserMenu() {
     } finally {
       setEnteringAdmin(false)
     }
+  }
+
+  if (variant === 'rotulo') {
+    // Rediseño "Rótulo de medianoche" (misma lógica de sesión, otra presentación)
+    if (profile === undefined) return <div className="ev-skeleton" style={{ width: 44, height: 44 }} aria-hidden="true" />
+
+    if (profile === null) {
+      return (
+        <Link href="/eventos/mi-cuenta" className="ev-btn ev-btn--primary ev-btn--sm">
+          {copyFor(lang, 'ev.signIn')}
+        </Link>
+      )
+    }
+
+    const initial = (profile.name.trim()[0] ?? '?').toUpperCase()
+    return (
+      <div
+        ref={rootRef}
+        className="ev-account"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+      >
+        <button
+          type="button"
+          className="ev-account-btn"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen(o => !o)}
+        >
+          <span className="ev-account-btn__avatar" aria-hidden="true">
+            {profile.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : initial}
+          </span>
+          <span className="ev-account-btn__label">{profile.name}</span>
+          {!profile.name && <span className="ev-visually-hidden">{t('menu.myTickets')}</span>}
+        </button>
+        {open && (
+          <div className="ev-menu" role="menu">
+            <Link href="/eventos/mi-cuenta" role="menuitem" className="ev-menu__item" onClick={() => setOpen(false)}>
+              {t('menu.myTickets')}
+            </Link>
+            <Link href="/eventos/mi-cuenta/ajustes" role="menuitem" className="ev-menu__item" onClick={() => setOpen(false)}>
+              {t('menu.settings')}
+            </Link>
+            {profile.isAdmin && (
+              <>
+                <hr className="ev-menu__sep" />
+                <button type="button" role="menuitem" onClick={handleAdminPanel} disabled={enteringAdmin} className="ev-menu__item ev-menu__item--accent">
+                  {enteringAdmin ? t('menu.enteringAdmin') : t('menu.adminPanel')}
+                </button>
+              </>
+            )}
+            <hr className="ev-menu__sep" />
+            <button type="button" role="menuitem" onClick={handleLogout} className="ev-menu__item">
+              {t('menu.logout')}
+            </button>
+          </div>
+        )}
+      </div>
+    )
   }
 
   if (profile === undefined) return <div className="w-9 h-9 rounded-full bg-white/5 animate-pulse flex-none" />

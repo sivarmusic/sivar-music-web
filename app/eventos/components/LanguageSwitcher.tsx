@@ -1,8 +1,19 @@
 'use client'
 import { useLanguage } from '@/lib/i18n'
+import { copyFor } from '../copy'
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ variant = 'default' }: { variant?: 'default' | 'rotulo' }) {
   const { lang, setLang } = useLanguage()
+
+  if (variant === 'rotulo') {
+    // Rediseño "Rótulo de medianoche": selector segmentado ES / EN
+    return (
+      <nav className="ev-lang" aria-label={copyFor(lang, 'ev.langNav')}>
+        <button type="button" className="ev-lang__opt" lang="es" aria-current={lang === 'es'} aria-label="Español" onClick={() => setLang('es')}>ES</button>
+        <button type="button" className="ev-lang__opt" lang="en" aria-current={lang === 'en'} aria-label="English" onClick={() => setLang('en')}>EN</button>
+      </nav>
+    )
+  }
 
   return (
     <div className="flex items-center gap-1 flex-none">
