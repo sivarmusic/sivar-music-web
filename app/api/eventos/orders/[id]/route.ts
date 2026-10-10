@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { verifyAdminSession, verifyStaffSession } from '@/lib/staff-auth'
 import { sendSafely } from '@/lib/email-safe'
 import { sendTicketConfirmed } from '@/lib/email'
+import { recordAudit } from '@/lib/audit'
 import { ensureEventTickets } from '@/lib/eventTickets'
 
 export async function PATCH(
@@ -28,6 +29,14 @@ export async function PATCH(
     .single()
 
   if (error) return serverError('eventos/orders/[id]', error)
+
+  // Quién y cuándo decidió (best-effort: requiere scripts/eventos-hardening-5.sql).
+  const nowIso = new Date().toISOString()
+  await recordAudit(supabase, 'event_orders', id, {
+    reviewed_by: user.email ?? null,
+    reviewed_at: nowIso,
+    ...(status === 'confirmado' ? { confirmed_by: user.email ?? null, confirmed_at: nowIso } : {}),
+  })
 
   let emailSent: boolean | undefined
 

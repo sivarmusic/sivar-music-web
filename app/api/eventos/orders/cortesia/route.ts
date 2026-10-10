@@ -3,6 +3,7 @@ import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyAdminSession } from '@/lib/staff-auth'
 import { buildTicketRows } from '@/lib/eventTickets'
+import { recordAudit } from '@/lib/audit'
 import { checkEventCapacity } from '@/lib/eventCapacity'
 import { sendSafely } from '@/lib/email-safe'
 import { sendTicketConfirmed } from '@/lib/email'
@@ -50,6 +51,9 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) return serverError('eventos/orders/cortesia', error)
+
+  // Quién emitió la cortesía (best-effort: requiere scripts/eventos-hardening-5.sql).
+  await recordAudit(supabase, 'event_orders', order.id, { created_by: user.email ?? null })
 
   const { data: tickets, error: ticketsError } = await supabase
     .from('event_tickets')
