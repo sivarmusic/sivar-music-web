@@ -994,3 +994,27 @@ body:has(.ev-buy-bar:not([hidden] .ev-buy-bar)) .ev-site-footer { padding-bottom
 .ev-progress--indeterminate .ev-progress__bar { width: 40%; animation: ev-indeterminate 1.2s var(--ev-ease-in-out) infinite; }
 @keyframes ev-indeterminate { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 @media (prefers-reduced-motion: reduce) { .ev-progress--indeterminate .ev-progress__bar { animation: none; width: 100%; } }
+
+/* Portal de artistas: cabecera con arte de marca, galería y lectura larga */
+.ev-artist-hero { position: relative; overflow: hidden; border-bottom: var(--ev-border-w) solid var(--ev-color-border); }
+.ev-artist-hero__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .4; }
+.ev-artist-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 20%, var(--ev-color-bg) 100%); }
+.ev-artist-hero__inner { position: relative; z-index: 1; padding-block: var(--ev-space-20) var(--ev-space-8); }
+.ev-artist-hero__name { font-family: var(--ev-font-display); font-weight: 900; font-size: var(--ev-display-xl); line-height: .8; text-transform: uppercase; overflow-wrap: anywhere; }
+.ev-artist-hero__name--lg { font-size: var(--ev-display-lg); }
+.ev-feature-list { display: grid; gap: var(--ev-space-4); list-style: none; padding: 0; margin: 0; }
+.ev-feature-list li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: var(--ev-space-3); }
+.ev-feature-list .ev-icon { color: var(--ev-color-accent-text); }
+.ev-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--ev-space-2); list-style: none; padding: 0; margin: 0; }
+.ev-gallery-item { position: relative; aspect-ratio: 1; border-radius: var(--ev-radius-sm); overflow: hidden; background: var(--ev-color-surface-2); }
+.ev-gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ev-gallery-item .ev-btn { position: absolute; top: var(--ev-space-2); right: var(--ev-space-2); background: var(--ev-color-bg); }
+.ev-avatar { width: 80px; height: 80px; border-radius: 50%; overflow: hidden; background: var(--ev-color-surface-2); flex: none; display: grid; place-items: center; color: var(--ev-color-text-subtle); }
+.ev-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ev-legal { max-width: 68ch; }
+.ev-legal h2 { margin-top: var(--ev-space-8); margin-bottom: var(--ev-space-2); }
+.ev-legal p, .ev-legal li { color: var(--ev-color-text-muted); line-height: 1.65; }
+.ev-legal p + p, .ev-legal ul + p, .ev-legal p + ul { margin-top: var(--ev-space-3); }
+.ev-legal ul { padding-left: 1.25rem; list-style: disc; display: grid; gap: var(--ev-space-2); }
+.ev-legal strong { color: var(--ev-color-text); }
+.ev-artist-panel-nav { margin-bottom: var(--ev-space-6); }

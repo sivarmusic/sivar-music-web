@@ -4,6 +4,12 @@ import { useParams } from 'next/navigation'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
 import { EVENT_TZ } from '@/lib/eventDate'
+import { copyFor, type CopyKey } from '../../copy'
+import { Icon, type IconName } from '../../components/icons'
+import SiteHeader from '../../components/site/SiteHeader'
+import SiteFooter from '../../components/site/SiteFooter'
+import { ARTIST_ART } from '../components/artistArt'
+import { formatMoneyFull } from '@/lib/format'
 
 interface Profile {
   slug: string; nombre_artistico: string; genero: string | null; bio: string | null
@@ -11,19 +17,24 @@ interface Profile {
   tiktok: string | null; youtube: string | null; apple_music: string | null; otro_link: string | null
 }
 interface GalleryItem { id: string; image_url: string }
-interface ArtistEvent { id: string; nombre: string; fecha: string; venue: string; descripcion: string | null; imagen_url: string | null; link_externo: string | null }
+interface ArtistEvent {
+  id: string; nombre: string; fecha: string; venue: string; descripcion: string | null
+  imagen_url: string | null; link_externo: string | null; precio?: number | null
+}
 
-const SOCIAL_ICONS: { key: keyof Profile; label: string }[] = [
-  { key: 'instagram', label: 'Instagram' },
-  { key: 'spotify', label: 'Spotify' },
-  { key: 'tiktok', label: 'TikTok' },
-  { key: 'youtube', label: 'YouTube' },
-  { key: 'apple_music', label: 'Apple Music' },
-  { key: 'otro_link', label: 'Link' },
+type SocialKey = 'instagram' | 'spotify' | 'tiktok' | 'youtube' | 'apple_music' | 'otro_link'
+const SOCIALS: { key: SocialKey; label: string; icon: IconName | null }[] = [
+  { key: 'instagram', label: 'Instagram', icon: 'instagram' },
+  { key: 'spotify', label: 'Spotify', icon: 'spotify' },
+  { key: 'youtube', label: 'YouTube', icon: 'youtube' },
+  { key: 'tiktok', label: 'TikTok', icon: null },
+  { key: 'apple_music', label: 'Apple Music', icon: null },
+  { key: 'otro_link', label: '', icon: null },
 ]
 
 export default function ArtistaPublicProfilePage() {
-  const { t, dateLocale } = useLanguage()
+  const { lang, t, dateLocale } = useLanguage()
+  const c = (key: CopyKey, vars?: Record<string, string | number>) => copyFor(lang, key, vars)
   const { slug } = useParams<{ slug: string }>()
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined)
   const [gallery, setGallery] = useState<GalleryItem[]>([])
@@ -42,77 +53,147 @@ export default function ArtistaPublicProfilePage() {
     })
   }, [slug])
 
-  if (profile === undefined) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">{t('detail.loading')}</p></div>
-  if (profile === null) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/50 text-sm">{t('artistas.profile.notFound')}</p></div>
-
-  return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      <div className="px-5 pt-10 pb-6 max-w-lg mx-auto text-center space-y-4">
-        <div className="w-24 h-24 rounded-full overflow-hidden bg-white/8 mx-auto">
-          {profile.foto_url && <img src={profile.foto_url} alt={profile.nombre_artistico} className="w-full h-full object-cover" />}
-        </div>
-        <div>
-          <h1 className="text-white text-2xl font-bold">{profile.nombre_artistico}</h1>
-          {profile.genero && <p className="text-[#F472B6] text-[10px] font-bold uppercase tracking-wider mt-1">{profile.genero}</p>}
-        </div>
-        {profile.bio && <p className="text-white/55 text-sm leading-relaxed">{profile.bio}</p>}
-
-        <div className="flex items-center justify-center gap-3 flex-wrap">
-          {SOCIAL_ICONS.filter(s => profile[s.key]).map(s => (
-            <a key={s.key} href={profile[s.key] as string} target="_blank" rel="noopener noreferrer"
-              className="text-xs font-semibold text-white/60 hover:text-[#F472B6] bg-white/6 hover:bg-white/10 px-3 py-1.5 rounded-full transition">
-              {s.label}
-            </a>
-          ))}
-        </div>
+  if (profile === undefined) {
+    return (
+      <div className="ev-surface">
+        <SiteHeader />
+        <main id="main"><div className="ev-state-screen"><p className="ev-muted" role="status">{t('detail.loading')}</p></div></main>
+        <SiteFooter />
       </div>
-
-      <div className="px-5 pb-16 max-w-lg mx-auto space-y-8">
-        <div>
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">{t('artistas.profile.upcomingEvents')}</p>
-          {events.length === 0 ? (
-            <p className="text-white/30 text-sm">{t('artistas.profile.noEvents')}</p>
-          ) : (
-            <div className="space-y-3">
-              {events.map(ev => {
-                const fecha = new Date(ev.fecha)
-                return (
-                  <div key={ev.id} className="bg-white/4 border border-white/10 rounded-2xl overflow-hidden">
-                    {ev.imagen_url && <img src={ev.imagen_url} alt={ev.nombre} className="w-full h-40 object-cover" />}
-                    <div className="p-4">
-                      <p className="text-white font-bold text-sm">{ev.nombre}</p>
-                      <p className="text-white/50 text-xs mt-1">
-                        {fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'short', day: 'numeric', month: 'short' })}
-                        {' · '}{ev.venue}
-                      </p>
-                      {ev.descripcion && <p className="text-white/40 text-sm mt-2 leading-relaxed">{ev.descripcion}</p>}
-                      {ev.link_externo && (
-                        <a href={ev.link_externo} target="_blank" rel="noopener noreferrer"
-                          className="inline-block mt-3 text-[#F472B6] text-xs font-bold uppercase tracking-wider hover:text-white transition">
-                          {t('artistas.profile.info')} →
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {gallery.length > 0 && (
-          <div>
-            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">{t('artistas.profile.gallery')}</p>
-            <div className="grid grid-cols-3 gap-2">
-              {gallery.map(item => (
-                <div key={item.id} className="aspect-square rounded-xl overflow-hidden bg-white/5">
-                  <img src={item.image_url} alt="" className="w-full h-full object-cover" />
-                </div>
-              ))}
+    )
+  }
+  if (profile === null) {
+    return (
+      <div className="ev-surface">
+        <SiteHeader />
+        <main id="main">
+          <div className="ev-state-screen">
+            <div className="ev-stack ev-stack--sm">
+              <h1 className="ev-display ev-display--md">{t('artistas.profile.notFound')}</h1>
+              <a className="ev-link-arrow" href="/eventos" style={{ justifySelf: 'center' }}>{c('eva.seeLineup')} <Icon name="arrow-right" /></a>
             </div>
           </div>
-        )}
+        </main>
+        <SiteFooter />
       </div>
+    )
+  }
+
+  const name = profile.nombre_artistico
+  const links = SOCIALS.filter(s => profile[s.key])
+  const fmt = (d: Date, o: Intl.DateTimeFormatOptions) => d.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, ...o })
+
+  return (
+    <div className="ev-surface">
+      <SiteHeader />
+      <main id="main">
+        <section className="ev-artist-hero">
+          <img className="ev-artist-hero__img" src={profile.foto_url || ARTIST_ART} alt="" />
+          <div className="ev-container ev-artist-hero__inner">
+            <p className="ev-eyebrow">{c('art.profile.eyebrow')}</p>
+            <h1 className="ev-artist-hero__name" style={{ marginTop: 'var(--ev-space-3)' }}>{name}</h1>
+            {profile.genero && <p className="ev-eyebrow ev-eyebrow--accent" style={{ marginTop: 'var(--ev-space-3)' }}>{profile.genero}</p>}
+            {links.length > 0 && (
+              <div className="ev-cluster" style={{ marginTop: 'var(--ev-space-5)' }}>
+                {links.map(s => {
+                  const href = profile[s.key] as string
+                  const label = s.label || c('art.profile.otherLink')
+                  if (s.icon) {
+                    return (
+                      <a key={s.key} className="ev-icon-btn ev-icon-btn--boxed" href={href} target="_blank" rel="noopener noreferrer"
+                        aria-label={c('art.profile.socialAria', { network: label, name })}>
+                        <Icon name={s.icon} />
+                      </a>
+                    )
+                  }
+                  return (
+                    <a key={s.key} className="ev-btn ev-btn--secondary ev-btn--sm" href={href} target="_blank" rel="noopener noreferrer"
+                      aria-label={c('art.profile.socialAria', { network: label, name })}>
+                      <Icon name="external" />{label}
+                    </a>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <div className="ev-container ev-page ev-split-2">
+          <section className="ev-split-2__main ev-stack" aria-labelledby="h-bio">
+            {profile.bio && (
+              <>
+                <h2 className="ev-display ev-display--sm" id="h-bio">{c('art.profile.bio')}</h2>
+                <div className="ev-prose"><p>{profile.bio}</p></div>
+              </>
+            )}
+            {gallery.length > 0 && (
+              <section className="ev-stack" aria-labelledby="h-gal">
+                <h2 className="ev-display ev-display--sm" id="h-gal">{t('artistas.profile.gallery')}</h2>
+                <ul className="ev-gallery-grid" role="list">
+                  {gallery.map(item => (
+                    <li key={item.id} className="ev-gallery-item"><img src={item.image_url} alt="" loading="lazy" /></li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </section>
+
+          <section className="ev-split-2__aside ev-stack" aria-labelledby="h-fechas">
+            <h2 className="ev-display ev-display--sm" id="h-fechas">{t('artistas.profile.upcomingEvents')}</h2>
+            {events.length === 0 ? (
+              <div className="ev-empty" style={{ padding: 'var(--ev-space-6)' }}>
+                <p className="ev-empty__text">
+                  {t('artistas.profile.noEvents')}{profile.instagram ? ` ${c('art.profile.followHint')}` : ''}
+                </p>
+              </div>
+            ) : (
+              <ul className="ev-stack" role="list" style={{ listStyle: 'none', padding: 0 }}>
+                {events.map(ev => {
+                  const fecha = new Date(ev.fecha)
+                  const inner = (
+                    <>
+                      <div className="ev-event-card__media">
+                        {ev.imagen_url
+                          ? <img src={ev.imagen_url} alt="" />
+                          : (
+                            <div className="ev-poster-fallback" role="img" aria-label={c('ev.posterNone', { name: ev.nombre })}>
+                              <span className="ev-poster-fallback__name">{ev.nombre}</span>
+                              <span className="ev-poster-fallback__tag">{c('ev.posterTag')}</span>
+                            </div>
+                          )}
+                        <p className="ev-event-card__date">
+                          <span>{fmt(fecha, { weekday: 'short' })}</span>
+                          <b>{fmt(fecha, { day: 'numeric' })}</b>
+                          <span>{fmt(fecha, { month: 'short' })}</span>
+                        </p>
+                      </div>
+                      <div className="ev-event-card__body">
+                        <h3 className="ev-event-card__title">{ev.nombre}</h3>
+                        <p className="ev-event-card__meta"><span><Icon name="map-pin" />{ev.venue}</span></p>
+                        {ev.descripcion && <p className="ev-subtle">{ev.descripcion}</p>}
+                        {(ev.precio != null || ev.link_externo) && (
+                          <div className="ev-event-card__foot">
+                            {ev.precio != null && <p className="ev-event-card__price">{formatMoneyFull(ev.precio)}</p>}
+                            {ev.link_externo && <span className="ev-link-arrow">{t('artistas.profile.info')} <Icon name="external" size="sm" /></span>}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )
+                  return (
+                    <li key={ev.id}>
+                      {ev.link_externo
+                        ? <a className="ev-event-card ev-event-card--row" href={ev.link_externo} target="_blank" rel="noopener noreferrer">{inner}</a>
+                        : <article className="ev-event-card ev-event-card--row">{inner}</article>}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+        </div>
+      </main>
+      <SiteFooter />
     </div>
   )
 }

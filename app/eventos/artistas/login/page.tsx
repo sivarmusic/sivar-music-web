@@ -4,11 +4,16 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
-
-const INPUT = 'w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#F472B6]/50 transition'
+import { copyFor, type CopyKey } from '../../copy'
+import { Icon } from '../../components/icons'
+import SiteHeader from '../../components/site/SiteHeader'
+import SiteFooter from '../../components/site/SiteFooter'
+import { Field } from '../components/Field'
+import { ARTIST_ART } from '../components/artistArt'
 
 export default function ArtistaLoginPage() {
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
+  const c = (key: CopyKey) => copyFor(lang, key)
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -16,6 +21,7 @@ export default function ArtistaLoginPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [forgot, setForgot] = useState(false)
+  const [reveal, setReveal] = useState(false)
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault(); setError(''); setLoading(true)
@@ -37,59 +43,79 @@ export default function ArtistaLoginPage() {
     setLoading(false)
   }
 
+  const pwToggle = (
+    <button
+      type="button"
+      className="ev-icon-btn ev-field__suffix"
+      aria-pressed={reveal}
+      aria-label={reveal ? c('eva.hidePw') : c('eva.showPw')}
+      onClick={() => setReveal(r => !r)}
+    >
+      <Icon name={reveal ? 'eye-off' : 'eye'} />
+    </button>
+  )
+
   return (
-    <div className="min-h-screen bg-[#0a0008] text-white flex flex-col items-center justify-center px-5 py-12">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <Link href="/eventos/artistas" className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase">Sivar Events for Artists</Link>
-          <h1 className="text-white text-xl font-bold mt-2">{t('artistas.login.title')}</h1>
-        </div>
+    <div className="ev-surface">
+      <SiteHeader />
+      <main id="main">
+        <section className="ev-auth">
+          <div className="ev-auth__art" aria-hidden="true">
+            <img src={ARTIST_ART} alt="" loading="lazy" />
+          </div>
+          <div className="ev-auth__panel">
+            <div className="ev-auth__inner">
+              <div className="ev-stack ev-stack--sm">
+                <p className="ev-eyebrow">{c('ev.forArtists')}</p>
+                <h1 className="ev-display ev-display--md">{t('artistas.login.title')}</h1>
+              </div>
 
-        {!forgot ? (
-          <form onSubmit={handleLogin} className="space-y-3">
-            <div>
-              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('login.email')}</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="tu@correo.com" className={INPUT} />
-            </div>
-            <div>
-              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('login.password')}</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" className={INPUT} />
-            </div>
-            {error && <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3 text-center">{error}</p>}
-            <button type="submit" disabled={loading}
-              className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-              {loading ? t('artistas.login.entering') : t('artistas.login.enter')}
-            </button>
-            <button type="button" onClick={() => setForgot(true)}
-              className="w-full text-white/30 hover:text-white/60 text-xs text-center transition py-1">
-              {t('artistas.login.forgot')}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleForgot} className="space-y-3">
-            <div>
-              <label className="block text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-1.5">{t('login.yourEmail')}</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="tu@correo.com" className={INPUT} />
-            </div>
-            {success
-              ? <p className="text-green-400 text-sm bg-green-400/10 border border-green-400/20 rounded-2xl px-4 py-3 text-center">{success}</p>
-              : (
-                <button type="submit" disabled={loading}
-                  className="w-full bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-sm uppercase tracking-[0.18em] rounded-2xl py-4 transition-all">
-                  {loading ? t('login.sending') : t('login.sendLink')}
-                </button>
+              {error && (
+                <div className="ev-banner ev-banner--error" role="alert">
+                  <Icon name="alert-triangle" />
+                  <div><p className="ev-banner__title">{error}</p></div>
+                </div>
               )}
-            <button type="button" onClick={() => { setForgot(false); setSuccess('') }}
-              className="w-full text-white/30 hover:text-white/60 text-xs text-center transition py-1">
-              {t('login.backToSignIn')}
-            </button>
-          </form>
-        )}
+              {success && (
+                <div className="ev-banner ev-banner--success" role="status">
+                  <Icon name="check-circle" />
+                  <div><p className="ev-banner__title">{success}</p></div>
+                </div>
+              )}
 
-        <p className="text-white/20 text-xs text-center">
-          <Link href="/eventos/artistas/aplicar" className="hover:text-white/50 transition">{t('artistas.login.backToApply')}</Link>
-        </p>
-      </div>
+              {!forgot ? (
+                <form className="ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-5)' }} onSubmit={handleLogin} aria-busy={loading}>
+                  <Field id="al-e" label={t('login.email')} icon="mail" type="email" autoComplete="email" required placeholder="tu@correo.com" value={email} onChange={e => setEmail(e.target.value)} />
+                  <Field id="al-p" label={t('login.password')} icon="lock" type={reveal ? 'text' : 'password'} autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} suffix={pwToggle} />
+                  <button className={`ev-btn ev-btn--primary ev-btn--lg ev-btn--block${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
+                    {loading ? t('artistas.login.entering') : t('artistas.login.enter')}
+                  </button>
+                  <p style={{ textAlign: 'center' }}>
+                    <button type="button" className="ev-btn ev-btn--ghost ev-btn--sm" onClick={() => setForgot(true)}>{t('artistas.login.forgot')}</button>
+                  </p>
+                </form>
+              ) : (
+                <form className="ev-stack" style={{ ['--stack-gap' as string]: 'var(--ev-space-5)' }} onSubmit={handleForgot} aria-busy={loading}>
+                  <Field id="af-e" label={t('login.yourEmail')} icon="mail" type="email" autoComplete="email" required placeholder="tu@correo.com" value={email} onChange={e => setEmail(e.target.value)} />
+                  {!success && (
+                    <button className={`ev-btn ev-btn--primary ev-btn--lg ev-btn--block${loading ? ' is-loading' : ''}`} type="submit" disabled={loading}>
+                      {loading ? t('login.sending') : t('login.sendLink')}
+                    </button>
+                  )}
+                  <button type="button" className="ev-back-link" style={{ background: 'transparent', border: 0, justifySelf: 'center' }} onClick={() => { setForgot(false); setSuccess('') }}>
+                    {t('login.backToSignIn')}
+                  </button>
+                </form>
+              )}
+
+              <Link href="/eventos/artistas/aplicar" className="ev-back-link" style={{ justifySelf: 'center' }}>
+                {t('artistas.login.backToApply')}
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
+      <SiteFooter />
     </div>
   )
 }

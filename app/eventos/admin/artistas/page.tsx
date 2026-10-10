@@ -1,9 +1,10 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { useRequireAdmin } from '../components/useRequireAdmin'
 import { EVENT_TZ } from '@/lib/eventDate'
+import { Icon, type IconName } from '../../components/icons'
+import { Field, AreaField } from '../../artistas/components/Field'
 
 interface Application {
   id: string; nombre_artistico: string; nombre_contacto: string; email: string; telefono: string | null
@@ -26,14 +27,16 @@ interface Profile {
   tiktok: string | null; youtube: string | null; apple_music: string | null; otro_link: string | null
 }
 
-const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  pendiente: { label: 'Pendiente', color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-  aprobado: { label: 'Aprobado', color: 'text-green-400', bg: 'bg-green-400/10' },
-  rechazado: { label: 'Rechazado', color: 'text-red-400', bg: 'bg-red-400/10' },
+const STATUS_LABELS: Record<string, { label: string; cls: string; icon: IconName }> = {
+  pendiente: { label: 'Pendiente', cls: 'review', icon: 'hourglass' },
+  aprobado: { label: 'Aprobado', cls: 'confirmed', icon: 'check-circle' },
+  rechazado: { label: 'Rechazado', cls: 'rejected', icon: 'x-circle' },
 }
 
-const INPUT = 'w-full bg-white/6 border border-white/10 text-white placeholder-white/25 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F472B6]/50 transition'
-const LABEL = 'block text-white/45 text-[10px] font-bold uppercase tracking-wider mb-1'
+function StatusChip({ status }: { status: string }) {
+  const info = STATUS_LABELS[status]
+  return <span className={`ev-chip ev-chip--${info.cls}`}><Icon name={info.icon} />{info.label}</span>
+}
 
 function getArtist(rel: ArtistEvent['artist_profiles']) {
   return Array.isArray(rel) ? rel[0] : rel
@@ -115,7 +118,7 @@ export default function AdminArtistasPage() {
     return true
   }
 
-  if (loading) return <div className="min-h-screen bg-[#0a0008] flex items-center justify-center"><p className="text-white/30 text-sm">Cargando...</p></div>
+  if (loading) return <div className="ev-state-screen"><p className="ev-muted" role="status">Cargando…</p></div>
 
   const pending = applications.filter(a => a.status === 'pendiente')
   const reviewed = applications.filter(a => a.status !== 'pendiente')
@@ -123,18 +126,21 @@ export default function AdminArtistasPage() {
   const reviewedEvents = events.filter(e => e.status !== 'pendiente')
 
   return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      <div className="px-5 pt-5 max-w-2xl mx-auto">
-        <h1 className="text-white text-lg font-bold">Artistas</h1>
+    <>
+      <div className="ev-page-head">
+        <div className="ev-stack ev-stack--sm">
+          <h1 className="ev-display ev-display--md">Artistas</h1>
+          <p className="ev-muted">Revisá solicitudes, eventos informativos y perfiles de Sivar Events for Artists.</p>
+        </div>
       </div>
 
-      <div className="px-5 py-6 max-w-2xl mx-auto space-y-8">
-        <div>
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">Solicitudes pendientes ({pending.length})</p>
+      <div className="ev-stack ev-stack--lg">
+        <section aria-labelledby="h-sol">
+          <h2 className="ev-title ev-title--sm" id="h-sol" style={{ marginBottom: 'var(--ev-space-4)' }}>Solicitudes pendientes ({pending.length})</h2>
           {pending.length === 0 ? (
-            <p className="text-white/30 text-sm">No hay solicitudes pendientes.</p>
+            <div className="ev-empty"><p className="ev-empty__text">No hay solicitudes pendientes.</p></div>
           ) : (
-            <div className="space-y-3">
+            <div className="ev-stack">
               {pending.map(app => (
                 <ApplicationCard key={app.id} app={app} expanded={expandedId === app.id}
                   onExpand={() => setExpandedId(expandedId === app.id ? null : app.id)}
@@ -142,64 +148,65 @@ export default function AdminArtistasPage() {
               ))}
             </div>
           )}
-        </div>
+        </section>
 
         {reviewed.length > 0 && (
-          <div>
-            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">Solicitudes revisadas</p>
-            <div className="space-y-2">
-              {reviewed.map(app => {
-                const info = STATUS_LABELS[app.status]
-                return (
-                  <div key={app.id} className="rounded-2xl border border-white/8 bg-white/3 px-4 py-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-white font-semibold text-sm truncate">{app.nombre_artistico}</p>
-                      <p className="text-white/35 text-xs mt-0.5 truncate">{app.email}</p>
-                    </div>
-                    <span className={`flex-none text-xs px-3 py-1.5 rounded-xl font-semibold ${info.bg} ${info.color}`}>{info.label}</span>
+          <section aria-labelledby="h-rev">
+            <h2 className="ev-title ev-title--sm" id="h-rev" style={{ marginBottom: 'var(--ev-space-4)' }}>Solicitudes revisadas</h2>
+            <ul className="ev-stack" role="list" style={{ listStyle: 'none', padding: 0 }}>
+              {reviewed.map(app => (
+                <li key={app.id} className="ev-admin-card ev-admin-card__head" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p className="ev-title ev-title--sm">{app.nombre_artistico}</p>
+                    <p className="ev-subtle" style={{ overflowWrap: 'anywhere' }}>{app.email}</p>
                   </div>
-                )
-              })}
-            </div>
-          </div>
+                  <StatusChip status={app.status} />
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
-        <div className="border-t border-white/8 pt-8">
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">Eventos por confirmar ({pendingEvents.length})</p>
+        <hr className="ev-divider" />
+
+        <section aria-labelledby="h-evp">
+          <h2 className="ev-title ev-title--sm" id="h-evp" style={{ marginBottom: 'var(--ev-space-4)' }}>Eventos por confirmar ({pendingEvents.length})</h2>
           {pendingEvents.length === 0 ? (
-            <p className="text-white/30 text-sm">No hay eventos pendientes.</p>
+            <div className="ev-empty"><p className="ev-empty__text">No hay eventos pendientes.</p></div>
           ) : (
-            <div className="space-y-3">
+            <div className="ev-stack">
               {pendingEvents.map(ev => (
                 <EventCard key={ev.id} ev={ev} onReview={reviewEvent} onSave={saveEvent} actionId={actionId} />
               ))}
             </div>
           )}
-        </div>
+        </section>
 
         {reviewedEvents.length > 0 && (
-          <div>
-            <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">Eventos revisados</p>
-            <div className="space-y-3">
+          <section aria-labelledby="h-evr">
+            <h2 className="ev-title ev-title--sm" id="h-evr" style={{ marginBottom: 'var(--ev-space-4)' }}>Eventos revisados</h2>
+            <div className="ev-stack">
               {reviewedEvents.map(ev => (
                 <EventCard key={ev.id} ev={ev} onReview={reviewEvent} onSave={saveEvent} actionId={actionId} collapsedByDefault />
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        <div className="border-t border-white/8 pt-8">
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">Perfiles de artistas ({profiles.length})</p>
+        <hr className="ev-divider" />
+
+        <section aria-labelledby="h-prf">
+          <h2 className="ev-title ev-title--sm" id="h-prf" style={{ marginBottom: 'var(--ev-space-4)' }}>Perfiles de artistas ({profiles.length})</h2>
           {profiles.length === 0 ? (
-            <p className="text-white/30 text-sm">Todavía no hay artistas aprobados.</p>
+            <div className="ev-empty"><p className="ev-empty__text">Todavía no hay artistas aprobados.</p></div>
           ) : (
-            <div className="space-y-3">
+            <div className="ev-stack">
               {profiles.map(p => <ProfileCard key={p.id} profile={p} onSave={saveProfile} />)}
             </div>
           )}
-        </div>
+        </section>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -214,38 +221,38 @@ function ApplicationCard({ app, expanded, onExpand, onReview, actionId }: {
   ].filter(l => l.value)
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/4 overflow-hidden">
-      <button onClick={onExpand} className="w-full px-4 py-4 text-left flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-white font-semibold text-sm">{app.nombre_artistico}</p>
-          <p className="text-white/40 text-xs mt-0.5">{app.nombre_contacto} · {app.email}</p>
-          {app.genero && <p className="text-white/30 text-xs mt-0.5">{app.genero}</p>}
+    <div className="ev-admin-card">
+      <button
+        type="button" onClick={onExpand} aria-expanded={expanded} aria-controls={`app-${app.id}`}
+        className="ev-admin-card__head" style={{ width: '100%', textAlign: 'left', background: 'none', border: 0, color: 'inherit', cursor: 'pointer', minHeight: 'var(--ev-tap-min)' }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p className="ev-title ev-title--sm">{app.nombre_artistico}</p>
+          <p className="ev-subtle" style={{ overflowWrap: 'anywhere' }}>{app.nombre_contacto} · {app.email}</p>
+          {app.genero && <p className="ev-subtle">{app.genero}</p>}
         </div>
-        <p className="text-white/20 text-xs flex-none">{expanded ? '▲' : '▼'}</p>
+        <Icon name={expanded ? 'chevron-down' : 'chevron-right'} />
       </button>
 
       {expanded && (
-        <div className="border-t border-white/8 px-4 py-4 space-y-3">
-          {app.telefono && <p className="text-white/50 text-sm">📞 {app.telefono}</p>}
-          {app.bio && <p className="text-white/50 text-sm leading-relaxed">{app.bio}</p>}
+        <div className="ev-admin-card__body" id={`app-${app.id}`}>
+          {app.telefono && <p className="ev-muted"><Icon name="phone" size="sm" /> {app.telefono}</p>}
+          {app.bio && <p className="ev-muted">{app.bio}</p>}
           {links.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="ev-cluster">
               {links.map(l => (
-                <a key={l.label} href={l.value!} target="_blank" rel="noopener noreferrer"
-                  className="text-xs font-semibold text-white/60 hover:text-[#F472B6] bg-white/6 hover:bg-white/10 px-3 py-1.5 rounded-full transition">
-                  {l.label}
+                <a key={l.label} className="ev-btn ev-btn--secondary ev-btn--sm" href={l.value!} target="_blank" rel="noopener noreferrer">
+                  <Icon name="external" />{l.label}
                 </a>
               ))}
             </div>
           )}
-          <div className="flex gap-2 pt-2">
-            <button onClick={() => onReview(app.id, 'rechazado')} disabled={actionId === app.id}
-              className="flex-1 bg-white/8 hover:bg-red-500/20 hover:text-red-400 disabled:opacity-50 text-white/60 font-bold text-xs uppercase tracking-wider rounded-xl py-3 transition">
-              Rechazar
+          <div className="ev-cluster">
+            <button type="button" className="ev-btn ev-btn--danger ev-btn--sm" onClick={() => onReview(app.id, 'rechazado')} disabled={actionId === app.id}>
+              <Icon name="x" />Rechazar
             </button>
-            <button onClick={() => onReview(app.id, 'aprobado')} disabled={actionId === app.id}
-              className="flex-1 bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl py-3 transition">
-              {actionId === app.id ? 'Procesando...' : 'Aprobar'}
+            <button type="button" className="ev-btn ev-btn--primary ev-btn--sm" onClick={() => onReview(app.id, 'aprobado')} disabled={actionId === app.id}>
+              <Icon name="check" />{actionId === app.id ? 'Procesando…' : 'Aprobar'}
             </button>
           </div>
         </div>
@@ -261,7 +268,6 @@ function EventCard({ ev, onReview, onSave, actionId, collapsedByDefault }: {
 }) {
   const artist = getArtist(ev.artist_profiles)
   const fecha = new Date(ev.fecha)
-  const info = STATUS_LABELS[ev.status]
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
@@ -270,7 +276,7 @@ function EventCard({ ev, onReview, onSave, actionId, collapsedByDefault }: {
     precio: ev.precio?.toString() ?? '', max_entradas: ev.max_entradas?.toString() ?? '', link_externo: ev.link_externo ?? '',
   })
 
-  function set<K extends keyof typeof form>(key: K, value: string) { setForm(f => ({ ...f, [key]: value })) }
+  function set<K extends keyof typeof form>(key: K) { return (e: { target: { value: string } }) => setForm(f => ({ ...f, [key]: e.target.value })) }
 
   async function handleSave() {
     setSaving(true)
@@ -288,15 +294,15 @@ function EventCard({ ev, onReview, onSave, actionId, collapsedByDefault }: {
 
   if (!editing && collapsedByDefault) {
     return (
-      <div className="rounded-2xl border border-white/8 bg-white/3 px-4 py-3 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-white font-semibold text-sm truncate">{ev.nombre}</p>
-          <p className="text-white/35 text-xs mt-0.5 truncate">{artist?.nombre_artistico} · {fecha.toLocaleDateString('es-SV', { timeZone: EVENT_TZ })}</p>
+      <div className="ev-admin-card ev-admin-card__head" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <p className="ev-title ev-title--sm">{ev.nombre}</p>
+          <p className="ev-subtle">{artist?.nombre_artistico} · {fecha.toLocaleDateString('es-SV', { timeZone: EVENT_TZ })}</p>
         </div>
-        <div className="flex items-center gap-2 flex-none">
-          <span className={`text-xs px-3 py-1.5 rounded-xl font-semibold ${info.bg} ${info.color}`}>{info.label}</span>
-          <button onClick={() => setEditing(true)} className="text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
-            Editar
+        <div className="ev-cluster" style={{ flex: 'none' }}>
+          <StatusChip status={ev.status} />
+          <button type="button" className="ev-btn ev-btn--ghost ev-btn--sm" onClick={() => setEditing(true)} aria-label={`Editar ${ev.nombre}`}>
+            <Icon name="edit" />Editar
           </button>
         </div>
       </div>
@@ -305,41 +311,45 @@ function EventCard({ ev, onReview, onSave, actionId, collapsedByDefault }: {
 
   if (!editing) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/4 overflow-hidden">
-        {ev.imagen_url && <img src={ev.imagen_url} alt={ev.nombre} className="w-full h-40 object-cover" />}
-        <div className="p-4 space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-white font-semibold text-sm">{ev.nombre}</p>
-              <p className="text-white/40 text-xs mt-0.5">{artist?.nombre_artistico ?? '—'}</p>
-              <p className="text-white/40 text-xs mt-0.5">
-                {fecha.toLocaleDateString('es-SV', { timeZone: EVENT_TZ, weekday: 'short', day: 'numeric', month: 'short' })}
-                {' · '}{ev.venue}
-              </p>
-              {ev.direccion && <p className="text-white/30 text-xs mt-0.5">{ev.direccion}</p>}
-              {ev.precio != null && <p className="text-white/30 text-xs mt-0.5">Precio: ${ev.precio}</p>}
-              {ev.max_entradas != null && <p className="text-white/30 text-xs mt-0.5">Máx. entradas: {ev.max_entradas}</p>}
-            </div>
-            <button onClick={() => setEditing(true)} className="flex-none text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
-              Editar
-            </button>
+      <div className="ev-admin-card">
+        <div className="ev-admin-card__head">
+          <div className="ev-admin-card__thumb">
+            {ev.imagen_url
+              ? <img src={ev.imagen_url} alt="" />
+              : <div className="ev-poster-fallback" aria-hidden="true"><span className="ev-poster-fallback__name">{ev.nombre}</span></div>}
           </div>
-          {ev.descripcion && <p className="text-white/50 text-sm leading-relaxed">{ev.descripcion}</p>}
+          <div className="ev-stack ev-stack--sm" style={{ flex: 1, minWidth: 0 }}>
+            <StatusChip status={ev.status} />
+            <h3 className="ev-title ev-title--sm">{ev.nombre}</h3>
+            <p className="ev-subtle">{artist?.nombre_artistico ?? '—'}</p>
+            <p className="ev-subtle">
+              {fecha.toLocaleDateString('es-SV', { timeZone: EVENT_TZ, weekday: 'short', day: 'numeric', month: 'short' })}
+              {' · '}{ev.venue}
+            </p>
+            {ev.direccion && <p className="ev-subtle">{ev.direccion}</p>}
+            {ev.precio != null && <p className="ev-subtle">Precio: ${ev.precio}</p>}
+            {ev.max_entradas != null && <p className="ev-subtle">Máx. entradas: {ev.max_entradas}</p>}
+          </div>
+          <button type="button" className="ev-btn ev-btn--ghost ev-btn--sm" onClick={() => setEditing(true)} aria-label={`Editar ${ev.nombre}`}>
+            <Icon name="edit" />Editar
+          </button>
+        </div>
+        <div className="ev-admin-card__body">
+          {ev.descripcion && <p className="ev-muted">{ev.descripcion}</p>}
           {ev.link_externo && (
-            <a href={ev.link_externo} target="_blank" rel="noopener noreferrer"
-              className="inline-block text-xs font-semibold text-white/60 hover:text-[#F472B6] bg-white/6 hover:bg-white/10 px-3 py-1.5 rounded-full transition">
-              Link externo
-            </a>
+            <div className="ev-cluster">
+              <a className="ev-btn ev-btn--secondary ev-btn--sm" href={ev.link_externo} target="_blank" rel="noopener noreferrer">
+                <Icon name="external" />Link externo
+              </a>
+            </div>
           )}
           {ev.status === 'pendiente' && (
-            <div className="flex gap-2 pt-1">
-              <button onClick={() => onReview(ev.id, 'rechazado')} disabled={actionId === ev.id}
-                className="flex-1 bg-white/8 hover:bg-red-500/20 hover:text-red-400 disabled:opacity-50 text-white/60 font-bold text-xs uppercase tracking-wider rounded-xl py-3 transition">
-                Rechazar
+            <div className="ev-cluster">
+              <button type="button" className="ev-btn ev-btn--danger ev-btn--sm" onClick={() => onReview(ev.id, 'rechazado')} disabled={actionId === ev.id}>
+                <Icon name="x" />Rechazar
               </button>
-              <button onClick={() => onReview(ev.id, 'aprobado')} disabled={actionId === ev.id}
-                className="flex-1 bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl py-3 transition">
-                {actionId === ev.id ? 'Procesando...' : 'Publicar'}
+              <button type="button" className="ev-btn ev-btn--primary ev-btn--sm" onClick={() => onReview(ev.id, 'aprobado')} disabled={actionId === ev.id}>
+                <Icon name="check" />{actionId === ev.id ? 'Procesando…' : 'Publicar'}
               </button>
             </div>
           )}
@@ -348,26 +358,26 @@ function EventCard({ ev, onReview, onSave, actionId, collapsedByDefault }: {
     )
   }
 
+  const p = `ee-${ev.id}`
   return (
-    <div className="rounded-2xl border border-[#F472B6]/30 bg-white/4 p-4 space-y-2">
-      <div><label className={LABEL}>Nombre</label><input value={form.nombre} onChange={e => set('nombre', e.target.value)} className={INPUT} /></div>
-      <div><label className={LABEL}>Descripción</label><textarea value={form.descripcion} onChange={e => set('descripcion', e.target.value)} rows={2} className={INPUT + ' resize-none'} /></div>
-      <div><label className={LABEL}>Fecha y hora</label><input type="datetime-local" value={form.fecha} onChange={e => set('fecha', e.target.value)} className={INPUT + ' [color-scheme:dark]'} /></div>
-      <div><label className={LABEL}>Venue</label><input value={form.venue} onChange={e => set('venue', e.target.value)} className={INPUT} /></div>
-      <div><label className={LABEL}>Dirección</label><input value={form.direccion} onChange={e => set('direccion', e.target.value)} className={INPUT} /></div>
-      <div className="grid grid-cols-2 gap-2">
-        <div><label className={LABEL}>Latitud</label><input type="number" step="any" value={form.lat} onChange={e => set('lat', e.target.value)} className={INPUT} /></div>
-        <div><label className={LABEL}>Longitud</label><input type="number" step="any" value={form.lng} onChange={e => set('lng', e.target.value)} className={INPUT} /></div>
+    <div className="ev-admin-card ev-admin-form ev-stack">
+      <h3 className="ev-title ev-title--sm">Editar evento</h3>
+      <div className="ev-form-grid ev-form-grid--2">
+        <Field id={`${p}-n`} className="ev-span-2" label="Nombre" value={form.nombre} onChange={set('nombre')} />
+        <AreaField id={`${p}-d`} className="ev-span-2" label="Descripción" rows={2} value={form.descripcion} onChange={set('descripcion')} />
+        <Field id={`${p}-f`} label="Fecha y hora" type="datetime-local" value={form.fecha} onChange={set('fecha')} />
+        <Field id={`${p}-v`} label="Venue" value={form.venue} onChange={set('venue')} />
+        <Field id={`${p}-a`} className="ev-span-2" label="Dirección" value={form.direccion} onChange={set('direccion')} />
+        <Field id={`${p}-la`} label="Latitud" type="number" step="any" value={form.lat} onChange={set('lat')} />
+        <Field id={`${p}-lo`} label="Longitud" type="number" step="any" value={form.lng} onChange={set('lng')} />
+        <Field id={`${p}-p`} label="Precio" type="number" step="0.01" value={form.precio} onChange={set('precio')} />
+        <Field id={`${p}-m`} label="Máx. entradas" type="number" value={form.max_entradas} onChange={set('max_entradas')} />
+        <Field id={`${p}-l`} className="ev-span-2" label="Link externo" value={form.link_externo} onChange={set('link_externo')} />
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div><label className={LABEL}>Precio</label><input type="number" step="0.01" value={form.precio} onChange={e => set('precio', e.target.value)} className={INPUT} /></div>
-        <div><label className={LABEL}>Máx. entradas</label><input type="number" value={form.max_entradas} onChange={e => set('max_entradas', e.target.value)} className={INPUT} /></div>
-      </div>
-      <div><label className={LABEL}>Link externo</label><input value={form.link_externo} onChange={e => set('link_externo', e.target.value)} className={INPUT} /></div>
-      <div className="flex gap-2 pt-2">
-        <button onClick={() => setEditing(false)} className="flex-1 bg-white/8 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider rounded-xl py-3 transition">Cancelar</button>
-        <button onClick={handleSave} disabled={saving} className="flex-1 bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl py-3 transition">
-          {saving ? 'Guardando...' : 'Guardar'}
+      <div className="ev-cluster">
+        <button type="button" className="ev-btn ev-btn--ghost ev-btn--sm" onClick={() => setEditing(false)}>Cancelar</button>
+        <button type="button" className="ev-btn ev-btn--primary ev-btn--sm" onClick={handleSave} disabled={saving}>
+          {saving ? 'Guardando…' : 'Guardar'}
         </button>
       </div>
     </div>
@@ -385,7 +395,7 @@ function ProfileCard({ profile, onSave }: {
     youtube: profile.youtube ?? '', apple_music: profile.apple_music ?? '', otro_link: profile.otro_link ?? '',
   })
 
-  function set<K extends keyof typeof form>(key: K, value: string) { setForm(f => ({ ...f, [key]: value })) }
+  function set<K extends keyof typeof form>(key: K) { return (e: { target: { value: string } }) => setForm(f => ({ ...f, [key]: e.target.value })) }
 
   async function handleSave() {
     setSaving(true)
@@ -396,38 +406,42 @@ function ProfileCard({ profile, onSave }: {
 
   if (!editing) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/4 px-4 py-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-full overflow-hidden bg-white/8 flex-none">
-            {profile.foto_url && <img src={profile.foto_url} alt="" className="w-full h-full object-cover" />}
+      <div className="ev-admin-card ev-admin-card__head" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="ev-cluster" style={{ minWidth: 0, flexWrap: 'nowrap' }}>
+          <div className="ev-avatar" style={{ width: 48, height: 48 }}>
+            {profile.foto_url ? <img src={profile.foto_url} alt="" /> : <Icon name="user" />}
           </div>
-          <div className="min-w-0">
-            <p className="text-white font-semibold text-sm truncate">{profile.nombre_artistico}</p>
-            <p className="text-white/35 text-xs mt-0.5 truncate">/eventos/artistas/{profile.slug}</p>
+          <div style={{ minWidth: 0 }}>
+            <p className="ev-title ev-title--sm">{profile.nombre_artistico}</p>
+            <p className="ev-subtle" style={{ overflowWrap: 'anywhere' }}>/eventos/artistas/{profile.slug}</p>
           </div>
         </div>
-        <button onClick={() => setEditing(true)} className="flex-none text-xs px-3 py-1.5 rounded-xl font-semibold bg-white/8 text-white/50 hover:bg-[#F472B6]/20 hover:text-[#F472B6] transition">
-          Editar
+        <button type="button" className="ev-btn ev-btn--ghost ev-btn--sm" onClick={() => setEditing(true)} aria-label={`Editar ${profile.nombre_artistico}`}>
+          <Icon name="edit" />Editar
         </button>
       </div>
     )
   }
 
+  const p = `ep-${profile.id}`
   return (
-    <div className="rounded-2xl border border-[#F472B6]/30 bg-white/4 p-4 space-y-2">
-      <div><label className={LABEL}>Nombre artístico</label><input value={form.nombre_artistico} onChange={e => set('nombre_artistico', e.target.value)} className={INPUT} /></div>
-      <div><label className={LABEL}>Género</label><input value={form.genero} onChange={e => set('genero', e.target.value)} className={INPUT} /></div>
-      <div><label className={LABEL}>Bio</label><textarea value={form.bio} onChange={e => set('bio', e.target.value)} rows={2} className={INPUT + ' resize-none'} /></div>
-      <div><label className={LABEL}>Instagram</label><input value={form.instagram} onChange={e => set('instagram', e.target.value)} className={INPUT} /></div>
-      <div><label className={LABEL}>Spotify</label><input value={form.spotify} onChange={e => set('spotify', e.target.value)} className={INPUT} /></div>
-      <div><label className={LABEL}>TikTok</label><input value={form.tiktok} onChange={e => set('tiktok', e.target.value)} className={INPUT} /></div>
-      <div><label className={LABEL}>YouTube</label><input value={form.youtube} onChange={e => set('youtube', e.target.value)} className={INPUT} /></div>
-      <div><label className={LABEL}>Apple Music</label><input value={form.apple_music} onChange={e => set('apple_music', e.target.value)} className={INPUT} /></div>
-      <div><label className={LABEL}>Otro link</label><input value={form.otro_link} onChange={e => set('otro_link', e.target.value)} className={INPUT} /></div>
-      <div className="flex gap-2 pt-2">
-        <button onClick={() => setEditing(false)} className="flex-1 bg-white/8 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider rounded-xl py-3 transition">Cancelar</button>
-        <button onClick={handleSave} disabled={saving} className="flex-1 bg-[#F472B6] hover:bg-[#ec4899] disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider rounded-xl py-3 transition">
-          {saving ? 'Guardando...' : 'Guardar'}
+    <div className="ev-admin-card ev-admin-form ev-stack">
+      <h3 className="ev-title ev-title--sm">Editar perfil</h3>
+      <div className="ev-form-grid ev-form-grid--2">
+        <Field id={`${p}-n`} label="Nombre artístico" value={form.nombre_artistico} onChange={set('nombre_artistico')} />
+        <Field id={`${p}-g`} label="Género" value={form.genero} onChange={set('genero')} />
+        <AreaField id={`${p}-b`} className="ev-span-2" label="Bio" rows={2} value={form.bio} onChange={set('bio')} />
+        <Field id={`${p}-ig`} label="Instagram" icon="instagram" value={form.instagram} onChange={set('instagram')} />
+        <Field id={`${p}-sp`} label="Spotify" icon="spotify" value={form.spotify} onChange={set('spotify')} />
+        <Field id={`${p}-tk`} label="TikTok" icon="music" value={form.tiktok} onChange={set('tiktok')} />
+        <Field id={`${p}-yt`} label="YouTube" icon="youtube" value={form.youtube} onChange={set('youtube')} />
+        <Field id={`${p}-am`} label="Apple Music" icon="music" value={form.apple_music} onChange={set('apple_music')} />
+        <Field id={`${p}-ot`} label="Otro link" icon="globe" value={form.otro_link} onChange={set('otro_link')} />
+      </div>
+      <div className="ev-cluster">
+        <button type="button" className="ev-btn ev-btn--ghost ev-btn--sm" onClick={() => setEditing(false)}>Cancelar</button>
+        <button type="button" className="ev-btn ev-btn--primary ev-btn--sm" onClick={handleSave} disabled={saving}>
+          {saving ? 'Guardando…' : 'Guardar'}
         </button>
       </div>
     </div>
