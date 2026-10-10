@@ -44,6 +44,20 @@ describe('EventosClient (rediseño)', () => {
     expect(screen.getAllByRole('img', { name: /sin afiche/ }).length).toBe(2)
   })
 
+  it('muestra "Quedan N" y "Agotado" solo cuando la API los informa', async () => {
+    const withAvail = [
+      { ...EVENTS[0], remaining: 6 },
+      { ...EVENTS[1], soldOut: true, remaining: null },
+      { id: '3', slug: 'x', nombre: 'Otro', fecha: future(30), venue: 'Teatro', imagen_url: null, precio: 10, artistas: [], kind: 'ticket' },
+    ]
+    mockFetch(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ events: withAvail }) }))
+    renderPage()
+    await screen.findByRole('heading', { level: 3, name: 'Pink Fest' })
+    expect(screen.getByText('Quedan 6')).toBeInTheDocument()
+    expect(screen.getAllByText('Agotado').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Quedan \d+/)).toHaveLength(1) // el evento sin datos de cupo no muestra chip
+  })
+
   it('búsqueda sin resultados ofrece limpiar', async () => {
     mockFetch(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ events: EVENTS }) }))
     renderPage()
