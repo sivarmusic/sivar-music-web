@@ -92,6 +92,11 @@ export async function POST(req: NextRequest) {
         .in('status', ['pendiente_comprobante', 'en_revision'])
         .maybeSingle()
       if (race) return NextResponse.json({ order: race, recovered: true })
+      // Otra cuenta ya tiene una solicitud activa con este teléfono para este evento.
+      return NextResponse.json({
+        error: 'Ya hay una solicitud activa con este teléfono para este evento. Si es tuya, revisá tu correo o escribinos a admin@sivarmusic.com.',
+        code: 'phone_active',
+      }, { status: 409 })
     }
     return serverError('eventos/orders', error)
   }
