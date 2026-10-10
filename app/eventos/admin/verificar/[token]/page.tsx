@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import AdminHeader from '../../components/AdminHeader'
+import { Icon } from '../../../components/icons'
+import DoorResult from '../../components/DoorResult'
 import { formatEventDateTime } from '@/lib/eventDate'
 import { EVENT_TZ } from '@/lib/eventDate'
 
@@ -92,155 +93,113 @@ export default function VerificarTokenPage() {
   const pastWarning = !!ticket?.evento_fecha
     && new Date(ticket.evento_fecha).getTime() < Date.now() - 24 * 60 * 60 * 1000
 
+  const scanNext = () => router.push('/eventos/admin/verificar')
+  const nextButton = (
+    <button type="button" className="ev-door-btn" onClick={scanNext}>
+      <Icon name="scan" />Escanear siguiente
+    </button>
+  )
+
   if (pageState === 'loading') {
     return (
-      <div className="min-h-screen bg-[#0a0008]">
-        <AdminHeader />
-        <div className="flex items-center justify-center py-24">
-          <p className="text-white/40 text-sm">Verificando...</p>
+      <main id="main" className="ev-door">
+        <header className="ev-door__top">
+          <h1 className="ev-door__event">Verificar<br />entrada</h1>
+        </header>
+        <div className="ev-door__stage">
+          <p className="ev-door__status" role="status" aria-busy="true">Verificando…</p>
         </div>
-      </div>
+        <div className="ev-door__actions" />
+      </main>
     )
   }
 
   if (pageState === 'invalid') {
-    return <ResultScreen color="red" icon="✕" title="QR inválido" subtitle="Esta entrada no existe en el sistema." onScan={() => router.push('/eventos/admin/verificar')} />
+    return (
+      <main id="main">
+        <DoorResult kind="invalid" icon="x" word="Inválida" detail="Esta entrada no existe en el sistema." band="No dejar pasar">
+          {nextButton}
+        </DoorResult>
+      </main>
+    )
   }
 
   if (pageState === 'not_confirmed') {
-    return <ResultScreen color="yellow" icon="⚠" title="No confirmada" subtitle="Esta entrada aún no fue confirmada por el admin." onScan={() => router.push('/eventos/admin/verificar')} />
+    return (
+      <main id="main">
+        <DoorResult kind="used" icon="alert-triangle" word={<>No<br />confirmada</>} detail="Esta entrada aún no fue confirmada por el admin." band="No dejar pasar">
+          {nextButton}
+        </DoorResult>
+      </main>
+    )
   }
 
   if (pageState === 'error') {
-    return <ResultScreen color="red" icon="!" title="Error" subtitle="No se pudo verificar la entrada." onScan={() => router.push('/eventos/admin/verificar')} />
+    return (
+      <main id="main">
+        <DoorResult kind="invalid" icon="alert-circle" word="Error" detail="No se pudo verificar la entrada.">
+          {nextButton}
+        </DoorResult>
+      </main>
+    )
+  }
+
+  const warning = pastWarning ? (
+    <>
+      <strong>Evento ya pasado.</strong>{' '}
+      Esta entrada es de &quot;{ticket?.evento}&quot;, que fue el {eventDateLabel}. Confirmá que sea la entrada correcta.
+    </>
+  ) : undefined
+
+  const who = ticket ? (
+    <>{ticket.nombre}<br />Entrada {ticket.ticket_number} de {ticket.cantidad}</>
+  ) : undefined
+  const meta = ticket
+    ? [`${ticket.order_code} · ${ticket.evento}`, tipoLabel, ...(eventDateLabel ? [eventDateLabel] : [])]
+    : undefined
+
+  if (pageState === 'already_used') {
+    if (justCheckedIn) {
+      return (
+        <main id="main">
+          <DoorResult
+            kind="valid" icon="check" word="Ingresó" detail={who}
+            meta={['Entrada registrada correctamente', ...(meta ?? [])]} band="Puede pasar" warning={warning}
+          >
+            {nextButton}
+          </DoorResult>
+        </main>
+      )
+    }
+    const time = new Date(ticket?.check_in_at ?? '').toLocaleTimeString('es-SV', { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' })
+    return (
+      <main id="main">
+        <DoorResult
+          kind="used" icon="alert-triangle" word={<>Ya<br />ingresó</>}
+          detail={<>Ingresó a las {time}<br />{ticket?.nombre}</>}
+          meta={meta ? [`${meta[0]} · Entrada ${ticket?.ticket_number} de ${ticket?.cantidad}`, ...meta.slice(1)] : undefined}
+          band="No dejar pasar" warning={warning}
+        >
+          {nextButton}
+        </DoorResult>
+      </main>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      <AdminHeader />
-      <div className="flex flex-col items-center px-4 pt-10 pb-10">
-        <div className="text-center mb-6">
-          <p className="text-[#F472B6] text-[10px] font-bold tracking-[0.28em] uppercase mb-2">Sivar Music Eventos</p>
-          <h1 className="text-white text-xl font-bold">Verificación de entrada</h1>
-        </div>
-
-        {pastWarning && (
-          <div role="alert" className="w-full max-w-sm rounded-2xl bg-yellow-500/12 border border-yellow-500/30 p-4 text-center mb-5">
-            <p className="text-yellow-400 text-sm font-bold">⚠ Evento ya pasado</p>
-            <p className="text-white/60 text-xs mt-1">
-              Esta entrada es de &quot;{ticket?.evento}&quot;, que fue el {eventDateLabel}. Confirmá que sea la entrada correcta.
-            </p>
-          </div>
-        )}
-
-        {/* Estado */}
-        {pageState === 'already_used' ? (
-          <div className={`w-full max-w-sm rounded-3xl p-6 text-center mb-5 ${
-            justCheckedIn
-              ? 'bg-green-500/15 border border-green-500/35'
-              : 'bg-red-500/12 border border-red-500/25'
-          }`}>
-            <div className={`text-5xl mb-3 ${justCheckedIn ? 'text-green-400' : 'text-red-400'}`}>
-              {justCheckedIn ? '✓' : '✕'}
-            </div>
-            <p className={`text-xl font-bold mb-1 ${justCheckedIn ? 'text-green-400' : 'text-red-400'}`}>
-              {justCheckedIn ? '¡Ingresó!' : 'Ya ingresó'}
-            </p>
-            <p className="text-white/50 text-sm">
-              {justCheckedIn
-                ? 'Entrada registrada correctamente'
-                : `Ingresó a las ${new Date(ticket?.check_in_at ?? '').toLocaleTimeString('es-SV', { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' })}`
-              }
-            </p>
-          </div>
-        ) : (
-          <div className="w-full max-w-sm rounded-3xl bg-green-500/10 border border-green-500/25 p-6 text-center mb-5">
-            <div className="text-5xl text-green-400 mb-3">✓</div>
-            <p className="text-green-400 text-xl font-bold mb-1">Entrada válida</p>
-            <p className="text-white/50 text-sm">Confirmar ingreso al evento</p>
-          </div>
-        )}
-
-        {/* Info del ticket */}
-        {ticket && (
-          <div className="w-full max-w-sm rounded-2xl bg-white/5 border border-white/10 divide-y divide-white/8 mb-6">
-            {[
-              { label: 'Código', value: ticket.order_code, pink: true },
-              { label: 'Nombre', value: ticket.nombre, bold: true },
-              { label: 'Evento', value: ticket.evento },
-              ...(eventDateLabel ? [{ label: 'Fecha del evento', value: eventDateLabel }] : []),
-              { label: 'Entrada', value: `${ticket.ticket_number} de ${ticket.cantidad}` },
-              { label: 'Tipo', value: tipoLabel },
-            ].map(({ label, value, pink, bold }) => (
-              <div key={label} className="flex justify-between items-center px-4 py-3 gap-3">
-                <span className="text-white/45 text-sm">{label}</span>
-                <span className={`text-sm font-semibold text-right ${pink ? 'text-[#F472B6]' : bold ? 'text-white' : 'text-white/80'}`}>
-                  {value}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Botón check-in */}
-        {pageState === 'valid' && (
-          <div className="w-full max-w-sm">
-            {checkInError && (
-              <p role="alert" className="mb-3 text-center text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3">
-                {checkInError}
-              </p>
-            )}
-            <button
-              onClick={handleCheckIn}
-              disabled={checkingIn}
-              className="w-full bg-green-500 hover:bg-green-400 active:scale-[0.98] disabled:opacity-50 text-white font-bold text-base uppercase tracking-wider rounded-2xl py-4 transition-all"
-            >
-              {checkingIn ? 'Registrando...' : checkInError ? '↻ Reintentar ingreso' : '✓ Confirmar ingreso'}
-            </button>
-          </div>
-        )}
-
-        <button
-          onClick={() => router.push('/eventos/admin/verificar')}
-          className="mt-6 text-white/35 hover:text-white text-sm transition"
-        >
-          ← Verificar otra entrada
+    <main id="main">
+      <DoorResult
+        kind="valid" icon="check" word="Válida" detail={who} meta={meta}
+        band="Falta confirmar el ingreso" warning={warning} error={checkInError || undefined}
+      >
+        <button type="button" className="ev-door-btn" onClick={handleCheckIn} disabled={checkingIn}>
+          <Icon name={checkInError ? 'refresh' : 'check'} />
+          {checkingIn ? 'Registrando…' : checkInError ? 'Reintentar ingreso' : 'Confirmar ingreso'}
         </button>
-      </div>
-    </div>
-  )
-}
-
-function ResultScreen({
-  color, icon, title, subtitle, onScan,
-}: {
-  color: 'red' | 'yellow'
-  icon: string
-  title: string
-  subtitle: string
-  onScan: () => void
-}) {
-  const colors = {
-    red: { bg: 'bg-red-500/12 border-red-500/25', text: 'text-red-400' },
-    yellow: { bg: 'bg-yellow-500/12 border-yellow-500/25', text: 'text-yellow-400' },
-  }
-  const c = colors[color]
-  return (
-    <div className="min-h-screen bg-[#0a0008] text-white">
-      <AdminHeader />
-      <div className="flex flex-col items-center justify-center px-4 py-16 gap-6">
-        <div className={`w-full max-w-sm rounded-3xl border p-8 text-center ${c.bg}`}>
-          <div className={`text-5xl mb-3 ${c.text}`}>{icon}</div>
-          <p className={`text-xl font-bold mb-1 ${c.text}`}>{title}</p>
-          <p className="text-white/50 text-sm">{subtitle}</p>
-        </div>
-        <button
-          onClick={onScan}
-          className="border border-white/15 text-white/60 hover:text-white rounded-2xl px-6 py-3 text-sm transition"
-        >
-          ← Verificar otra entrada
+        <button type="button" className="ev-door__link" onClick={scanNext}>
+          <Icon name="arrow-left" />Verificar otra entrada
         </button>
-      </div>
-    </div>
+      </DoorResult>
+    </main>
   )
 }
