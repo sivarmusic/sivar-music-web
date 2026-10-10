@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AdminHeader from '../components/AdminHeader'
 import { useRequireAdmin } from '../components/useRequireAdmin'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 interface Application {
   id: string; nombre_artistico: string; nombre_contacto: string; email: string; telefono: string | null
@@ -292,7 +293,7 @@ function EventCard({ ev, onReview, onSave, actionId, collapsedByDefault }: {
       <div className="rounded-2xl border border-white/8 bg-white/3 px-4 py-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-white font-semibold text-sm truncate">{ev.nombre}</p>
-          <p className="text-white/35 text-xs mt-0.5 truncate">{artist?.nombre_artistico} · {fecha.toLocaleDateString()}</p>
+          <p className="text-white/35 text-xs mt-0.5 truncate">{artist?.nombre_artistico} · {fecha.toLocaleDateString('es-SV', { timeZone: EVENT_TZ })}</p>
         </div>
         <div className="flex items-center gap-2 flex-none">
           <span className={`text-xs px-3 py-1.5 rounded-xl font-semibold ${info.bg} ${info.color}`}>{info.label}</span>
@@ -314,7 +315,7 @@ function EventCard({ ev, onReview, onSave, actionId, collapsedByDefault }: {
               <p className="text-white font-semibold text-sm">{ev.nombre}</p>
               <p className="text-white/40 text-xs mt-0.5">{artist?.nombre_artistico ?? '—'}</p>
               <p className="text-white/40 text-xs mt-0.5">
-                {fecha.toLocaleDateString('es-SV', { weekday: 'short', day: 'numeric', month: 'short' })}
+                {fecha.toLocaleDateString('es-SV', { timeZone: EVENT_TZ, weekday: 'short', day: 'numeric', month: 'short' })}
                 {' · '}{ev.venue}
               </p>
               {ev.direccion && <p className="text-white/30 text-xs mt-0.5">{ev.direccion}</p>}

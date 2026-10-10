@@ -10,6 +10,10 @@ export default function QrCameraScanner({ onDecode }: { onDecode: (decoded: stri
   const streamRef = useRef<MediaStream | null>(null)
   const [phase, setPhase] = useState<Phase>('ready')
   const [error, setError] = useState('')
+  // onDecode suele ser una función nueva en cada render del padre: se guarda en un
+  // ref para que escribir en el campo manual no reinicie la cámara.
+  const onDecodeRef = useRef(onDecode)
+  useEffect(() => { onDecodeRef.current = onDecode }, [onDecode])
 
   useEffect(() => {
     if (phase !== 'scanning') return
@@ -29,7 +33,7 @@ export default function QrCameraScanner({ onDecode }: { onDecode: (decoded: stri
       active = false
       stopStream()
       if (navigator.vibrate) navigator.vibrate(80)
-      onDecode(data)
+      onDecodeRef.current(data)
     }
 
     async function start() {
@@ -91,7 +95,7 @@ export default function QrCameraScanner({ onDecode }: { onDecode: (decoded: stri
       active = false
       stopStream()
     }
-  }, [phase, onDecode])
+  }, [phase])
 
   if (phase === 'scanning') {
     return (

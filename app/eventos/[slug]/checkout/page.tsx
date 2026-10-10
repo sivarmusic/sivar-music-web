@@ -4,6 +4,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
 import { formatMoney, orderTotal } from '@/lib/format'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 interface Event {
   id: string; slug: string; nombre: string; fecha: string
@@ -132,7 +133,7 @@ function CheckoutForm() {
           <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">{t('checkout.yourOrder')}</p>
           <p className="text-white font-bold text-base">{event.nombre}</p>
           <p className="text-white/60 text-xs mt-1">
-            {fecha.toLocaleDateString(dateLocale, { weekday: 'long', day: 'numeric', month: 'long' })}
+            {fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'long', day: 'numeric', month: 'long' })}
             {' · '}{event.venue}
           </p>
           <div className="border-t border-white/8 mt-3 pt-3 flex items-center justify-between">

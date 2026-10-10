@@ -6,6 +6,7 @@ import { useLanguage } from '@/lib/i18n'
 import { formatMoney } from '@/lib/format'
 import LanguageSwitcher from './components/LanguageSwitcher'
 import UserMenu from './components/UserMenu'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 interface Event {
   id: string; slug?: string; nombre: string; fecha: string
@@ -183,9 +184,9 @@ export default function EventosPage() {
                       </p>
                       <h2 className="text-white font-bold text-sm leading-tight">{event.nombre}</h2>
                       <p className="text-white/50 text-xs mt-1">
-                        {fecha.toLocaleDateString(dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })}
+                        {fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'short', day: 'numeric', month: 'short' })}
                         {' · '}
-                        {fecha.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
+                        {fecha.toLocaleTimeString(dateLocale, { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' })}
                       </p>
                       <p className="text-white/40 text-xs">{event.venue}</p>
                       {event.kind === 'ticket' && event.precio != null && <p className="text-[#F472B6] font-bold text-sm mt-2">{formatMoney(event.precio)}</p>}

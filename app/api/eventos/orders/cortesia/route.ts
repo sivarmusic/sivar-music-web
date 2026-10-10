@@ -8,6 +8,7 @@ import { checkEventCapacity } from '@/lib/eventCapacity'
 import { parseCantidad } from '@/lib/eventValidation'
 import { sendSafely } from '@/lib/email-safe'
 import { sendTicketConfirmed } from '@/lib/email'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 const CATEGORIAS = ['staff', 'organizacion', 'vip', 'musicos'] as const
 
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
     nombre: order.nombre,
     orderCode: order.order_code,
     eventName: event.nombre,
-    eventDate: new Date(event.fecha).toLocaleString('es-SV', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }),
+    eventDate: new Date(event.fecha).toLocaleString('es-SV', { timeZone: EVENT_TZ, weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }),
     eventVenue: event.venue,
     verUrl: 'https://sivarmusic.com/eventos/mi-cuenta',
   }))

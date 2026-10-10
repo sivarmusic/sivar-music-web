@@ -2,12 +2,15 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import AdminHeader from '../../components/AdminHeader'
+import { formatEventDateTime } from '@/lib/eventDate'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 interface TicketInfo {
   order_code: string
   nombre: string
   cantidad: number
   evento: string
+  evento_fecha?: string | null
   ticket_number: number
   check_in_at: string | null
   order_type: string
@@ -28,6 +31,7 @@ export default function VerificarTokenPage() {
   const [pageState, setPageState] = useState<PageState>('loading')
   const [checkingIn, setCheckingIn] = useState(false)
   const [justCheckedIn, setJustCheckedIn] = useState(false)
+  const [checkInError, setCheckInError] = useState('')
 
   useEffect(() => {
     fetch(`/api/eventos/verify/${token}`)
@@ -51,6 +55,7 @@ export default function VerificarTokenPage() {
 
   async function handleCheckIn() {
     setCheckingIn(true)
+    setCheckInError('')
     try {
       const res = await fetch(`/api/eventos/verify/${token}`, { method: 'PATCH' })
       if (res.ok) {
@@ -60,9 +65,17 @@ export default function VerificarTokenPage() {
       } else if (res.status === 401) {
         router.push(`/eventos/admin/login?redirect=/eventos/admin/verificar/${token}`)
       } else {
-        const data = await res.json()
-        if (data.alreadyUsed) setPageState('already_used')
+        const data = await res.json().catch(() => ({} as { error?: string; alreadyUsed?: boolean; check_in_at?: string | null }))
+        if (data.alreadyUsed) {
+          setTicket(t => (t ? { ...t, check_in_at: data.check_in_at ?? t.check_in_at } : t))
+          setPageState('already_used')
+        } else {
+          // 400 (no confirmada), 404, 500...: el portero debe ver qué pasó y poder reintentar.
+          setCheckInError(data.error || 'No se pudo registrar el ingreso. Intentá de nuevo.')
+        }
       }
+    } catch {
+      setCheckInError('Sin conexión. Revisá tu internet e intentá de nuevo.')
     } finally {
       setCheckingIn(false)
     }
@@ -73,6 +86,11 @@ export default function VerificarTokenPage() {
       ? `Cortesía — ${CATEGORIA_LABELS[ticket.cortesia_categoria ?? ''] ?? ticket.cortesia_categoria}`
       : 'Comprada'
     : ''
+
+  const eventDateLabel = ticket?.evento_fecha ? formatEventDateTime(ticket.evento_fecha) : ''
+  // Aviso (no bloqueo): evento que terminó hace más de 24 h.
+  const pastWarning = !!ticket?.evento_fecha
+    && new Date(ticket.evento_fecha).getTime() < Date.now() - 24 * 60 * 60 * 1000
 
   if (pageState === 'loading') {
     return (
@@ -106,6 +124,15 @@ export default function VerificarTokenPage() {
           <h1 className="text-white text-xl font-bold">Verificación de entrada</h1>
         </div>
 
+        {pastWarning && (
+          <div role="alert" className="w-full max-w-sm rounded-2xl bg-yellow-500/12 border border-yellow-500/30 p-4 text-center mb-5">
+            <p className="text-yellow-400 text-sm font-bold">⚠ Evento ya pasado</p>
+            <p className="text-white/60 text-xs mt-1">
+              Esta entrada es de &quot;{ticket?.evento}&quot;, que fue el {eventDateLabel}. Confirmá que sea la entrada correcta.
+            </p>
+          </div>
+        )}
+
         {/* Estado */}
         {pageState === 'already_used' ? (
           <div className={`w-full max-w-sm rounded-3xl p-6 text-center mb-5 ${
@@ -122,7 +149,7 @@ export default function VerificarTokenPage() {
             <p className="text-white/50 text-sm">
               {justCheckedIn
                 ? 'Entrada registrada correctamente'
-                : `Ingresó a las ${new Date(ticket?.check_in_at ?? '').toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}`
+                : `Ingresó a las ${new Date(ticket?.check_in_at ?? '').toLocaleTimeString('es-SV', { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' })}`
               }
             </p>
           </div>
@@ -141,6 +168,7 @@ export default function VerificarTokenPage() {
               { label: 'Código', value: ticket.order_code, pink: true },
               { label: 'Nombre', value: ticket.nombre, bold: true },
               { label: 'Evento', value: ticket.evento },
+              ...(eventDateLabel ? [{ label: 'Fecha del evento', value: eventDateLabel }] : []),
               { label: 'Entrada', value: `${ticket.ticket_number} de ${ticket.cantidad}` },
               { label: 'Tipo', value: tipoLabel },
             ].map(({ label, value, pink, bold }) => (
@@ -157,12 +185,17 @@ export default function VerificarTokenPage() {
         {/* Botón check-in */}
         {pageState === 'valid' && (
           <div className="w-full max-w-sm">
+            {checkInError && (
+              <p role="alert" className="mb-3 text-center text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-2xl px-4 py-3">
+                {checkInError}
+              </p>
+            )}
             <button
               onClick={handleCheckIn}
               disabled={checkingIn}
               className="w-full bg-green-500 hover:bg-green-400 active:scale-[0.98] disabled:opacity-50 text-white font-bold text-base uppercase tracking-wider rounded-2xl py-4 transition-all"
             >
-              {checkingIn ? 'Registrando...' : '✓ Confirmar ingreso'}
+              {checkingIn ? 'Registrando...' : checkInError ? '↻ Reintentar ingreso' : '✓ Confirmar ingreso'}
             </button>
           </div>
         )}

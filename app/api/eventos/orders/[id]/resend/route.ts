@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { verifyStaffSession } from '@/lib/staff-auth'
 import { sendSafely } from '@/lib/email-safe'
 import { sendTicketConfirmed } from '@/lib/email'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 export async function POST(
   _req: NextRequest,
@@ -30,7 +31,7 @@ export async function POST(
     nombre: order.nombre,
     orderCode: order.order_code,
     eventName: ev.nombre,
-    eventDate: new Date(ev.fecha).toLocaleString('es-SV', {
+    eventDate: new Date(ev.fecha).toLocaleString('es-SV', { timeZone: EVENT_TZ,
       weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
     }),
     eventVenue: ev.venue,

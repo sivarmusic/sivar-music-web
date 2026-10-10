@@ -7,6 +7,7 @@ import EventMap from '../components/EventMap'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
 import { formatMoney, orderTotal } from '@/lib/format'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 interface Event {
   id: string; slug: string; nombre: string; descripcion: string
@@ -81,9 +82,9 @@ export default function EventPage() {
           <div className="space-y-1.5 text-sm">
             <p className="text-white/60">
               📅{' '}
-              {fecha.toLocaleDateString(dateLocale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              {fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               {' '}{t('detail.at')}{' '}
-              {fecha.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
+              {fecha.toLocaleTimeString(dateLocale, { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' })}
             </p>
             <p className="text-white/60">📍 {event.venue}</p>
             {event.artistas?.length > 0 && (

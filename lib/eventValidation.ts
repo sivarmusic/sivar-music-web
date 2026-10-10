@@ -1,6 +1,8 @@
 // Validación de campos de eventos (admin y artistas). Solo valida las claves
 // presentes en el body y devuelve un objeto limpio con las claves permitidas.
 
+import { toEventIso } from './eventDate'
+
 type Rule = (v: unknown) => { ok: true; value: unknown } | { ok: false; error: string }
 
 const text = (label: string, max: number, required = false): Rule => v => {
@@ -84,8 +86,11 @@ const RULES: Record<string, Rule> = {
   nombre: text('El nombre', 120, true),
   descripcion: text('La descripción', 2000),
   fecha: v => {
-    if (typeof v !== 'string' || Number.isNaN(Date.parse(v))) return { ok: false, error: 'La fecha no es válida' }
-    return { ok: true, value: v }
+    if (typeof v !== 'string' || !v.trim()) return { ok: false, error: 'La fecha no es válida' }
+    // Sin zona explícita se interpreta como hora de El Salvador (lib/eventDate.ts).
+    const iso = toEventIso(v)
+    if (Number.isNaN(Date.parse(iso))) return { ok: false, error: 'La fecha no es válida' }
+    return { ok: true, value: iso }
   },
   venue: text('El lugar', 120, true),
   direccion: text('La dirección', 200),

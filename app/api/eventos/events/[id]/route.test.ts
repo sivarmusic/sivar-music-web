@@ -43,6 +43,11 @@ describe('PATCH /api/eventos/events/[id]', () => {
     expect((await call({ imagen_url: 'https://mthpqfiozddtohkcrbui.supabase.co.evil.tld/storage/v1/object/public/a.jpg' })).status).toBe(400)
   })
 
+  it('fecha sin zona se guarda como hora de El Salvador (-06:00)', async () => {
+    await call({ fecha: '2026-12-01T20:00' })
+    expect(m.update).toHaveBeenCalledWith({ fecha: '2026-12-01T20:00:00-06:00' })
+  })
+
   it('acepta una edición completa válida', async () => {
     const res = await call({
       nombre: 'Show', slug: 'Mi Show', fecha: '2026-12-01T20:00', venue: 'Teatro', direccion: 'Calle 1',
@@ -50,6 +55,6 @@ describe('PATCH /api/eventos/events/[id]', () => {
       imagen_url: 'https://mthpqfiozddtohkcrbui.supabase.co/storage/v1/object/public/event-images/a/cover.jpg',
     })
     expect(res.status).toBe(200)
-    expect(m.update.mock.calls[0][0]).toMatchObject({ slug: 'mi-show', precio: 12.5, max_entradas: 100 })
+    expect(m.update.mock.calls[0][0]).toMatchObject({ fecha: '2026-12-01T20:00:00-06:00', slug: 'mi-show', precio: 12.5, max_entradas: 100 })
   })
 })

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 interface Order {
   id: string; order_code: string; cantidad: number; status: string
@@ -51,7 +52,7 @@ export default function EventoGraciasPage() {
             { label: t('gracias.event'), value: order.events?.nombre ?? '—' },
             { label: t('gracias.tickets'), value: `${order.cantidad}` },
             { label: t('gracias.venue'), value: order.events?.venue ?? '—' },
-            fecha ? { label: t('gracias.date'), value: fecha.toLocaleDateString(dateLocale, { weekday: 'short', day: 'numeric', month: 'long' }) } : null,
+            fecha ? { label: t('gracias.date'), value: fecha.toLocaleDateString(dateLocale, { timeZone: EVENT_TZ, weekday: 'short', day: 'numeric', month: 'long' }) } : null,
           ].filter(Boolean).map(item => item && (
             <div key={item.label} className="flex items-center justify-between px-4 py-3">
               <span className="text-white/60 text-sm">{item.label}</span>

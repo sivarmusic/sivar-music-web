@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AdminHeader from '../../../components/AdminHeader'
 import { useRequireAdmin } from '../../../components/useRequireAdmin'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 interface Ticket { id: string; ticket_number: number; check_in_at: string | null }
 interface Order {
@@ -78,7 +79,7 @@ export default function ReporteEventoPage() {
     const header = ['Código', 'Nombre', 'Tipo', 'Entrada', 'Hora de ingreso']
     const rows = attendees.map(a => [
       a.orderCode, a.nombre, a.tipo, String(a.ticketNumber),
-      a.checkInAt ? new Date(a.checkInAt).toLocaleString('es-SV') : 'No ha ingresado',
+      a.checkInAt ? new Date(a.checkInAt).toLocaleString('es-SV', { timeZone: EVENT_TZ }) : 'No ha ingresado',
     ])
     const csv = [header, ...rows].map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -99,7 +100,7 @@ export default function ReporteEventoPage() {
           <div className="min-w-0">
             <Link href="/eventos/admin" className="text-white/35 hover:text-white text-xs transition">← Eventos</Link>
             <h1 className="text-white text-lg font-bold truncate mt-1">Reporte — {event.nombre}</h1>
-            <p className="text-white/35 text-xs mt-0.5">{event.venue} · {new Date(event.fecha).toLocaleDateString('es-SV', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+            <p className="text-white/35 text-xs mt-0.5">{event.venue} · {new Date(event.fecha).toLocaleDateString('es-SV', { timeZone: EVENT_TZ, day: 'numeric', month: 'short', year: 'numeric' })}</p>
           </div>
           <button onClick={exportCsv}
             className="flex-none bg-white/8 hover:bg-[#F472B6]/20 hover:text-[#F472B6] text-white/60 text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl transition">
@@ -156,7 +157,7 @@ export default function ReporteEventoPage() {
                   </div>
                   <span className={`text-xs font-semibold flex-none ${a.checkInAt ? 'text-green-400' : 'text-white/25'}`}>
                     {a.checkInAt
-                      ? new Date(a.checkInAt).toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })
+                      ? new Date(a.checkInAt).toLocaleTimeString('es-SV', { timeZone: EVENT_TZ, hour: '2-digit', minute: '2-digit' })
                       : 'No ha ingresado'}
                   </span>
                 </div>

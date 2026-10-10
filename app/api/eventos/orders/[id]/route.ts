@@ -6,6 +6,7 @@ import { sendSafely } from '@/lib/email-safe'
 import { sendTicketConfirmed } from '@/lib/email'
 import { recordAudit } from '@/lib/audit'
 import { ensureEventTickets } from '@/lib/eventTickets'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 export async function PATCH(
   req: NextRequest,
@@ -56,7 +57,7 @@ export async function PATCH(
         nombre: data.nombre,
         orderCode: data.order_code,
         eventName: ev.nombre,
-        eventDate: new Date(ev.fecha).toLocaleString('es-SV', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }),
+        eventDate: new Date(ev.fecha).toLocaleString('es-SV', { timeZone: EVENT_TZ, weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }),
         eventVenue: ev.venue,
         verUrl,
       }))

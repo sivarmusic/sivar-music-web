@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 import { useLanguage } from '@/lib/i18n'
 import { uploadErrorMessage } from './uploadError'
+import { EVENT_TZ } from '@/lib/eventDate'
 
 interface Profile {
   id: string; slug: string; nombre_artistico: string; genero: string | null; bio: string | null
@@ -301,7 +302,7 @@ function EventsTab({ token, events, setEvents, t }: {
             <div key={ev.id} className="bg-white/4 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-white font-semibold text-sm truncate">{ev.nombre}</p>
-                <p className="text-white/40 text-xs mt-0.5">{new Date(ev.fecha).toLocaleDateString()} · {ev.venue}</p>
+                <p className="text-white/40 text-xs mt-0.5">{new Date(ev.fecha).toLocaleDateString('es-SV', { timeZone: EVENT_TZ })} · {ev.venue}</p>
                 <p className={`text-xs mt-1 font-semibold ${status.color}`}>{status.label}</p>
               </div>
               <button onClick={() => handleDelete(ev.id)} className="flex-none text-red-400/70 hover:text-red-400 text-xs font-bold uppercase transition">
