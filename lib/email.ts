@@ -1,5 +1,6 @@
 import { Resend } from 'resend'
 import { ADMIN_EMAIL } from './constants'
+import { formatMoney, formatMoneyFull } from './format'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -39,7 +40,7 @@ export async function sendOrderConfirmation({
           <p style="margin:8px 0 0;font-size:12px;color:#6b7280">Incluí este código como concepto en tu transferencia</p>
         </div>
         <p style="color:#374151"><strong>Evento:</strong> ${esc(eventName)}</p>
-        <p style="color:#374151"><strong>Entradas:</strong> ${esc(cantidad)} × $10 = <strong>$${esc(total)}.00</strong></p>
+        <p style="color:#374151"><strong>Entradas:</strong> ${esc(cantidad)} × ${esc(formatMoney(cantidad > 0 ? total / cantidad : 0))} = <strong>${esc(formatMoneyFull(total))}</strong></p>
         <div style="margin:24px 0">
           <a href="${esc(pagoUrl)}" style="background:#F472B6;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">
             Ver datos de pago →
@@ -72,7 +73,7 @@ export async function sendAdminNewOrderRequest({
         <p style="color:#374151"><strong>Nombre:</strong> ${esc(nombre)}</p>
         <p style="color:#374151"><strong>Teléfono:</strong> ${esc(telefono)}</p>
         <p style="color:#374151"><strong>Email:</strong> ${esc(email)}</p>
-        <p style="color:#374151"><strong>Entradas:</strong> ${esc(cantidad)} × total <strong>$${esc(total)}.00</strong></p>
+        <p style="color:#374151"><strong>Entradas:</strong> ${esc(cantidad)} × ${esc(formatMoney(cantidad > 0 ? total / cantidad : 0))} = <strong>${esc(formatMoneyFull(total))}</strong></p>
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
         <p style="color:#9ca3af;font-size:12px;text-align:center">Revisá el panel admin para confirmar el comprobante cuando llegue.</p>
       </div>
