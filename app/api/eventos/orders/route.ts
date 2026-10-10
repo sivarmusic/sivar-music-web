@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { enforceRateLimit } from '@/lib/rate-limit'
 import { serverError } from '@/lib/api-error'
 import { supabase } from '@/lib/supabase'
 import { verifyStaffSession } from '@/lib/staff-auth'
@@ -7,6 +8,9 @@ import { checkEventCapacity } from '@/lib/eventCapacity'
 import { sendOrderConfirmation, sendAdminNewOrderRequest } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
+  const limited = await enforceRateLimit(req, 'orders', { limit: 30, windowSeconds: 3600 })
+  if (limited) return limited
+
   // Autenticación requerida via Bearer token
   const authHeader = req.headers.get('authorization')
   if (!authHeader?.startsWith('Bearer ')) {

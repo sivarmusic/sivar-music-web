@@ -16,7 +16,6 @@ export async function GET(req: NextRequest) {
     path.length <= 200 &&
     !path.includes('..') &&
     !path.includes('//') &&
-    // eslint-disable-next-line no-control-regex
     !/[\u0000-\u001f\u007f\\]/.test(path)
   if (!safePath) return NextResponse.json({ error: 'Path inválido' }, { status: 400 })
 

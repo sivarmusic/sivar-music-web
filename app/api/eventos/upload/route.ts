@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { enforceRateLimit } from '@/lib/rate-limit'
 import { supabase } from '@/lib/supabase'
 import { EXT_BY_MIME, matchesMime } from '@/lib/imageUpload'
 
@@ -8,6 +9,9 @@ const MAX_BYTES = 5 * 1024 * 1024
 const UPLOADABLE_STATUSES = ['pendiente_comprobante', 'en_revision', 'rechazado']
 
 export async function POST(req: NextRequest) {
+  const limited = await enforceRateLimit(req, 'upload-comprobante', { limit: 20, windowSeconds: 3600 })
+  if (limited) return limited
+
   const formData = await req.formData()
   const orderId = formData.get('orderId') as string
   const file = formData.get('file') as File

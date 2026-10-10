@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { enforceRateLimit } from '@/lib/rate-limit'
 import { supabase } from '@/lib/supabase'
 import { sendSafely } from '@/lib/email-safe'
 import { sendWelcome } from '@/lib/email'
@@ -6,6 +7,9 @@ import { sendWelcome } from '@/lib/email'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 export async function POST(req: NextRequest) {
+  const limited = await enforceRateLimit(req, 'register', { limit: 10, windowSeconds: 3600 })
+  if (limited) return limited
+
   const body = await req.json().catch(() => null)
   if (!body || typeof body !== 'object') {
     return NextResponse.json({ error: 'Faltan campos' }, { status: 400 })
