@@ -20,6 +20,18 @@ export default function UserMenu({ variant = 'default' }: { variant?: 'default' 
   const [open, setOpen] = useState(false)
   const [enteringAdmin, setEnteringAdmin] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Abre al instante y cierra con una pequeña demora: el menú no desaparece
+  // al cruzar el hueco entre el botón y la lista.
+  const openMenu = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    setOpen(true)
+  }
+  const closeMenuSoon = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    closeTimer.current = setTimeout(() => setOpen(false), 600)
+  }
 
   useEffect(() => {
     function applySession(session: { user: { user_metadata?: Record<string, string>; email?: string } } | null) {
@@ -42,8 +54,14 @@ export default function UserMenu({ variant = 'default' }: { variant?: 'default' 
     function handleClickOutside(e: MouseEvent) {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
     }
+    function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKey)
+      if (closeTimer.current) clearTimeout(closeTimer.current)
+    }
   }, [])
 
   async function handleLogout() {
@@ -85,15 +103,15 @@ export default function UserMenu({ variant = 'default' }: { variant?: 'default' 
       <div
         ref={rootRef}
         className="ev-account"
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onMouseEnter={openMenu}
+        onMouseLeave={closeMenuSoon}
       >
         <button
           type="button"
           className="ev-account-btn"
           aria-haspopup="menu"
           aria-expanded={open}
-          onClick={() => setOpen(o => !o)}
+          onClick={openMenu}
         >
           <span className="ev-account-btn__avatar" aria-hidden="true">
             {profile.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : initial}
@@ -144,11 +162,11 @@ export default function UserMenu({ variant = 'default' }: { variant?: 'default' 
     <div
       ref={rootRef}
       className="relative flex-none"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onMouseEnter={openMenu}
+      onMouseLeave={closeMenuSoon}
     >
       <button
-        onClick={() => setOpen(o => !o)}
+        onClick={openMenu}
         className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full bg-white/6 hover:bg-white/10 transition"
       >
         {profile.avatarUrl ? (
