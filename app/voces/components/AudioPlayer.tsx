@@ -23,6 +23,8 @@ export default function AudioPlayer({ src: rawSrc, ariaLabel, trackName }: { src
   const { t } = useI18n();
   const triedFallbackRef = useRef(false);
   const [activeSrc, setActiveSrc] = useState<string | null>(null);
+  // Precarga en vuelo (o ya hecha) para el src actual: evita llamar load() varias veces.
+  const preloadRef = useRef<Promise<void> | null>(null);
   const player = useOptionalPlayer();
 
   useEffect(() => {
@@ -75,16 +77,22 @@ export default function AudioPlayer({ src: rawSrc, ariaLabel, trackName }: { src
     setDur(0);
     if (a) { a.pause(); a.currentTime = 0; }
     setActiveSrc(null);
+    preloadRef.current = null;
   }, [src]);
 
-  const ensureActive = async () => {
+  const ensureActive = (): Promise<void> => {
     const a = audioRef.current;
-    if (!a || !src) return;
-    if (!activeSrc) {
-      setActiveSrc(src);
-      await new Promise((r) => setTimeout(r, 0));
-      a.load();
+    if (!a || !src) return Promise.resolve();
+    if (!preloadRef.current) {
+      let p: Promise<void> | null = null;
+      p = (async () => {
+        setActiveSrc(src);
+        await new Promise((r) => setTimeout(r, 0));
+        if (preloadRef.current === p) a.load();
+      })();
+      preloadRef.current = p;
     }
+    return preloadRef.current;
   };
 
   const toggle = async () => {
