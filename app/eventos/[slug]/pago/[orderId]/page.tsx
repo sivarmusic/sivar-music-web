@@ -6,7 +6,7 @@ import { useLanguage } from '@/lib/i18n'
 import { formatMoney, formatMoneyFull, orderTotal } from '@/lib/format'
 
 interface Order {
-  id: string; order_code: string; nombre: string; cantidad: number; status: string
+  id: string; order_code: string; cantidad: number; status: string
   events: { slug: string; nombre: string; precio: number; venue: string; fecha: string } | null
 }
 
@@ -57,7 +57,7 @@ export default function EventoPagoPage() {
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({
               orderId: d.order.id, orderCode: d.order.order_code,
-              nombre: d.order.nombre, slug, expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+              slug, expiresAt: Date.now() + 24 * 60 * 60 * 1000,
             }))
           } catch {}
         } else if (['en_revision', 'confirmado'].includes(d.order.status)) {

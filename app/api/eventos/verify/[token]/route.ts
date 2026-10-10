@@ -7,6 +7,11 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
+  // Solo staff: la pantalla de verificación vive en el admin y el GET devuelve
+  // nombre del comprador y tipo de entrada.
+  const user = await verifyStaffSession()
+  if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
   const { token } = await params
 
   const { data: ticket, error } = await supabase

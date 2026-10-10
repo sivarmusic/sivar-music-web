@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { chain } from '@/test/chain'
 
-const m = vi.hoisted(() => ({ result: {} as unknown }))
-vi.mock('@/lib/staff-auth', () => ({ verifyStaffSession: vi.fn() }))
+const m = vi.hoisted(() => ({ result: {} as unknown, staff: vi.fn() }))
+vi.mock('@/lib/staff-auth', () => ({ verifyStaffSession: m.staff }))
 vi.mock('@/lib/supabase', () => ({ supabase: { from: () => chain(m.result) } }))
 
 import { GET } from './route'
@@ -10,9 +10,18 @@ import { NextRequest } from 'next/server'
 
 const call = () => GET({} as NextRequest, { params: Promise.resolve({ token: 't' }) })
 
-beforeEach(() => vi.spyOn(console, 'error').mockImplementation(() => {}))
+beforeEach(() => {
+  m.staff.mockReset(); m.staff.mockResolvedValue({ id: 's' })
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+})
 
 describe('GET /api/eventos/verify/[token]', () => {
+  it('401 sin sesión de staff y no consulta la base', async () => {
+    m.staff.mockResolvedValueOnce(null)
+    m.result = { data: null, error: null }
+    expect((await call()).status).toBe(401)
+  })
+
   it('404 con token inexistente', async () => {
     m.result = { data: null, error: null }
     expect((await call()).status).toBe(404)
