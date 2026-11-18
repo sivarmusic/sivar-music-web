@@ -45,6 +45,9 @@ const nextConfig: NextConfig = {
       { source: '/artists/vanessa-garcia/fyc-ruidosa', destination: '/ruidosa/index.html' },
       { source: '/artists/vanessa-garcia/img/:path*', destination: '/ruidosa/img/:path*' },
       { source: '/artists/vanessa-garcia/audio/:path*', destination: '/ruidosa/audio/:path*' },
+      // Landing de "Peperecha". Sus assets usan rutas absolutas (/peperecha/img/...)
+      // para no chocar con la regla /img/* de arriba.
+      { source: '/peperecha', destination: '/peperecha/index.html' },
     ];
   },
 };
