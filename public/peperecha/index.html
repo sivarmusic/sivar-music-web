@@ -245,6 +245,9 @@ section{padding-block:clamp(56px,8vw,112px);position:relative}
 .gal .polaroid:nth-child(1){--r:-3deg}
 .gal .polaroid:nth-child(2){--r:2deg;margin-top:clamp(20px,5vw,60px)}
 .gal .polaroid:nth-child(3){--r:-1.5deg}
+.art-credit{margin-top:clamp(20px,3vw,32px);text-align:right;font-size:.9rem;color:var(--ink-2)}
+.art-credit .ig{margin-top:0}
+@media (max-width:480px){.art-credit{text-align:center}}
 @media (max-width:760px){.gal{grid-template-columns:1fr 1fr}.gal .polaroid:nth-child(3){display:none}}
 @media (max-width:480px){.gal{grid-template-columns:1fr;max-width:340px;margin-inline:auto}.gal .polaroid:nth-child(2){margin-top:0}.gal .polaroid:nth-child(3){display:block}}
 
@@ -371,6 +374,7 @@ footer .legal{margin-top:36px;padding-top:18px;border-top:1px dashed rgba(254,23
       <figure class="polaroid rv"><span class="tape" aria-hidden="true"></span><img src="/peperecha/img/ilus-2.webp" alt="Ilustración de Gabriela Triste y Vanessa García caminando con peperechas" width="1000" height="1250" loading="lazy"></figure>
       <figure class="polaroid rv"><span class="tape" aria-hidden="true"></span><img src="/peperecha/img/foto-2.webp" alt="Peperechas apiladas sobre fondo amarillo" width="1000" height="1250" loading="lazy"></figure>
     </div>
+    <p class="art-credit"><span class="l-es">Arte:</span><span class="l-en">Art:</span> <a class="ig" href="https://www.instagram.com/violegpinto/" target="_blank" rel="noopener">@violegpinto</a></p>
   </div>
 </section>
 
