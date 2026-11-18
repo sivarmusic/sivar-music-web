@@ -249,11 +249,10 @@ section{padding-block:clamp(56px,8vw,112px);position:relative}
 @media (max-width:480px){.gal{grid-template-columns:1fr;max-width:340px;margin-inline:auto}.gal .polaroid:nth-child(2){margin-top:0}.gal .polaroid:nth-child(3){display:block}}
 
 /* créditos */
-.crew{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 32px}
-.crew li{display:grid;gap:6px;align-content:start;padding-top:16px;border-top:1.5px solid var(--ink)}
+.crew{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px 32px}
+.crew li{display:grid;gap:6px;align-content:start;padding-top:14px;border-top:1.5px solid var(--ink)}
 .crew .role{font:600 var(--step--1)/1.2 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--hot)}
-.crew h3{font-size:var(--step-3);font-variation-settings:"wdth" 85}
-.crew p{color:var(--ink-2);font-size:.95rem}
+.crew .names{font:500 1.05rem/1.45 var(--f-body);color:var(--ink)}
 @media (max-width:860px){.crew{grid-template-columns:1fr 1fr}}
 @media (max-width:480px){.crew{grid-template-columns:1fr}}
 
@@ -294,7 +293,7 @@ footer .legal{margin-top:36px;padding-top:18px;border-top:1px dashed rgba(254,23
       <button type="button" data-l="es" aria-pressed="true"><span>ES</span></button>
       <button type="button" data-l="en" aria-pressed="false"><span>EN</span></button>
     </div>
-    <a class="btn" href="#presave"><span class="l-es">Presave</span><span class="l-en">Pre-save</span></a>
+    <a class="btn" href="https://hypeddit.com/0gfz8b" target="_blank" rel="noopener"><span class="l-es">Presave</span><span class="l-en">Pre-save</span></a>
   </div>
 </header>
 
@@ -343,7 +342,7 @@ footer .legal{margin-top:36px;padding-top:18px;border-top:1px dashed rgba(254,23
     <div class="sec-head rv">
       <div>
         <p class="eyebrow"><span class="l-es">Una peperecha cada una</span><span class="l-en">One peperecha each</span></p>
-        <h2 id="d-h"><span class="l-es">Las dos</span><span class="l-en">The two</span></h2>
+        <h2 id="d-h"><span class="l-es">Artistas</span><span class="l-en">Artists</span></h2>
       </div>
     </div>
     <div class="duo">
@@ -351,8 +350,6 @@ footer .legal{margin-top:36px;padding-top:18px;border-top:1px dashed rgba(254,23
         <img class="st" src="/peperecha/img/gabriela.webp" alt="Ilustración de Gabriela Triste" width="700" height="1047" loading="lazy">
         <div>
           <h3>Gabriela Triste</h3>
-          <p class="l-es">Cantautora salvadoreña.</p>
-          <p class="l-en">Singer-songwriter from El Salvador.</p>
           <a class="ig" href="https://www.instagram.com/akatristecita/" target="_blank" rel="noopener">@akatristecita</a>
         </div>
       </article>
@@ -360,8 +357,6 @@ footer .legal{margin-top:36px;padding-top:18px;border-top:1px dashed rgba(254,23
         <img class="st" src="/peperecha/img/vanessa.webp" alt="Ilustración de Vanessa García" width="700" height="1079" loading="lazy">
         <div>
           <h3>Vanessa García</h3>
-          <p class="l-es">Pink rock en español. Su álbum: RUIDOSA.</p>
-          <p class="l-en">Pink rock en español. Her album: RUIDOSA.</p>
           <a class="ig" href="https://instagram.com/vanegarciasv" target="_blank" rel="noopener">@vanegarciasv</a>
         </div>
       </article>
@@ -369,60 +364,12 @@ footer .legal{margin-top:36px;padding-top:18px;border-top:1px dashed rgba(254,23
   </div>
 </section>
 
-<section class="bag" id="presave" aria-labelledby="p-h">
+<section aria-label="Arte">
   <div class="wrap">
-    <div class="rv">
-      <p class="eyebrow" style="color:#FFB3D1"><span class="l-es">Apartá la tuya</span><span class="l-en">Save yours</span></p>
-      <h2 id="p-h"><span class="l-es">Que no te la <span class="pink">ganen</span></span><span class="l-en">Get it <span class="pink">first</span></span></h2>
-      <p class="lead l-es">Guardala antes de que salga y te aparece en tu biblioteca el día del estreno.</p>
-      <p class="lead l-en">Save it now and it lands in your library on release day.</p>
-      <div class="plats">
-        <a class="plat" href="https://hypeddit.com/0gfz8b" target="_blank" rel="noopener"><svg><use href="#i-spotify"/></svg><span><b>Spotify</b><small>Presave</small></span><span class="go">→</span></a>
-        <a class="plat" href="https://hypeddit.com/0gfz8b" target="_blank" rel="noopener"><svg><use href="#i-apple"/></svg><span><b>Apple Music</b><small>Pre-add</small></span><span class="go">→</span></a>
-        <a class="plat" href="https://hypeddit.com/0gfz8b" target="_blank" rel="noopener"><svg><use href="#i-deezer"/></svg><span><b>Deezer</b><small><span class="l-es">Guardar</span><span class="l-en">Save</span></small></span><span class="go">→</span></a>
-      </div>
-    </div>
-    <div class="ticket rv" hidden>
-      <h3><span class="l-es">Avisame cuando salga</span><span class="l-en">Tell me when it drops</span></h3>
-      <p class="l-es">Te escribimos el día del estreno con el link directo.</p>
-      <p class="l-en">We'll message you on release day with the direct link.</p>
-      <!-- TODO: conectar a dónde se guardan los datos (sheet, Mailchimp, etc.). Hoy no guarda nada. -->
-      <form id="notify" data-endpoint="" novalidate>
-        <div>
-          <label for="f-name"><span class="l-es">Nombre</span><span class="l-en">Name</span></label>
-          <input id="f-name" name="name" autocomplete="given-name" required>
-        </div>
-        <div class="row">
-          <div>
-            <label for="f-mail">Email</label>
-            <input id="f-mail" name="email" type="email" autocomplete="email" inputmode="email">
-          </div>
-          <div>
-            <label for="f-wa">WhatsApp</label>
-            <input id="f-wa" name="whatsapp" type="tel" autocomplete="tel" inputmode="tel" placeholder="+503">
-          </div>
-        </div>
-        <button class="btn primary" type="submit" style="justify-self:start"><span class="l-es">Apuntame</span><span class="l-en">Count me in</span></button>
-        <p class="fine l-es">Solo te escribimos por este lanzamiento.</p>
-        <p class="fine l-en">We'll only contact you about this release.</p>
-      </form>
-      <p class="ok" role="status"><span class="l-es">¡Listo! Te avisamos.</span><span class="l-en">Done! We'll let you know.</span></p>
-    </div>
-  </div>
-</section>
-
-<section aria-labelledby="g-h">
-  <div class="wrap">
-    <div class="sec-head rv">
-      <div>
-        <p class="eyebrow"><span class="l-es">Del mostrador</span><span class="l-en">From the counter</span></p>
-        <h2 id="g-h"><span class="l-es">El arte</span><span class="l-en">The artwork</span></h2>
-      </div>
-    </div>
     <div class="gal">
-      <figure class="polaroid rv"><span class="tape" aria-hidden="true"></span><img src="/peperecha/img/foto-1.webp" alt="Peperechas de cerca, con el título en blanco" width="1000" height="1250" loading="lazy"><figcaption><span class="l-es">azúcar rosada</span><span class="l-en">pink sugar</span></figcaption></figure>
-      <figure class="polaroid rv"><span class="tape" aria-hidden="true"></span><img src="/peperecha/img/ilus-2.webp" alt="Ilustración de Gabriela Triste y Vanessa García caminando con peperechas" width="1000" height="1250" loading="lazy"><figcaption><span class="l-es">de camino</span><span class="l-en">on our way</span></figcaption></figure>
-      <figure class="polaroid rv"><span class="tape" aria-hidden="true"></span><img src="/peperecha/img/foto-2.webp" alt="Peperechas apiladas sobre fondo amarillo" width="1000" height="1250" loading="lazy"><figcaption><span class="l-es">una pila</span><span class="l-en">a stack</span></figcaption></figure>
+      <figure class="polaroid rv"><span class="tape" aria-hidden="true"></span><img src="/peperecha/img/foto-1.webp" alt="Peperechas de cerca, con el título en blanco" width="1000" height="1250" loading="lazy"></figure>
+      <figure class="polaroid rv"><span class="tape" aria-hidden="true"></span><img src="/peperecha/img/ilus-2.webp" alt="Ilustración de Gabriela Triste y Vanessa García caminando con peperechas" width="1000" height="1250" loading="lazy"></figure>
+      <figure class="polaroid rv"><span class="tape" aria-hidden="true"></span><img src="/peperecha/img/foto-2.webp" alt="Peperechas apiladas sobre fondo amarillo" width="1000" height="1250" loading="lazy"></figure>
     </div>
   </div>
 </section>
@@ -435,21 +382,50 @@ footer .legal{margin-top:36px;padding-top:18px;border-top:1px dashed rgba(254,23
         <h2 id="c-h"><span class="l-es">Créditos</span><span class="l-en">Credits</span></h2>
       </div>
     </div>
-    <!-- TODO: confirmar créditos completos (composición, mezcla, master, arte, fotos) -->
     <ul class="crew rv">
       <li>
-        <span class="role"><span class="l-es">Nuevo arreglo</span><span class="l-en">New arrangement</span></span>
-        <h3>Javii</h3>
-        <a class="ig" href="https://instagram.com/javiimusica" target="_blank" rel="noopener">@javiimusica</a>
+        <span class="role"><span class="l-es">Composición</span><span class="l-en">Composers</span></span>
+        <p class="names">Gabriela Triste, Vanessa García, Javii, Diego Calvo</p>
       </li>
       <li>
-        <span class="role"><span class="l-es">Nuevo arreglo</span><span class="l-en">New arrangement</span></span>
-        <h3>Diego Calvo</h3>
-        <a class="ig" href="https://instagram.com/diegocalvooo" target="_blank" rel="noopener">@diegocalvooo</a>
+        <span class="role"><span class="l-es">Producción</span><span class="l-en">Producer</span></span>
+        <p class="names">Javii, Diego Calvo</p>
       </li>
       <li>
-        <span class="role"><span class="l-es">Productor fonográfico</span><span class="l-en">Phonographic producer</span></span>
-        <h3>Sivar Music</h3>
+        <span class="role"><span class="l-es">Voces</span><span class="l-en">Vocals</span></span>
+        <p class="names">Gabriela Triste, Vanessa García</p>
+      </li>
+      <li>
+        <span class="role"><span class="l-es">Batería</span><span class="l-en">Drums</span></span>
+        <p class="names">Javii</p>
+      </li>
+      <li>
+        <span class="role"><span class="l-es">Bajo eléctrico</span><span class="l-en">Electric bass guitar</span></span>
+        <p class="names">Javii</p>
+      </li>
+      <li>
+        <span class="role"><span class="l-es">Guitarra eléctrica</span><span class="l-en">Electric guitar</span></span>
+        <p class="names">Diego Calvo</p>
+      </li>
+      <li>
+        <span class="role"><span class="l-es">Sintetizador</span><span class="l-en">Synthesizer</span></span>
+        <p class="names">Javii</p>
+      </li>
+      <li>
+        <span class="role"><span class="l-es">Ingeniería de grabación</span><span class="l-en">Recording engineer</span></span>
+        <p class="names">Javii, Diego Calvo</p>
+      </li>
+      <li>
+        <span class="role"><span class="l-es">Mezcla</span><span class="l-en">Mixing engineer</span></span>
+        <p class="names">Diego Calvo</p>
+      </li>
+      <li>
+        <span class="role"><span class="l-es">Masterización</span><span class="l-en">Mastering engineer</span></span>
+        <p class="names">Javii</p>
+      </li>
+      <li>
+        <span class="role"><span class="l-es">Personal de estudio</span><span class="l-en">Studio personnel</span></span>
+        <p class="names">David Leal</p>
       </li>
     </ul>
   </div>
@@ -471,7 +447,6 @@ footer .legal{margin-top:36px;padding-top:18px;border-top:1px dashed rgba(254,23
     </div>
     <div class="legal">
       <span>℗ Sivar Music</span>
-      <span class="l-es">Hecho en El Salvador, con azúcar.</span><span class="l-en">Made in El Salvador, with sugar.</span>
     </div>
   </div>
 </footer>
@@ -508,20 +483,6 @@ document.documentElement.classList.add('js');
     setTimeout(tick,1000);
   }
   tick();
-})();
-/* notify form — no guarda nada hasta que haya endpoint */
-(function(){
-  var f=document.getElementById('notify');
-  f.addEventListener('submit',function(e){
-    e.preventDefault();
-    var name=f.name.value.trim(),mail=f.email.value.trim(),wa=f.whatsapp.value.trim();
-    if(!name){f.name.focus();return}
-    if(!mail&&!wa){f.email.focus();return}
-    var ep=f.dataset.endpoint;
-    if(!ep){console.warn('Formulario sin endpoint: no se guardó nada.');}
-    else{fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,email:mail,whatsapp:wa,lang:document.documentElement.lang})}).catch(function(){})}
-    f.closest('.ticket').classList.add('sent');
-  });
 })();
 /* reveal */
 (function(){
